@@ -1,0 +1,8 @@
+.vercel
+package-lock.json
+node_modules/*
+.idea/*
+.env
+
+images/*
+!images/git.keep

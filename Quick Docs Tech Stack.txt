@@ -1,0 +1,11 @@
+Quick Docs Tech Stack:
+
+React Native
+Node.js
+Express.js
+Zustand (Super React Native friendly State Management)
+AWS (S3)
+JWT Tokens (Authorization, Token Generation)
+.env (secure data protection)
+EAS (Expo Building)
+Secure API Gateway (GET, POST, DELETE)

@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Quick-Docs",
+    "slug": "Quick-Docs",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logomain.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/logomain.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "infoPlist": {
+        "NSDocumentsFolderUsageDescription": "This app needs access to your documents folder to display PDFs."
+      },
+      "supportsTablet": true
+    },
+    "android": {
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logomain.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.rajeswar.QuickDocs"
+    },
+    "web": {
+      "favicon": "./assets/logomain.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e4a1d83b-5647-46e8-97db-b953de8d6e83"
+      }
+    }
+  }
+}
