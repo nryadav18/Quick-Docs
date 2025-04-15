@@ -18,7 +18,7 @@ const AppContent = () => {
 
             if (token && userId) {
                 try {
-                    const response = await axios.get(`https://quick-docs-app-backend.onrender.com/user/${userId}`, {
+                    const response = await axios.get(`https://44e4-152-59-195-151.ngrok-free.app/user/${userId}`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     setUser(response.data);

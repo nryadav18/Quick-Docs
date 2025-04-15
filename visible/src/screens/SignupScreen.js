@@ -60,7 +60,7 @@ const SignupScreen = ({ navigation }) => {
 
     const checkUsernameUnique = async (username) => {
         try {
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-username', { username });
+            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/check-username', { username });
             return !res.data.exists;
         } catch (err) {
             return false;
@@ -80,6 +80,11 @@ const SignupScreen = ({ navigation }) => {
 
         if (!username.trim()) {
             showErrorAlert("Empty Username", "Please enter your username to Continue.")
+            return false
+        }
+
+        if (!/^[a-zA-Z0-9_.-]+$/.test(username.trim())) {
+            showErrorAlert("Invalid Username", "Username should contain only A-Z, a-z, 0-9 and _")
             return false
         }
 
@@ -111,7 +116,7 @@ const SignupScreen = ({ navigation }) => {
             return false
         }
 
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(trimmedPassword)) {
+        if (!/[!@#$%^&*(),._?":{}|<>]/.test(trimmedPassword)) {
             showWarningAlert("Weak Password", "Password must contain at least one special character.")
             return false
         }
@@ -169,9 +174,9 @@ const SignupScreen = ({ navigation }) => {
 
             if (imageUri) {
                 const fileType = imageUri.split('.').pop().toLowerCase();
-                const fileName = `profile.${fileType}`;
+                const fileName = `profile_${Date.now()}.${fileType}`;
 
-                const res = await axios.post('https://quick-docs-app-backend.onrender.com/generate-upload-url', {
+                const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/generate-upload-url', {
                     fileName,
                     fileType,
                     username: trimmedData.username
@@ -193,7 +198,7 @@ const SignupScreen = ({ navigation }) => {
             }
 
 
-            const response = await axios.post('https://quick-docs-app-backend.onrender.com/signup', {
+            const response = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/signup', {
                 ...trimmedData,
                 profileImageUrl
             });
@@ -220,10 +225,10 @@ const SignupScreen = ({ navigation }) => {
     const sendOtp = async () => {
         try {
             const trimmedEmail = email.trim();
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/send-otp', { email: trimmedEmail });
+            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/send-otp', { email: trimmedEmail });
             if (res.data.success) {
                 showSuccessAlert("OTP Sent", "Please check out your Inbox for OTP")
-                setIsOtpSent(true);
+                setIsOtpSent(true)
             }
         } catch {
             showErrorAlert("OTP Sending Failed", "Please try again later!")
@@ -235,7 +240,7 @@ const SignupScreen = ({ navigation }) => {
         try {
             const trimmedEmail = email.trim();
             const trimmedOtp = otp.trim();
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
+            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
             if (res.data.success) {
                 showSuccessAlert("OTP Verified", "OTP Verified Successfully!")
                 setIsOtpVerified(true)

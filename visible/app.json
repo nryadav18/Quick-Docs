@@ -21,7 +21,8 @@
     "android": {
       "permissions": [
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logomain.png",

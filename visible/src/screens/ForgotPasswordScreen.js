@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
+import { Ionicons } from '@expo/vector-icons'; // add this to your imports
 
 
 const ForgotPasswordScreen = ({ navigation }) => {
@@ -26,6 +27,8 @@ const ForgotPasswordScreen = ({ navigation }) => {
     const [successTitle, setSuccessTitle] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
 
+    const [showPassword, setShowPassword] = useState(false); // For toggling password visibility
+
     //My Custom Alert Functions
     const showErrorAlert = (title, message) => {
         setErrorTitle(title)
@@ -45,7 +48,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         setSuccessMessage(message)
     }
 
-    const API_BASE_URL = 'https://quick-docs-app-backend.onrender.com'; // Replace with your actual backend URL
+    const API_BASE_URL = 'https://44e4-152-59-195-151.ngrok-free.app'; // Replace with your actual backend URL
 
     // Step 1: Send OTP
     const handleSendOTP = async () => {
@@ -178,18 +181,29 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
             {step === 3 && (
                 <>
-                    <TextInput
-                        placeholder="Enter New Password"
-                        style={styles.input}
-                        secureTextEntry
-                        value={newPassword}
-                        onChangeText={setNewPassword}
-                    />
+                    <View style={styles.passwordContainer}>
+                        <TextInput
+                            placeholder="Enter New Password"
+                            style={styles.passwordInput}
+                            secureTextEntry={!showPassword}
+                            value={newPassword}
+                            onChangeText={setNewPassword}
+                        />
+                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                            <Ionicons
+                                name={showPassword ? 'eye-off' : 'eye'}
+                                size={24}
+                                color="gray"
+                            />
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity style={styles.button} onPress={handleResetPassword} disabled={loading}>
                         <Text style={styles.buttonText}>{loading ? 'Resetting...' : 'Reset Password'}</Text>
                     </TouchableOpacity>
                 </>
             )}
+
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
             <SuccessAlert
@@ -213,7 +227,22 @@ const styles = StyleSheet.create({
     title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
     input: { height: 50, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, marginBottom: 10 },
     button: { backgroundColor: '#00796b', padding: 15, borderRadius: 10, alignItems: 'center' },
-    buttonText: { color: 'white', fontWeight: 'bold' }
+    buttonText: { color: 'white', fontWeight: 'bold' },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        marginBottom: 10,
+        height: 50,
+        justifyContent: 'space-between',
+    },
+    passwordInput: {
+        flex: 1,
+        height: '100%',
+    },
+
 });
 
 export default ForgotPasswordScreen;

@@ -6,7 +6,10 @@ const useUserStore = create((set) => ({
     token: null,
     setUser: (userData) => set({ user: userData }),
     setToken: (token) => set({ token }),
-    clearUser: () => set({ user: null, token: null }),
+    clearUser: () => {
+        console.log("Clearing user data...");
+        set({ user: null, token: null });
+    }
 }));
 
 export default useUserStore;

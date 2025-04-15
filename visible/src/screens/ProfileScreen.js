@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { ThemeContext } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -93,7 +94,7 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://quick-docs-app-backend.onrender.com/deactivate', {
+                    const response = await fetch('https://44e4-152-59-195-151.ngrok-free.app/deactivate', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -124,12 +125,14 @@ const ProfileScreen = () => {
             <View style={[styles.header, isDarkMode && styles.darkHeader]}>
                 <TouchableOpacity onPress={pickImage}>
                     <Image
+                        key={user?.profileImageUrl || 'default-image'}
                         source={
                             user?.profileImageUrl
-                                ? { uri: user.profileImageUrl }
-                                : require('../../assets/logomain.png') // Fallback image
+                                ? { uri: `${user.profileImageUrl}?${new Date().getTime()}` }
+                                : require('../../assets/logomain.png')
                         }
                         style={styles.profileImage}
+                        priority="high" // Ensures the image is preloaded
                     />
 
                     <View style={styles.cameraIcon}>

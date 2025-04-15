@@ -107,7 +107,7 @@ const UploadFilesScreen = () => {
         formData.append("username", user.username);
 
         try {
-            const response = await fetch("https://quick-docs-app-backend.onrender.com/upload", {
+            const response = await fetch("https://44e4-152-59-195-151.ngrok-free.app/upload", {
                 method: "POST",
                 headers: {
                     "Content-Type": "multipart/form-data"
@@ -124,6 +124,7 @@ const UploadFilesScreen = () => {
                 showSuccessAlert("Success", "File uploaded successfully.");
                 resetForm();
             } else {
+                console.log(response)
                 showErrorAlert("Upload Failed", "Please Upload file Less than 5MB!");
             }
         } catch (err) {

@@ -53,7 +53,7 @@ const LoginScreen = () => {
         setSuccessAlertVisible(true)
     }
 
-    const validateInputs = () => {
+    const validateInputs = async () => {
         if (!username.trim()) {
             showErrorAlert("Empty Username", "Please enter your username to continue.")
             return false
@@ -63,6 +63,7 @@ const LoginScreen = () => {
             showErrorAlert("Empty Password", "Please enter your password to continue.")
             return false
         }
+
 
         if (password.trim().length < 8) {
             showWarningAlert("Weak Password", "Your password seems too short. Are you sure you want to continue?")
@@ -74,28 +75,39 @@ const LoginScreen = () => {
 
     const handleLogin = async () => {
         if (!validateInputs()) return;
+        try {
+            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/check-valid-user', { username });
+            if (!res.data.exists) {
+                showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
+                return;
+            }
+        } catch (err) {
+            showErrorAlert("Unexpected Error Rised", "Please Try Again Later");
+            return;
+        }
+
         setWarningAlertVisible(false);
         setLoading(true);
-    
+
         try {
             const trimmedUsername = username.trim();
             const trimmedPassword = password.trim();
-    
-            const response = await axios.post("https://quick-docs-app-backend.onrender.com/login", {
+
+            const response = await axios.post("https://44e4-152-59-195-151.ngrok-free.app/login", {
                 username: trimmedUsername,
                 password: trimmedPassword,
             });
-    
+
             setLoading(false);
-    
+
             if (response.status === 200) {
                 const { token, user } = response.data;
-    
+
                 // ✅ Zustand store usage
                 const { setUser, setToken } = useUserStore.getState();
                 setUser(user);
                 setToken(token);
-    
+
                 showSuccessAlert();
                 setTimeout(() => {
                     setSuccessAlertVisible(false);

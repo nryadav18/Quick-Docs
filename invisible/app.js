@@ -42,7 +42,8 @@ const UserSchema = new mongoose.Schema({
     gender: String,
     verified: { type: Boolean, default: false },
     profileImageUrl: String,
-    myfiles: [fileSchema],
+    myfiles: { type: [fileSchema], default: [] },
+    filesdata: [{ type: String }] // Array of strings for extracted text
 });
 
 
@@ -258,6 +259,26 @@ app.post('/check-username', async (req, res) => {
         }
 
         return res.status(200).json({ exists: false });
+    } catch (error) {
+        console.error("Error checking username:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+//Checking User Exist or Not
+app.post('/check-valid-user', async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        const trimmedUserName = username.trim();
+
+        const existingUser = await User.findOne({username : trimmedUserName});
+
+        if (!existingUser) {
+            return res.status(409).json({ exists: false });
+        }
+
+        return res.status(200).json({ exists: true });
     } catch (error) {
         console.error("Error checking username:", error);
         res.status(500).json({ message: "Server error" });
