@@ -60,7 +60,7 @@ const SignupScreen = ({ navigation }) => {
 
     const checkUsernameUnique = async (username) => {
         try {
-            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/check-username', { username });
+            const res = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/check-username', { username });
             return !res.data.exists;
         } catch (err) {
             return false;
@@ -176,7 +176,7 @@ const SignupScreen = ({ navigation }) => {
                 const fileType = imageUri.split('.').pop().toLowerCase();
                 const fileName = `profile_${Date.now()}.${fileType}`;
 
-                const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/generate-upload-url', {
+                const res = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/generate-upload-url', {
                     fileName,
                     fileType,
                     username: trimmedData.username
@@ -198,7 +198,7 @@ const SignupScreen = ({ navigation }) => {
             }
 
 
-            const response = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/signup', {
+            const response = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/signup', {
                 ...trimmedData,
                 profileImageUrl
             });
@@ -225,7 +225,7 @@ const SignupScreen = ({ navigation }) => {
     const sendOtp = async () => {
         try {
             const trimmedEmail = email.trim();
-            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/send-otp', { email: trimmedEmail });
+            const res = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/send-otp', { email: trimmedEmail });
             if (res.data.success) {
                 showSuccessAlert("OTP Sent", "Please check out your Inbox for OTP")
                 setIsOtpSent(true)
@@ -240,7 +240,7 @@ const SignupScreen = ({ navigation }) => {
         try {
             const trimmedEmail = email.trim();
             const trimmedOtp = otp.trim();
-            const res = await axios.post('https://44e4-152-59-195-151.ngrok-free.app/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
+            const res = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
             if (res.data.success) {
                 showSuccessAlert("OTP Verified", "OTP Verified Successfully!")
                 setIsOtpVerified(true)

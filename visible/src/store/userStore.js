@@ -4,8 +4,14 @@ import { create } from 'zustand';
 const useUserStore = create((set) => ({
     user: null,
     token: null,
-    setUser: (userData) => set({ user: userData }),
-    setToken: (token) => set({ token }),
+    setUser: (userData) => {
+        console.log('Setting New User Data')
+        set({ user: userData })
+    },
+    setToken: (token) => {
+        console.log('Setting New User Token')
+        set({ token })
+    },
     clearUser: () => {
         console.log("Clearing user data...");
         set({ user: null, token: null });

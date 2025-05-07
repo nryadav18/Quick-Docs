@@ -6,17 +6,24 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
-const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+const { Storage } = require('@google-cloud/storage');
 const multer = require('multer')
 const path = require('path')
 const { Readable } = require('stream')
-
-
 const app = express();
+
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const storage = new Storage({
+    keyFilename: path.join(__dirname, './gcs-storage-keys.json'),
+    projectId: 'arched-media-348917',
+});
+const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
+const upload = multer({ storage: multer.memoryStorage() });
+
+
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
@@ -66,14 +73,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// AWS S3 Client v3
-const s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
-});
 
 // JWT Middleware
 const authenticateToken = (req, res, next) => {
@@ -114,8 +113,6 @@ app.get('/user/:id', authenticateToken, async (req, res) => {
 app.post('/signup', async (req, res) => {
     const { name, username, email, password, dob, gender, profileImageUrl } = req.body;
 
-    console.log(req.body)
-
     if (!password) return res.status(400).json({ success: false, message: 'Password is required' });
 
     try {
@@ -139,10 +136,10 @@ app.post('/signup', async (req, res) => {
         res.json({ success: true, message: 'Signup successful' });
     } catch (error) {
         console.error(error);
-        console.log(req.body)
         res.status(500).json({ success: false, message: 'Signup failed' });
     }
 });
+
 
 // Send OTP
 app.post('/send-otp', async (req, res) => {
@@ -272,7 +269,7 @@ app.post('/check-valid-user', async (req, res) => {
 
         const trimmedUserName = username.trim();
 
-        const existingUser = await User.findOne({username : trimmedUserName});
+        const existingUser = await User.findOne({ username: trimmedUserName });
 
         if (!existingUser) {
             return res.status(409).json({ exists: false });
@@ -331,31 +328,20 @@ app.delete('/deactivate', async (req, res) => {
     }
 
     try {
-        // Step 1: List objects in the user's folder
-        const listCommand = new ListObjectsV2Command({
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Prefix: `${username}/`
-        });
+        const [files] = await bucket.getFiles({ prefix: `${username}/` });
 
-        const listedObjects = await s3.send(listCommand);
-
-        if (listedObjects.Contents && listedObjects.Contents.length > 0) {
-            const deleteParams = {
-                Bucket: process.env.AWS_S3_BUCKET_NAME,
-                Delete: {
-                    Objects: listedObjects.Contents.map(obj => ({ Key: obj.Key }))
-                }
-            };
-
-            const deleteCommand = new DeleteObjectsCommand(deleteParams);
-            await s3.send(deleteCommand);
+        // Step 1: Delete files from GCS
+        if (files.length > 0) {
+            await Promise.all(files.map(file => file.delete()));
         }
 
         // Step 2: Delete user from DB
         const user = await User.findOneAndDelete({ email });
-        if (!user) return res.status(400).json({ success: false, message: 'User not found' });
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'User not found' });
+        }
 
-        res.json({ success: true, message: 'Account and S3 data deleted successfully' });
+        res.json({ success: true, message: 'Account and GCS data deleted successfully' });
 
     } catch (error) {
         console.error('Error during deactivation:', error);
@@ -363,7 +349,8 @@ app.delete('/deactivate', async (req, res) => {
     }
 });
 
-// Generate S3 presigned URL
+
+// Generate GCS presigned URL
 app.post('/generate-upload-url', async (req, res) => {
     const { fileName, fileType, username } = req.body;
 
@@ -372,32 +359,106 @@ app.post('/generate-upload-url', async (req, res) => {
     }
 
     const extension = fileType.toLowerCase();
-    const imageKey = `${username}/profile.${extension}`;
-
-    const command = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME,
-        Key: imageKey,
-        ContentType: `image/${fileType}`,
-    });
+    const timestamp = Date.now();  // Unique version
+    const gcsKey = `${username}/profile-${timestamp}.${extension}`;
+    const file = bucket.file(gcsKey);
 
     try {
-        const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        const [uploadUrl] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + 60 * 60 * 1000, // 1 hour
+            contentType: `image/${fileType}`
+        });
 
-        const imageUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${imageKey}`;
+        await deleteOldProfiles(username);
+
+        const imageUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`;
 
         res.json({ success: true, uploadUrl, imageUrl });
     } catch (err) {
-        console.error("Error generating presigned URL:", err);
+        console.error("Error generating signed URL:", err);
         res.status(500).json({ success: false, message: "Failed to generate upload URL" });
     }
 });
 
-const storage = multer.memoryStorage();  // Store file in memory for direct upload to S3
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+
+// Delete old profile images
+async function deleteOldProfiles(username) {
+    const [files] = await bucket.getFiles({ prefix: `${username}/profile-` });
+    for (const file of files) {
+        await file.delete();
+    }
+}
+
+
+app.post('/file-id-thrower', async (req, res) => {
+    const { username, itemname } = req.body;
+
+    // Find user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Search for the file in user's myfiles array
+    const file = user.myfiles.find(f => f.name === itemname);
+    if (!file) {
+        return res.status(404).json({ message: 'File not found.' });
+    }
+
+    // Return file ID
+    res.json({ fileId: file._id });
+
 });
+
+
+// DELETE /:fileId?userId=<userId>
+app.delete('/:fileId', async (req, res) => {
+    const { fileId } = req.params;
+    const { userId } = req.query;
+
+    console.log('Delete request received:', { fileId, userId });
+
+    if (!userId) {
+        return res.status(400).json({ message: 'User ID is required.' });
+    }
+
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const file = user.myfiles.id(fileId);
+        if (!file) {
+            return res.status(404).json({ message: 'File not found.' });
+        }
+
+        const gcsFilePath = file.filepath;
+        try {
+            await bucket.file(gcsFilePath).delete();
+            console.log(`Deleted from GCS: ${gcsFilePath}`);
+        } catch (gcsErr) {
+            console.error('GCS deletion error:', gcsErr);
+            return res.status(502).json({ message: 'Failed to delete file from storage.' });
+        }
+
+        // ✅ Remove from MongoDB array
+        user.myfiles.pull(fileId);
+        await user.save();
+
+        return res.json({ message: 'File deleted successfully.', updatedUser: user });
+
+    } catch (err) {
+        console.error('Delete file error:', err);
+        return res.status(500).json({ message: 'Internal server error.' });
+    }
+});
+
+
+
 
 // Upload route
 app.post('/upload', upload.single('file'), async (req, res) => {
@@ -409,49 +470,61 @@ app.post('/upload', upload.single('file'), async (req, res) => {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // Prepare unique file name and S3 key
+        // Generate unique file name and GCS key
         const fileName = Date.now() + '-' + originalname;
-        const s3Key = `${username}/myfiles/${fileName}`;
+        const gcsKey = `${username}/myfiles/${fileName}`;
+        const gcsFile = bucket.file(gcsKey);
 
-        const uploadParams = {
-            Bucket: process.env.AWS_S3_BUCKET_NAME,
-            Key: s3Key,
-            Body: file.buffer,
-            ContentType: file.mimetype
-        };
-
-        // Upload to S3
-        await s3.send(new PutObjectCommand(uploadParams));
-
-        const fileUrl = `https://${process.env.AWS_S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-
-        const newFile = {
-            name: originalname,
-            url: fileUrl,
-            filepath: s3Key,
-            type: file.mimetype,
-            rating: parseInt(importance) || 1,
-            uploadedAt: new Date()
-        };
-
-        console.log(newFile)
-
-        // Upsert user: create if not exists, else update
-        const user = await User.findOneAndUpdate(
-            { username },
-            { $push: { myfiles: newFile } },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-
-        res.status(200).json({
-            message: 'File uploaded and saved successfully',
-            file: newFile
+        // Upload to GCS
+        const stream = gcsFile.createWriteStream({
+            metadata: {
+                contentType: file.mimetype
+            }
         });
+
+        stream.on('error', (err) => {
+            console.error('Stream error:', err);
+            return res.status(500).json({ message: 'Upload failed', error: err.message });
+        });
+
+        stream.on('finish', async () => {
+            try {
+
+                const fileUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`;
+
+                const newFile = {
+                    name: originalname,
+                    url: fileUrl,
+                    filepath: gcsKey,
+                    type: file.mimetype,
+                    rating: parseInt(importance) || 1,
+                    uploadedAt: new Date()
+                };
+
+                const user = await User.findOneAndUpdate(
+                    { username },
+                    { $push: { myfiles: newFile } },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
+
+                res.status(200).json({
+                    message: 'File uploaded and saved successfully',
+                    file: newFile
+                });
+            } catch (err) {
+                console.error('Post-upload error:', err);
+                res.status(500).json({ message: 'Failed to finalize upload', error: err.message });
+            }
+        });
+
+
+        stream.end(file.buffer);
     } catch (err) {
         console.error('Upload error:', err);
         res.status(500).json({ message: 'Upload failed', error: err.message });
     }
 });
+
 
 app.get('/', (req, res) => {
     res.send(`

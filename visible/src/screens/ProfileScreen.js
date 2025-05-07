@@ -94,7 +94,7 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://44e4-152-59-195-151.ngrok-free.app/deactivate', {
+                    const response = await fetch('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/deactivate', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -233,8 +233,8 @@ const styles = StyleSheet.create({
         padding: 5,
     },
 
-    name: { fontSize: 22, fontWeight: 'bold', color: '#FFF' },
-    username: { fontSize: 16, color: '#EEE', marginBottom: 5 },
+    name: { fontSize: 22, fontWeight: 'bold', color: 'black', marginBottom : 6 },
+    username: { fontSize: 16, fontWeight : 'bold', fontStyle : 'italic', color: 'black', marginBottom: 5 },
 
     card: {
         width: '90%',

@@ -48,7 +48,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         setSuccessMessage(message)
     }
 
-    const API_BASE_URL = 'https://44e4-152-59-195-151.ngrok-free.app'; // Replace with your actual backend URL
+    const API_BASE_URL = 'https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app'; // Replace with your actual backend URL
 
     // Step 1: Send OTP
     const handleSendOTP = async () => {

@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     View,
     Text,
-    FlatList,
     TouchableOpacity,
     Image,
     StyleSheet,
@@ -10,25 +9,20 @@ import {
     ActivityIndicator,
     Dimensions,
     Modal,
+    ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
 import * as Sharing from 'expo-sharing';
-import { WebView } from 'react-native-webview'; // Import WebView
 import LottieView from 'lottie-react-native';
 import { ThemeContext } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import useUserStore from '../store/userStore';
+import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
+import axios from 'axios';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
-
-// Sample Files
-const sampleFiles = [
-    { id: 1, name: "Sample PDF", type: "pdf", rating: 3, local: require('../../assets/pdf.pdf') },
-    { id: 2, name: "Sample Image", type: "jpeg", rating: 5, local: require('../../assets/raj.jpeg') },
-];
 
 // File Icons
 const fileIcons = {
@@ -40,10 +34,6 @@ const fileIcons = {
     webp: require('../../assets/image.png'),
 };
 
-// Get File Preview
-const getFilePreview = (file) => {
-    return fileIcons[file.type.toLowerCase()] || require('../../assets/file.png');
-};
 
 // Main Component  
 const ViewFilesScreen = () => {
@@ -53,62 +43,88 @@ const ViewFilesScreen = () => {
     const [selectedType, setSelectedType] = useState('All');
     const [loading, setLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState(null);
-    const [pdfUri, setPdfUri] = useState(null); // State to hold the PDF URI
-    const [files, setFiles] = useState(sampleFiles);
+    const [pdfUri, setPdfUri] = useState(null);
+    const [files, setFiles] = useState([]);
+
+    //My Custom Alert Boxes
+    const [errorAlertVisible, setErrorAlertVisible] = useState(false)
+    const [errorTitle, setErrorTitle] = useState("")
+    const [errorMessage, setErrorMessage] = useState("")
+
+    const [warningAlertVisible, setWarningAlertVisible] = useState(false)
+    const [warningTitle, setWarningTitle] = useState("")
+    const [warningMessage, setWarningMessage] = useState("")
+
+    const [successAlertVisible, setSuccessAlertVisible] = useState(false)
+    const [successTitle, setSuccessTitle] = useState("")
+    const [successMessage, setSuccessMessage] = useState("")
+
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const [onWarningConfirm, setOnWarningConfirm] = useState(null);
+
 
     useEffect(() => {
-        setLoading(true); // Start loading when searchText or selectedType changes
+        if (user?.myfiles) {
+            setFiles(user.myfiles);
+        } else {
+            setFiles([]);
+        }
+    }, [user?.myfiles]);
 
-        // Simulate a loading delay (e.g., for fetching data)
-        const timer = setTimeout(() => setLoading(false), 1000); // Set to 1000ms (1 second) for demo purposes
-
+    useEffect(() => {
+        setLoading(true);
+        const timer = setTimeout(() => setLoading(false), 1000);
         return () => clearTimeout(timer); // Cleanup timeout on unmount
     }, [searchText, selectedType]);
 
-    // Memoized Filtered Data
-    const filteredFiles = useMemo(() => {
-        return sampleFiles.filter(file =>
-            (selectedType === 'All' || file.type.toLowerCase() === selectedType.toLowerCase()) &&
-            (file.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                file.type.toLowerCase().includes(searchText.toLowerCase()) ||
-                file.rating.toString().includes(searchText))
-        );
-    }, [searchText, selectedType]);
+
+    //My Custom Alert Functions
+    const showErrorAlert = (title, message) => {
+        setErrorTitle(title)
+        setErrorMessage(message)
+        setErrorAlertVisible(true)
+    }
+
+    const showSuccessAlert = (title, message) => {
+        setSuccessAlertVisible(true)
+        setSuccessTitle(title)
+        setSuccessMessage(message)
+    }
+
+    const showWarningAlert = (title, message, onConfirm) => {
+        setWarningTitle(title)
+        setWarningMessage(message)
+        setWarningAlertVisible(true)
+        setOnWarningConfirm(() => onConfirm);  // Store the callback
+    };
+
 
     // View File Function
     const handleViewFile = async (file) => {
-        let fileUri = file.uri;
-
-        if (file.local) {
-            const asset = Asset.fromModule(file.local);
-            await asset.downloadAsync();
-            fileUri = asset.localUri;
+        if (!file.url) {
+            console.warn("File URL is missing");
+            return;
         }
-
+        const fileUri = file.url;
         if (file.type === "pdf") {
-            const base64 = await FileSystem.readAsStringAsync(fileUri, {
-                encoding: FileSystem.EncodingType.Base64,
-            });
-
-            const pdfData = `data:application/pdf;base64,${base64}`;
-            setPdfUri(pdfData);
-        } else if (["jpg", "jpeg", "png", "webp"].includes(file.type)) {
-            setImagePreview(fileUri);
+            try {
+                const base64 = await FileSystem.readAsStringAsync(fileUri, {
+                    encoding: FileSystem.EncodingType.Base64,
+                });
+                const pdfData = `data:application/pdf;base64,${base64}`;
+                setPdfUri(pdfData);
+            } catch (error) {
+                console.error('Error reading PDF:', error);
+            }
         } else {
-            console.warn("Unsupported file type. Download to view.");
+            setImagePreview(fileUri);
         }
     };
 
     // Download File
     const handleDownloadFile = async (file) => {
         let fileUri = file.uri;
-
-        if (file.local) {
-            const asset = Asset.fromModule(file.local);
-            await asset.downloadAsync();
-            fileUri = asset.localUri;
-        }
-
         try {
             await Sharing.shareAsync(fileUri);
         } catch (error) {
@@ -116,9 +132,75 @@ const ViewFilesScreen = () => {
         }
     };
 
-    const handleDeleteFile = (fileId) => {
-        setFiles((prevFiles) => prevFiles.filter(file => file.id !== fileId));
+    const handleDeleteFile = async (item) => {
+
+        let fileId = item._id;
+
+        if (!fileId) {
+            try {
+                const response = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/file-id-thrower', {
+                    username: user.username,
+                    itemname: item.name,
+                });
+                
+                fileId = response.data.fileId;
+            } catch (err) {
+                console.error('Error:', err.response?.data || err.message);
+            }
+        }
+
+
+        showWarningAlert(
+            "Confirm Deletion?",
+            "Are you sure you want to delete this file? This action cannot be undone.",
+            async () => {
+                setIsDeleting(true);
+                try {
+                    setLoading(true);
+
+                    const url = `https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/${fileId}?userId=${user._id}`;
+                    const response = await fetch(url, {
+                        method: 'DELETE',
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Failed to delete file.');
+                    }
+
+                    // Update Zustand user store
+                    useUserStore.getState().setUser(data.updatedUser);
+                    showSuccessAlert("File Deleted", "The File has been deleted successfully.");
+                    console.log('Deleted Successfully')
+                } catch (error) {
+                    console.error('Error deleting file:', error);
+                    showErrorAlert("Error", "Failed to delete File. Please try again.");
+
+                } finally {
+                    setLoading(false);
+                    setIsDeleting(false);
+                }
+
+            }
+        );
     };
+
+
+
+    const filteredFiles = files.filter(file => {
+        const fileName = file.name || '';
+        const fileType = file.type || '';
+        const fileRating = file.rating !== undefined && file.rating !== null ? file.rating : '';
+        return (
+            (selectedType === 'All' || fileType.toLowerCase() === selectedType.toLowerCase()) &&
+            (
+                fileName.toLowerCase().includes(searchText.toLowerCase()) ||
+                fileType.toLowerCase().includes(searchText.toLowerCase()) ||
+                String(fileRating).includes(searchText)
+            )
+        );
+    });
 
     return (
         <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
@@ -145,7 +227,7 @@ const ViewFilesScreen = () => {
             </View>
 
             {/* Loader */}
-            {loading &&
+            {loading && (
                 <View style={styles.lottieContainer}>
                     <LottieView
                         source={require('../../assets/loading.json')}
@@ -155,44 +237,56 @@ const ViewFilesScreen = () => {
                         style={styles.lottie}
                     />
                 </View>
-            }
+            )}
 
-            {/* File List */}
+            {/* Files List using map instead of FlatList */}
             {!loading && (
-                <FlatList
-                    nestedScrollEnabled={true} // Fixes the nested scrolling issue
-                    data={files.filter(file =>
-                        (selectedType === 'All' || file.type.toLowerCase() === selectedType.toLowerCase()) &&
-                        (file.name.toLowerCase().includes(searchText.toLowerCase()) ||
-                            file.type.toLowerCase().includes(searchText.toLowerCase()) ||
-                            file.rating.toString().includes(searchText))
-                    )}
-                    keyExtractor={(item) => item.id.toString()}
-                    numColumns={1}
-                    renderItem={({ item }) => (
-                        <View style={[styles.fileCard, isDarkMode && styles.darkFileCard]}>
-                            <Text style={styles.fileName}>{item.name}</Text>
-                            <Image source={getFilePreview(item)} style={styles.filePreview} />
-                            <Text style={styles.fileType}>{item.type.toUpperCase()}</Text>
-                            <Text style={styles.rating}>⭐ {item.rating}</Text>
-                            <View style={styles.buttonContainer}>
-                                <TouchableOpacity style={styles.viewButton} onPress={() => handleViewFile(item)}>
-                                    <MaterialIcons name="visibility" size={20} color="white" />
-                                    <Text style={styles.buttonText}>View</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownloadFile(item)}>
-                                    <MaterialIcons name="file-download" size={20} color="white" />
-                                    <Text style={styles.buttonText}>Download</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteFile(item.id)}>
-                                    <MaterialIcons name="delete" size={20} color="white" />
-                                    <Text style={styles.buttonText}>Delete</Text>
-                                </TouchableOpacity>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
+                    {filteredFiles.length > 0 ? (
+                        filteredFiles.map((item, index) => (
+                            <View key={index} style={[styles.fileCard, isDarkMode && styles.darkFileCard]}>
+                                <View style={styles.previewContainer}>
+                                    <View style={styles.previewBox}>
+                                        {(
+                                            <View style={styles.genericFile}>
+                                                <Image source={{ uri: item.url }} style={styles.fileIcon} />
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {/* File Info */}
+                                    <View style={styles.infoBox}>
+                                        <Text numberOfLines={1} style={[styles.fileName, isDarkMode && styles.darkFileName]}>
+                                            {item.name}
+                                        </Text>
+                                        <Text style={styles.rating}>🌟 {item.rating}</Text>
+                                        <Text style={[styles.fileTypeLabel, isDarkMode && styles.darkFileTypeLabel]}>{item.type.toUpperCase()}</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.buttonContainer}>
+                                    <TouchableOpacity style={styles.viewButton} onPress={() => handleViewFile(item)}>
+                                        <MaterialIcons name="visibility" size={20} color="white" />
+                                        <Text style={styles.buttonText}>View</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownloadFile(item)}>
+                                        <MaterialIcons name="file-download" size={20} color="white" />
+                                        <Text style={styles.buttonText}>Download</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteFile(item)}>
+                                        <MaterialIcons name="delete" size={20} color="white" />
+                                        <Text style={styles.buttonText}>Delete</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
+                        ))
+                    ) : (
+                        <View style={styles.emptyState}>
+                            <Text style={[styles.emptyText, isDarkMode && styles.darkText]}>
+                                No files found.
+                            </Text>
                         </View>
                     )}
-
-                />
+                </ScrollView>
             )}
 
             {/* Image Preview Modal */}
@@ -222,6 +316,22 @@ const ViewFilesScreen = () => {
                     )}
                 </View>
             </Modal>
+            <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
+            <WarningAlert
+                visible={warningAlertVisible}
+                title={warningTitle}
+                message={warningMessage}
+                onCancel={() => {
+                    setWarningAlertVisible(false);
+                    setOnWarningConfirm(null);
+                }}
+                onOk={() => {
+                    setWarningAlertVisible(false);
+                    if (onWarningConfirm) onWarningConfirm();
+                    setOnWarningConfirm(null);
+                }}
+            />
+            <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
         </LinearGradient>
     );
 };
@@ -236,18 +346,184 @@ const styles = StyleSheet.create({
     activeFilter: { backgroundColor: '#007AFF' },
     filterText: { fontSize: 14, fontWeight: 'bold' },
     activeFilterText: { color: 'white' },
-    fileCard: { flex: 1, backgroundColor: 'white', borderRadius: 10, padding: 15, margin: 8, alignItems: 'center', elevation: 3 },
-    darkFileCard: { backgroundColor: '#121212', borderWidth: 1, borderColor: 'rgba(255,255,255,1)', elevation: 8, shadowColor: 'rgba(255, 255, 255, .6)', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 8, },
+    scrollViewContent: {
+        paddingBottom: 20,
+    },
+    fileCard: {
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 15,
+        marginHorizontal: 8,
+        marginBottom: 16,
+        alignItems: 'center',
+        elevation: 3,
+    },
+    darkFileCard: {
+        backgroundColor: '#121212',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,1)',
+        elevation: 8,
+        shadowColor: 'rgba(255, 255, 255, .6)',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+    },
+    fileDetails: {
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
+        padding: 15,
+    },
+    fileDetailsLeft: {
+        width: '50%',
+        textAlign: 'center',
+        alignContent: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontSize: 30
+    },
+    fileDetailsRight: {
+        width: '50%',
+        textAlign: 'center',
+        alignContent: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     filePreview: { width: 60, height: 60, marginBottom: 10, resizeMode: 'contain' },
-    fileName: { fontWeight: 'bold', fontSize: 16, marginBottom: 5, textAlign: 'center' },
     fileType: { fontSize: 12, color: 'gray', marginBottom: 5 },
-    rating: { fontWeight: 'bold', color: '#00796b', marginBottom: 10 },
-    buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
-    viewButton: { backgroundColor: '#007AFF', justifyContent: 'center', gap: '5', alignItems: 'center', flexDirection: 'row', padding: 10, borderRadius: 5, flex: 1, marginRight: 5 },
-    downloadButton: { backgroundColor: '#00796b', justifyContent: 'center', gap: '5', alignItems: 'center', flexDirection: 'row', padding: 10, borderRadius: 5, flex: 1, marginLeft: 5 },
-    modalContainer: { flex: 1, backgroundColor: 'black', justifyContent: 'center', alignItems: 'center' },
-    closeButton: { position: 'absolute', top: 40, right: 20 },
-    fullImage: { width: '90%', height: '80%', resizeMode: 'contain' },
+    previewContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        paddingVertical: 26,
+        borderBottomWidth: 1,
+        borderColor: '#ddd',
+    },
+
+    previewBox: {
+        width: '50%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    imageThumbnail: {
+        width: 200,
+        height: 200,
+        borderRadius: 10,
+        resizeMode: 'cover',
+    },
+
+    textPreview: {
+        fontSize: 14,
+        color: '#333',
+        textAlign: 'left',
+        width: '100%',
+    },
+    darkTextPreview: {
+        color: '#ccc'
+    },
+    genericFile: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    fileIcon: {
+        width: 150,
+        height: 150,
+        resizeMode: 'contain',
+    },
+
+    fileTypeLabel: {
+        marginTop: 5,
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#666',
+    },
+    darkFileTypeLabel: {
+        color: '#bbb'
+    },
+
+    infoBox: {
+        flex: 1,
+        paddingLeft: 10,
+        justifyContent: 'center',
+        gap: 10,
+        width: '50%'
+    },
+
+    fileName: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        color: '#333',
+        marginBottom: 5,
+    },
+    darkFileName: {
+        color: '#fff'
+    },
+    rating: {
+        fontWeight: 'bold',
+        color: '#00796b',
+        fontSize: 20,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    viewButton: {
+        backgroundColor: '#007AFF',
+        justifyContent: 'center',
+        gap: 5,
+        alignItems: 'center',
+        flexDirection: 'row',
+        padding: 10,
+        borderRadius: 5,
+        flex: 1,
+        marginRight: 5,
+    },
+    downloadButton: {
+        backgroundColor: '#00796b',
+        justifyContent: 'center',
+        gap: 5,
+        alignItems: 'center',
+        flexDirection: 'row',
+        padding: 10,
+        borderRadius: 5,
+        flex: 1,
+        marginLeft: 5,
+    },
+    deleteButton: {
+        backgroundColor: '#DC3545',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'row',
+        padding: 10,
+        borderRadius: 5,
+        flex: 1,
+        marginLeft: 5,
+    },
+    buttonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: 'white',
+        marginLeft: 5,
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: 'black',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 40,
+        right: 20,
+    },
+    fullImage: {
+        width: '90%',
+        height: '80%',
+        resizeMode: 'contain',
+    },
     pdfViewer: {
         flex: 1,
         width: '90%',
@@ -264,21 +540,17 @@ const styles = StyleSheet.create({
         height: 200,
         resizeMode: 'contain'
     },
-    deleteButton: {
-        backgroundColor: '#DC3545', // Red color for delete
+    emptyState: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        flexDirection: 'row',
-        padding: 10,
-        borderRadius: 5,
-        flex: 1,
-        marginLeft: 5,
     },
-    buttonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: 'white',
-        marginLeft: 5,
+    emptyText: {
+        fontSize: 18,
+        color: 'gray',
+    },
+    darkText: {
+        color: '#ccc',
     },
 });
 
