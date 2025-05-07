@@ -138,11 +138,11 @@ const ViewFilesScreen = () => {
 
         if (!fileId) {
             try {
-                const response = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/file-id-thrower', {
+                const response = await axios.post('https://quick-docs-app-backend.onrender.com/file-id-thrower', {
                     username: user.username,
                     itemname: item.name,
                 });
-                
+
                 fileId = response.data.fileId;
             } catch (err) {
                 console.error('Error:', err.response?.data || err.message);
@@ -158,7 +158,7 @@ const ViewFilesScreen = () => {
                 try {
                     setLoading(true);
 
-                    const url = `https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/${fileId}?userId=${user._id}`;
+                    const url = `https://quick-docs-app-backend.onrender.com/${fileId}?userId=${user._id}`;
                     const response = await fetch(url, {
                         method: 'DELETE',
                     });

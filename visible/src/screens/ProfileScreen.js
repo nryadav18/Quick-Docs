@@ -94,7 +94,7 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/deactivate', {
+                    const response = await fetch('https://quick-docs-app-backend.onrender.com/deactivate', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

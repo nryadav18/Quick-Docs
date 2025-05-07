@@ -128,7 +128,7 @@ const UploadFilesScreen = () => {
             formData.append('username', user.username);
             formData.append('importance', importance);
 
-            const response = await fetch('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/upload', {
+            const response = await fetch('https://quick-docs-app-backend.onrender.com/upload', {
                 method: 'POST',
                 body: formData,
             });

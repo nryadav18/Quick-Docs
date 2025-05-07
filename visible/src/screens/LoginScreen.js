@@ -76,7 +76,7 @@ const LoginScreen = () => {
     const handleLogin = async () => {
         if (!validateInputs()) return;
         try {
-            const res = await axios.post('https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/check-valid-user', { username });
+            const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-valid-user', { username });
             if (!res.data.exists) {
                 showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
                 return;
@@ -93,7 +93,7 @@ const LoginScreen = () => {
             const trimmedUsername = username.trim();
             const trimmedPassword = password.trim();
 
-            const response = await axios.post("https://58a8-2409-40f0-3-5fb7-5106-61ff-4908-2049.ngrok-free.app/login", {
+            const response = await axios.post("https://quick-docs-app-backend.onrender.com/login", {
                 username: trimmedUsername,
                 password: trimmedPassword,
             });
