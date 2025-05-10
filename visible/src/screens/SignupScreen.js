@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, RadioButton } from 'react-native-paper';
 import { DatePickerModal } from 'react-native-paper-dates';
@@ -7,7 +7,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
-import Note from './Note';
+import { AntDesign, Entypo } from "@expo/vector-icons"
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 
@@ -25,6 +25,11 @@ const SignupScreen = ({ navigation }) => {
     const [isOtpVerified, setIsOtpVerified] = useState(false);
     const [imageUri, setImageUri] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false)
+    const [sendingOTP, setSendingOTP] = useState(false)
+    const [verifyingOTP, setVerifyingOTP] = useState(false)
+    const [userCreated, setUserCreated] = useState(false)
+
 
     //My Custom Alert Boxes
     const [errorAlertVisible, setErrorAlertVisible] = useState(false)
@@ -70,74 +75,97 @@ const SignupScreen = ({ navigation }) => {
     const validateInputs = async () => {
         if (imageUri == null) {
             showErrorAlert("Invalid Photo", "Please Select your Image to Continue.")
+            setLoading(false)
             return false
         }
 
         if (!name.trim()) {
             showErrorAlert("Empty Name", "Please enter your Full Name to Continue.")
+            setLoading(false)
             return false
         }
 
         if (!username.trim()) {
             showErrorAlert("Empty Username", "Please enter your username to Continue.")
+            setLoading(false)
             return false
         }
 
-        if (!/^[a-zA-Z0-9_.-]+$/.test(username.trim())) {
+        const trimmedUsername = username.trim()
+
+        if (!/^[a-zA-Z0-9_.-]+$/.test(trimmedUsername)) {
             showErrorAlert("Invalid Username", "Username should contain only A-Z, a-z, 0-9 and _")
+            setLoading(false)
             return false
         }
 
-        const isUnique = await checkUsernameUnique(username.trim());
+        // ✅ Username passed regex, now check uniqueness
+        const isUnique = await checkUsernameUnique(trimmedUsername);
         if (!isUnique) {
             showErrorAlert("Username Already Exist", "Please choose Another Username to Continue.");
+            setLoading(false)
             return false
         }
 
         const trimmedPassword = password.trim()
 
+        if (trimmedPassword.length == 0) {
+            showErrorAlert("Empty Password", "Please enter your Password to Continue.")
+            setLoading(false)
+            return false
+        }
+
         if (trimmedPassword.length < 8) {
             showWarningAlert("Weak Password", "Password must be at least 8 characters long.")
+            setLoading(false)
             return false
         }
 
         if (!/[a-z]/.test(trimmedPassword)) {
             showWarningAlert("Weak Password", "Password must contain at least one lowercase letter.")
+            setLoading(false)
             return false
         }
 
         if (!/[A-Z]/.test(trimmedPassword)) {
             showWarningAlert("Weak Password", "Password must contain at least one uppercase letter.")
+            setLoading(false)
             return false
         }
 
         if (!/[0-9]/.test(trimmedPassword)) {
             showWarningAlert("Weak Password", "Password must contain at least one number.")
+            setLoading(false)
             return false
         }
 
         if (!/[!@#$%^&*(),._?":{}|<>]/.test(trimmedPassword)) {
             showWarningAlert("Weak Password", "Password must contain at least one special character.")
+            setLoading(false)
             return false
         }
 
         if (!email.trim()) {
             showErrorAlert("Empty Email", "Please enter your Email to Continue.")
+            setLoading(false)
+            return false
+        }
+
+        if (!otp.trim()) {
+            showErrorAlert("Empty OTP", "Please enter your OTP to Continue.")
+            setLoading(false)
             return false
         }
 
         if (dob == null) {
             showErrorAlert("Empty DOB", "Please Select your DOB to Continue.")
-            return false
-        }
-
-        if (!otp.trim()) {
-            showErrorAlert("Empty DOB", "Please Select your DOB to Continue.")
+            setLoading(false)
             return false
         }
 
         return true
     }
+
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -152,6 +180,7 @@ const SignupScreen = ({ navigation }) => {
     };
 
     const uploadImageAndSignup = async () => {
+        setLoading(true)
         try {
             const isValid = await validateInputs();
             if (!isValid) return;
@@ -193,7 +222,6 @@ const SignupScreen = ({ navigation }) => {
                         'Content-Type': `image/${fileType}`
                     }
                 });
-
                 profileImageUrl = imageUrl;
             }
 
@@ -202,15 +230,17 @@ const SignupScreen = ({ navigation }) => {
                 ...trimmedData,
                 profileImageUrl
             });
-
+            setLoading(false)
             if (response.data.success) {
                 showSuccessAlert("Signup Success", "Great! Your account has been created!");
+                setUserCreated(true)
                 return true;
             } else {
                 showErrorAlert("Signup Failed", "Unknown error occurred. Please try again.");
                 return false;
             }
         } catch (err) {
+            setLoading(false)
             if (err.response?.status === 409) {
                 const message = err.response?.data?.message || "Email or Username already exists.";
                 showErrorAlert("Signup Conflict", message);
@@ -223,30 +253,65 @@ const SignupScreen = ({ navigation }) => {
 
 
     const sendOtp = async () => {
+        setSendingOTP(true)
         try {
             const trimmedEmail = email.trim();
+            if (!trimmedEmail) {
+                showErrorAlert("Empty Email", "Please enter your Email to Send OTP")
+                setSendingOTP(false)
+                return;
+            }
+
+            const emailExistence = await axios.post('https://quick-docs-app-backend.onrender.com/check-user-exists', { email: trimmedEmail })
+            if (emailExistence.data.exists) {
+                showErrorAlert("Email already Exists", "A User has been registered with current Email")
+                setSendingOTP(false)    
+                return;
+            }
+
             const res = await axios.post('https://quick-docs-app-backend.onrender.com/send-otp', { email: trimmedEmail });
             if (res.data.success) {
                 showSuccessAlert("OTP Sent", "Please check out your Inbox for OTP")
                 setIsOtpSent(true)
+                setSendingOTP(false)
             }
         } catch {
             showErrorAlert("OTP Sending Failed", "Please try again later!")
+            setLoading(false)
+            setSendingOTP(false)
             return;
         }
     };
 
     const verifyOtp = async () => {
+        setVerifyingOTP(true)
         try {
             const trimmedEmail = email.trim();
             const trimmedOtp = otp.trim();
+
+            if (!trimmedEmail) {
+                showErrorAlert("Empty Email", "Please enter your Email to Send OTP")
+                setVerifyingOTP(false)
+                return;
+            }
+
+            if (!trimmedOtp) {
+                showErrorAlert("Empty OTP", "Please enter the OTP sent to your Email")
+                setVerifyingOTP(false)
+                return;
+            }
+
             const res = await axios.post('https://quick-docs-app-backend.onrender.com/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
             if (res.data.success) {
                 showSuccessAlert("OTP Verified", "OTP Verified Successfully!")
                 setIsOtpVerified(true)
+                setLoading(false)
+                setVerifyingOTP(false)
             }
         } catch {
             showErrorAlert("Wrong OTP", "Please enter Valid OTP to Continue.")
+            setLoading(false)
+            setVerifyingOTP(false)
             return false
         }
     };
@@ -256,7 +321,6 @@ const SignupScreen = ({ navigation }) => {
             <PaperProvider>
                 <SafeAreaView style={styles.safeArea}>
                     <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-                        <Note />
                         <View style={styles.container}>
                             <Text style={styles.title}>Signup</Text>
 
@@ -287,21 +351,21 @@ const SignupScreen = ({ navigation }) => {
 
                             <View style={styles.inputRow}>
                                 <TextInput placeholder="Email" style={styles.inputField} value={email} onChangeText={setEmail} />
-                                {!isOtpSent && (
-                                    <TouchableOpacity style={styles.smallButton} onPress={sendOtp}>
-                                        <Text style={styles.buttonText}>Send OTP</Text>
-                                    </TouchableOpacity>
-                                )}
+                                <TouchableOpacity style={[styles.smallButton, { paddingHorizontal: 12.5 }]} onPress={sendOtp}>
+                                    {
+                                        sendingOTP ? <ActivityIndicator color="white" style={{ paddingHorizontal: 25 }} /> : <Text style={styles.buttonText}>Send OTP</Text>
+                                    }
+                                </TouchableOpacity>
                             </View>
 
-                            {isOtpSent && (
-                                <View style={styles.inputRow}>
-                                    <TextInput placeholder="Enter OTP" style={styles.inputField} value={otp} onChangeText={setOtp} keyboardType="numeric" />
-                                    <TouchableOpacity style={styles.smallButton} onPress={verifyOtp}>
-                                        <Text style={styles.buttonText}>Verify</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
+                            <View style={styles.inputRow}>
+                                <TextInput placeholder="Enter OTP" style={styles.inputField} value={otp} onChangeText={setOtp} keyboardType="numeric" />
+                                <TouchableOpacity style={styles.smallButton} onPress={verifyOtp}>
+                                    {
+                                        verifyingOTP ? <ActivityIndicator color="white" style={{ paddingHorizontal: 28 }} /> : <Text style={styles.buttonText}>Verify OTP</Text>
+                                    }
+                                </TouchableOpacity>
+                            </View>
 
                             <Button mode="outlined" onPress={() => setShowDatePicker(true)} textColor='#00796b' rippleColor='#00796b' style={styles.datePickerButton}>
                                 {dob ? dob.toDateString() : 'Select Date of Birth'}
@@ -333,16 +397,38 @@ const SignupScreen = ({ navigation }) => {
                             </View>
 
                             <TouchableOpacity style={styles.button} onPress={uploadImageAndSignup}>
-                                <Text style={styles.buttonText}>Sign Up</Text>
+                                {loading ? <ActivityIndicator color="white" /> : <View style={styles.buttonStylings}>
+                                    <Entypo name="new-message" size={24} color="white" />
+                                    <Text style={styles.buttonText}>Sign Up</Text>
+                                </View>}
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                <Text style={styles.loginText}>Already have an account? Login</Text>
+                            <View style={styles.separator}>
+                                <View style={styles.line} />
+                                <Text style={styles.orText}>OR</Text>
+                                <View style={styles.line} />
+                            </View>
+
+                            <TouchableOpacity style={styles.googleButton} onPress={() => navigation.navigate("Login")}>
+                                <AntDesign name="login" size={24} color="white" />
+                                <Text style={styles.buttonText}>Login</Text>
                             </TouchableOpacity>
+
                         </View>
                         <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
                         <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
-                        <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
+                        <SuccessAlert
+                            visible={successAlertVisible}
+                            title={successTitle}
+                            message={successMessage}
+                            onOk={() => {
+                                setSuccessAlertVisible(false);
+                                if (userCreated) {
+                                    setUserCreated(false)
+                                    navigation.replace('Login');
+                                }
+                            }}
+                        />
                     </ScrollView>
                 </SafeAreaView>
             </PaperProvider>
@@ -368,6 +454,11 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         backgroundColor: '#f9f9f9'
     },
+    buttonStylings: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     passwordInput: {
         flex: 1,
         height: 50,
@@ -375,10 +466,9 @@ const styles = StyleSheet.create({
     eyeIcon: {
         paddingHorizontal: 5,
     },
-    smallButton: { backgroundColor: '#00796b', paddingVertical: 12, paddingHorizontal: 15, borderRadius: 5, marginRight: 5 },
-    button: { backgroundColor: '#00796b', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
+    smallButton: { backgroundColor: '#00796b', paddingVertical: 12, paddingHorizontal: 10, borderRadius: 5, marginRight: 5 },
+    button: { backgroundColor: '#00796b', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     buttonText: { color: 'white', fontWeight: 'bold' },
-    loginText: { textAlign: 'center', marginTop: 20 },
     datePickerButton: { marginBottom: 10, padding: 10, borderColor: '#ddd' },
     genderLabel: { fontSize: 16, fontWeight: 'bold', marginVertical: 10 },
     genderRow: {
@@ -393,7 +483,31 @@ const styles = StyleSheet.create({
     radioLabel: { fontSize: 16 },
     imagePicker: { alignItems: 'center', marginBottom: 20, height: 150, width: 150, borderRadius: 75, borderWidth: 1, borderColor: '#00796b', justifyContent: 'center' },
     profileImage: { width: 143, height: 143, borderRadius: 80 },
-    imageUploadContainer: { width: '100%', justifyContent: 'center', alignItems: 'center' }
+    imageUploadContainer: { width: '100%', justifyContent: 'center', alignItems: 'center' },
+    googleButton: {
+        flexDirection: "row",
+        backgroundColor: "#DB4437",
+        padding: 15,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: 16 },
+    separator: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginVertical: 20,
+    },
+    line: {
+        flex: 1,
+        height: 1,
+        backgroundColor: "#ccc",
+    },
+    orText: {
+        marginHorizontal: 10,
+        fontWeight: "600",
+        color: "#666",
+    },
 });
 
 export default SignupScreen;

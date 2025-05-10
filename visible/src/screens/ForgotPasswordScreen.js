@@ -214,7 +214,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                     setSuccessAlertVisible(false);
                     if (passwordResetDone) {
                         setPasswordResetDone(false); // ✅ Reset the flag
-                        navigation.navigate('Login');
+                        navigation.replace('Login');
                     }
                 }}
             />

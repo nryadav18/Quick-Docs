@@ -17,8 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const storage = new Storage({
-    keyFilename: path.join(__dirname, './gcs-storage-keys.json'),
-    projectId: 'arched-media-348917',
+    keyFilename: path.join(__dirname, './yadavmainserver-gcs-storage-keys.json'),
+    projectId: 'yadavmainserver',
 });
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
@@ -209,7 +209,7 @@ app.post('/check-user-exists', async (req, res) => {
 
     try {
         const user = await User.findOne({ email });
-        res.status(200).json({ exists: !!user });
+        res.status(200).json({ exists: !!user });   
     } catch (err) {
         res.status(500).json({ message: 'Internal Server Error' });
     }

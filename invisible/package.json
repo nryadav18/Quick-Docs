@@ -6,13 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.788.0",
-    "@aws-sdk/client-lambda": "^3.787.0",
-    "@aws-sdk/client-s3": "^3.787.0",
-    "@aws-sdk/client-sagemaker": "^3.787.0",
-    "@aws-sdk/s3-request-presigner": "^3.787.0",
     "@google-cloud/storage": "^7.16.0",
-    "aws-sdk": "^2.1692.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "compression": "^1.8.0",

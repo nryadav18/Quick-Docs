@@ -30,7 +30,7 @@ const Header = ({ title }) => {
             <View style={[styles.header, isDarkMode && styles.darkHeader]}>
                 {/* Title */}
                 <Text style={[styles.title, isDarkMode && styles.darkTitle]}>{title}</Text>
-                
+
                 {/* Toggle Button */}
                 <TouchableOpacity onPress={toggleDarkMode} style={styles.toggleButton}>
                     <Animated.View style={{ transform: [{ rotate: rotateIcon }] }}>
@@ -42,6 +42,7 @@ const Header = ({ title }) => {
                     </Animated.View>
                 </TouchableOpacity>
             </View>
+            <View style={styles.bottomLine} />
         </SafeAreaView>
     );
 };
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
     safeArea: {
         backgroundColor: '#89f7fe',
     },
-    darkSafeArea :  {
+    darkSafeArea: {
         backgroundColor: '#0f0c29',
     },
     header: {
@@ -58,6 +59,14 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    bottomLine: {
+        height: 3,
+        backgroundColor: '#a8adaa',
+        width: '100%',
+        alignSelf: 'center', // center the line
+        marginBottom: 6,
+        borderRadius : 10
     },
     title: {
         fontSize: 20,

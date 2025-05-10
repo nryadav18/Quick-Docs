@@ -6,7 +6,7 @@ import {
     TouchableOpacity,
     StyleSheet,
     Image,
-    Alert,
+    ActivityIndicator,
     Dimensions,
     ScrollView,
 } from 'react-native';
@@ -17,6 +17,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ErrorAlert, WarningAlert, SuccessAlert } from '../components/AlertBox';
 import useUserStore from '../store/userStore';
+import { FontAwesome5 } from 'react-native-vector-icons'
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -31,6 +32,7 @@ const UploadFilesScreen = () => {
     const [fileType, setFileType] = useState(null);
     const [importance, setImportance] = useState('');
     const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+    const [uploadingState, setUploadingState] = useState(false)
 
     // Alert States
     const [errorAlertVisible, setErrorAlertVisible] = useState(false);
@@ -105,15 +107,17 @@ const UploadFilesScreen = () => {
     // Upload the file to the backend (GC bucket)
     const allowedTypes = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'webp'];
     const uploadFile = async () => {
+        setUploadingState(true)
         if (!file || !importance || !fileName) {
             showErrorAlert('Missing Data', 'Please provide a file name, select a file, and importance level.');
+            setUploadingState(false)
             return;
         }
 
         const fileExtension = file.split('.').pop().toLowerCase();
         if (!allowedTypes.includes(fileExtension)) {
-            console.log(fileExtension)
             showErrorAlert('Invalid File Type', 'Only PDF, DOCX, JPG, JPEG, PNG, and WEBP files are allowed.');
+            setUploadingState(false)
             return;
         }
 
@@ -139,6 +143,7 @@ const UploadFilesScreen = () => {
 
             if (!response.ok) {
                 showErrorAlert('Upload Failed', data?.message || 'Please ensure your file is less than 5MB and try again.');
+                setUploadingState(false)
                 return;
             }
             const newFile = {
@@ -153,14 +158,16 @@ const UploadFilesScreen = () => {
                 ...user,
                 myfiles: [...user.myfiles, newFile],
             };
-            
+
             setUser(updatedUser); // Update Zustand
 
             showSuccessAlert('Success', 'File uploaded successfully.');
+            setUploadingState(false)
             resetForm();
         } catch (err) {
             console.error('Upload error:', err);
             showErrorAlert('Error', 'Failed to upload file.');
+            setUploadingState(false)
         }
     };
 
@@ -252,7 +259,10 @@ const UploadFilesScreen = () => {
                     )}
                 </View>
                 <TouchableOpacity style={styles.submitButton} onPress={uploadFile}>
-                    <Text style={styles.buttonText}>Upload</Text>
+                    {uploadingState ? <ActivityIndicator color="white" /> : <View style={styles.buttonStylings}>
+                        <FontAwesome5 name="file-upload" size={24} color="white" />
+                        <Text style={styles.buttonText}>Upload File</Text>
+                    </View>}
                 </TouchableOpacity>
             </ScrollView>
 
@@ -298,6 +308,12 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         marginTop: 15,
+    },
+    buttonStylings: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap : 10,
     },
     buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
     previewContainer: {

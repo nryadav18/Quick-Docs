@@ -3,8 +3,11 @@ Quick Docs Tech Stack:
 React Native
 Node.js
 Express.js
+MongoDB
 Zustand (Super React Native friendly State Management)
-AWS (S3)
+GCS (Google Cloud Services)
+Cloud Storage (Google)
+Vertex API (Google)
 JWT Tokens (Authorization, Token Generation)
 .env (secure data protection)
 EAS (Expo Building)

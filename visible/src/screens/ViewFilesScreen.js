@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import useUserStore from '../store/userStore';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import axios from 'axios';
+import WebView from 'react-native-webview';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -281,8 +282,9 @@ const ViewFilesScreen = () => {
                         ))
                     ) : (
                         <View style={styles.emptyState}>
+                            <Image source={require('../../assets/NoDataFound.jpg')} style={styles.noDataFound} />
                             <Text style={[styles.emptyText, isDarkMode && styles.darkText]}>
-                                No files found.
+                                No Files Found.
                             </Text>
                         </View>
                     )}
@@ -340,14 +342,19 @@ const ViewFilesScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, padding: 20, backgroundColor: '#F5F5F5' },
     darkContainer: { backgroundColor: '#121212' },
-    searchBar: { height: 50, backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 15, marginBottom: 10 },
-    filters: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 },
+    searchBar: { height: 50, backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 15, marginBottom: 20 },
+    filters: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 25 },
     filterButton: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, backgroundColor: 'lightgray' },
     activeFilter: { backgroundColor: '#007AFF' },
     filterText: { fontSize: 14, fontWeight: 'bold' },
     activeFilterText: { color: 'white' },
     scrollViewContent: {
         paddingBottom: 20,
+    },
+
+    noDataFound : {
+        width : 220,
+        height : 220
     },
     fileCard: {
         backgroundColor: 'white',
@@ -546,8 +553,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyText: {
-        fontSize: 18,
-        color: 'gray',
+        fontSize: 20,
+        fontWeight : 600,
+        color: 'black',
     },
     darkText: {
         color: '#ccc',

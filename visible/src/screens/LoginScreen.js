@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
     View,
     Text,
@@ -9,13 +9,12 @@ import {
     Image
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
-import { AntDesign, Feather } from "@expo/vector-icons"
+import { AntDesign, Feather, Entypo } from "@expo/vector-icons"
 import axios from "axios"
 import { LinearGradient } from "expo-linear-gradient"
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
-import Note from "./Note"
 import useUserStore from "../store/userStore"
-
+import * as LocalAuthentication from "expo-local-authentication";
 
 const LoginScreen = () => {
     const { setUser, setToken } = useUserStore.getState();
@@ -24,6 +23,7 @@ const LoginScreen = () => {
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [validUser, setValidUser] = useState(false)
 
     //My Custom Alert Boxes
     const [errorAlertVisible, setErrorAlertVisible] = useState(false)
@@ -35,6 +35,36 @@ const LoginScreen = () => {
     const [warningMessage, setWarningMessage] = useState("")
 
     const [successAlertVisible, setSuccessAlertVisible] = useState(false)
+
+    const [biometricSuccess, setBiometricSuccess] = useState(false);
+
+    useEffect(() => {
+        const checkBiometricSupportAndAuthenticate = async () => {
+            const compatible = await LocalAuthentication.hasHardwareAsync();
+            const enrolled = await LocalAuthentication.isEnrolledAsync();
+
+            if (!compatible || !enrolled) {
+                showWarningAlert("Biometric Unavailable", "Your device does not support biometric authentication or no fingerprints are enrolled.");
+                return;
+            }
+
+            const result = await LocalAuthentication.authenticateAsync({
+                promptMessage: "Authenticate with fingerprint",
+                fallbackLabel: "Use Passcode",
+                cancelLabel: "Cancel",
+            });
+
+            if (!result.success) {
+                showErrorAlert("Authentication Failed", "Fingerprint authentication failed or was cancelled.");
+                return;
+            }
+            setBiometricSuccess(true);
+        };
+
+        checkBiometricSupportAndAuthenticate();
+    }, []);
+
+
 
     //My Custom Alert Functions
     const showErrorAlert = (title, message) => {
@@ -64,30 +94,33 @@ const LoginScreen = () => {
             return false
         }
 
-
         if (password.trim().length < 8) {
             showWarningAlert("Weak Password", "Your password seems too short. Are you sure you want to continue?")
             return false
         }
 
-        return true
+        return true;
     }
 
     const handleLogin = async () => {
-        if (!validateInputs()) return;
+        const isValid = await validateInputs(); // await the validation
+        if (!isValid) return; // stop here if invalid
+        setLoading(true);
+
         try {
             const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-valid-user', { username });
             if (!res.data.exists) {
                 showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
+                setLoading(flase)
                 return;
             }
         } catch (err) {
             showErrorAlert("Unexpected Error Rised", "Please Try Again Later");
+            setLoading(flase)
             return;
         }
 
         setWarningAlertVisible(false);
-        setLoading(true);
 
         try {
             const trimmedUsername = username.trim();
@@ -107,12 +140,8 @@ const LoginScreen = () => {
                 const { setUser, setToken } = useUserStore.getState();
                 setUser(user);
                 setToken(token);
-
                 showSuccessAlert();
-                setTimeout(() => {
-                    setSuccessAlertVisible(false);
-                    navigation.replace("Home");
-                }, 1500);
+                setValidUser(true)
             } else {
                 showErrorAlert("Login Failed", response.data.message || "Unable to login. Please try again.");
             }
@@ -133,7 +162,6 @@ const LoginScreen = () => {
 
     return (
         <LinearGradient colors={["#89f7fe", "#fad0c4"]} style={styles.container}>
-            <Note />
             <Image source={require("../../assets/logomain.png")} style={styles.logo} />
             <Text style={styles.title}>Welcome Back</Text>
 
@@ -160,12 +188,16 @@ const LoginScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
-                <Text style={styles.forgotPassword}>Forgot Password?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}
+                disabled={!biometricSuccess}>
+                <Text style={[styles.forgotPassword, (!biometricSuccess) && { color: '#a8adaa' }]}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin} disabled={loading}>
-                {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Login</Text>}
+            <TouchableOpacity style={[styles.loginButton, (!biometricSuccess) && styles.disabledButton]}
+                onPress={handleLogin}
+                disabled={loading || !biometricSuccess}>
+                {loading ? <ActivityIndicator color="white" style={{ paddingVertical: 3 }} /> :
+                    <View style={styles.buttonStylings}><AntDesign name="login" size={24} color="white" /><Text style={styles.buttonText}>Login</Text></View>}
             </TouchableOpacity>
 
             <View style={styles.separator}>
@@ -174,19 +206,29 @@ const LoginScreen = () => {
                 <View style={styles.line} />
             </View>
 
-            <TouchableOpacity style={styles.googleButton}>
-                <AntDesign name="google" size={24} color="white" />
-                <Text style={styles.buttonText}>Login with Google</Text>
+            <TouchableOpacity style={[styles.googleButton, (!biometricSuccess) && styles.disabledButton]}
+                onPress={() => navigation.navigate("Signup")}
+                disabled={!biometricSuccess}>
+                <Entypo name="new-message" size={24} color="white" />
+                <Text style={styles.buttonText}>Signup/ Register</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
-                <Text style={styles.signupText}>Don't have an account? Sign up</Text>
-            </TouchableOpacity>
 
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
             <SuccessAlert visible={successAlertVisible} title="Login Successful" message="You have successfully logged in!" onOk={() => setSuccessAlertVisible(false)} />
-
+            <SuccessAlert
+                visible={successAlertVisible}
+                title="Login Successful"
+                message="You have successfully logged in!"
+                onOk={() => {
+                    setSuccessAlertVisible(false);
+                    if (validUser) {
+                        setValidUser(false)
+                        navigation.replace('Home');
+                    }
+                }}
+            />
         </LinearGradient>
     )
 }
@@ -203,6 +245,9 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         borderColor: "#ccc",
         backgroundColor: "#fff",
+    },
+    disabledButton: {
+        backgroundColor: '#a8adaa'
     },
     passwordContainer: {
         flexDirection: "row",
@@ -221,12 +266,19 @@ const styles = StyleSheet.create({
         height: "100%",
         color: "#333",
     },
+    buttonStylings: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     forgotPassword: { color: "#00796b", textAlign: "right", marginBottom: 15, fontWeight: "500" },
     loginButton: {
         backgroundColor: "#00796b",
         padding: 15,
         borderRadius: 10,
         alignItems: "center",
+        flexDirection: 'row',
+        justifyContent: 'center',
     },
     googleButton: {
         flexDirection: "row",
@@ -235,7 +287,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
-        marginTop: 15,
     },
     buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: 16 },
     signupText: { textAlign: "center", marginTop: 20, fontWeight: "500", color: "#333" },
