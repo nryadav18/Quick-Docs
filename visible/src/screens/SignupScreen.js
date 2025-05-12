@@ -265,7 +265,7 @@ const SignupScreen = ({ navigation }) => {
             const emailExistence = await axios.post('https://quick-docs-app-backend.onrender.com/check-user-exists', { email: trimmedEmail })
             if (emailExistence.data.exists) {
                 showErrorAlert("Email already Exists", "A User has been registered with current Email")
-                setSendingOTP(false)    
+                setSendingOTP(false)
                 return;
             }
 

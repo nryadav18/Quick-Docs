@@ -111,12 +111,12 @@ const LoginScreen = () => {
             const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-valid-user', { username });
             if (!res.data.exists) {
                 showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
-                setLoading(flase)
+                setLoading(false)
                 return;
             }
         } catch (err) {
             showErrorAlert("Unexpected Error Rised", "Please Try Again Later");
-            setLoading(flase)
+            setLoading(false)
             return;
         }
 

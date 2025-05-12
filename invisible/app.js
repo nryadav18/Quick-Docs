@@ -10,6 +10,7 @@ const { Storage } = require('@google-cloud/storage');
 const multer = require('multer')
 const path = require('path')
 const { Readable } = require('stream')
+const axios = require('axios')
 const app = express();
 
 
@@ -48,6 +49,7 @@ const UserSchema = new mongoose.Schema({
     dob: Date,
     gender: String,
     verified: { type: Boolean, default: false },
+    premiumuser: { type: Boolean, default: false },
     profileImageUrl: String,
     myfiles: { type: [fileSchema], default: [] },
     filesdata: [{ type: String }] // Array of strings for extracted text
@@ -87,6 +89,121 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+//Payment - Test
+// async function generateCashfreeToken(orderId, orderAmount, customerId) {
+//     try {
+//         const requestBody = {
+//             order_id: orderId,
+//             order_amount: Number(orderAmount), // ensure it's a number, not string
+//             order_currency: 'INR',
+//             customer_details: {
+//                 customer_id: customerId,
+//                 customer_email: 'user@example.com',  // Replace with actual email
+//                 customer_phone: '9999999999',       // Replace with actual phone number
+//             }
+//         };
+
+//         console.log('Request Body:', JSON.stringify(requestBody));
+
+//         const response = await axios.post('https://sandbox.cashfree.com/pg/orders', requestBody, {
+//             headers: {
+//                 'x-client-id': process.env.CASHFREE_APP_ID,
+//                 'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+//                 'x-api-version': '2022-09-01', // ✅ required header
+//                 'Content-Type': 'application/json',
+//             }
+//         });
+
+//         console.log('Response:', response.data);
+//         return response.data.payment_session_id; // this is the token
+//     } catch (error) {
+//         console.error('Error generating Cashfree token:', error.response ? error.response.data : error.message);
+//         throw new Error('Payment session creation failed');
+//     }
+// }
+
+
+
+// // Create order route
+// app.post('/create-order', async (req, res) => {
+//     const { amount, planType, customerId } = req.body;
+
+//     try {
+//         // Generate the payment session token from Cashfree API
+//         const paymentSessionId = await generateCashfreeToken('ORDER127', amount, customerId);
+
+//         // Return the payment session ID (or payment link) to the frontend
+//         res.json({ paymentLink: `https://sandbox.cashfree.com/pg/redirect?payment_session_id=${paymentSessionId}` });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({ error: 'Failed to create order' });
+//     }
+// });
+
+app.post('/initiate-upi', async (req, res) => {
+    const { upi_id, order_id, amount, username } = req.body;
+
+    try {
+        const response = await axios.post(
+            'https://api.cashfree.com/pg/orders', // ✅ correct endpoint
+            {
+                order_id: order_id,
+                order_amount: amount,
+                order_currency: 'INR',
+                customer_details: {
+                    customer_id: username,
+                    customer_phone: '9398542959', // required
+                    customer_email: 'cserajeswaryadav@gmail.com', // required
+                    customer_name: username,
+                },
+                payment_method: {
+                    upi: {
+                        channel: 'COLLECT',
+                        upi_id: upi_id
+                    }
+                }
+            },
+            {
+                headers: {
+                    'x-client-id': process.env.CASHFREE_APP_ID,
+                    'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+                    'x-api-version': '2022-09-01',
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (err) {
+        console.error(err.response?.data || err.message);
+        res.status(500).json({ error: 'Failed to initiate UPI collect' });
+    }
+});
+
+
+// Get Payment Status
+app.get('/check-status/:order_id', async (req, res) => {
+    try {
+        const response = await axios.get(
+            `https://api.cashfree.com/pg/orders/${req.params.order_id}`,
+            {
+                headers: {
+                    'x-client-id': process.env.CASHFREE_APP_ID,
+                    'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+                    'x-api-version': '2022-09-01', // ✅ REQUIRED
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        res.json(response.data);
+    } catch (err) {
+        console.error(err.response?.data || err.message);
+        res.status(500).json({ error: 'Failed to check status' });
+    }
+});
+
 
 // Get User Data by ID (Secure)
 app.get('/user/:id', authenticateToken, async (req, res) => {
@@ -209,7 +326,7 @@ app.post('/check-user-exists', async (req, res) => {
 
     try {
         const user = await User.findOne({ email });
-        res.status(200).json({ exists: !!user });   
+        res.status(200).json({ exists: !!user });
     } catch (err) {
         res.status(500).json({ message: 'Internal Server Error' });
     }
@@ -472,7 +589,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         // Generate unique file name and GCS key
         const fileName = Date.now() + '-' + originalname;
-        const gcsKey = `${username}/myfiles/${fileName}`;
+        const gcsKey = `${username}/${fileName}`;
         const gcsFile = bucket.file(gcsKey);
 
         // Upload to GCS

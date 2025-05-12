@@ -24,7 +24,6 @@ export default function BottomTabNavigator() {
                     else if (route.name === 'Upload') iconName = 'cloud-upload-alt';
                     else if (route.name === 'AI') iconName = 'robot';
                     else if (route.name === 'Profile') iconName = 'user-alt';
-
                     return <FontAwesome5 name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: '#00796b',
