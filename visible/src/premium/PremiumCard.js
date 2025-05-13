@@ -64,10 +64,65 @@ export default function Premium() {
     const slideAnim = useRef(new Animated.Value(0)).current;
     const navigation = useNavigation()
 
-    const handleBuyNow = (plan) => {
+    const checkPaymentStatus = async (orderId) => {
+        try {
+            const res = await fetch(`https://quick-docs-app-backend.onrender.com/check-status/${orderId}`);
+            const data = await res.json();
 
-        navigation.navigate('Payment', {plan});
+            if (data.order_status === 'PAID') {
+                console.log('✅ Payment successful');
+                alert("✅ Payment successful!");
+            } else {
+                console.log('❌ Payment not completed yet');
+                alert("⏳ Payment pending or failed. Try again.");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("⚠️ Error checking payment status");
+        }
     };
+
+
+    const handleBuyNow = async (plan) => {
+        const order_id = `ORDER_${Date.now()}`;
+
+        try {
+            const response = await fetch('https://quick-docs-app-backend.onrender.com/initiate-upi', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    order_id,
+                    amount: plan.price,
+                    username: 'Nryadav18',
+                    email: 'cserajeswaryadav@gmail.com',
+                    phone: '9398542959',
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.paymentLink) {
+                console.log("✅ Payment link:", data.paymentLink);
+                alert("📩 Payment link sent to your email!");
+
+                // Optionally open the payment link directly
+                // Linking.openURL(data.paymentLink);
+
+                // Save order ID in state for later status check
+                setTimeout(() => {
+                    checkPaymentStatus(order_id); // Auto-check after 5–10 seconds
+                }, 10000);
+            } else {
+                alert("❌ Failed to initiate payment");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("⚠️ Error while initiating payment");
+        }
+    };
+
 
     const handleSelect = (planKey) => {
         const currentIndex = planKeys.indexOf(selected);
@@ -209,6 +264,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         elevation: 4,
+        marginBottom : 100
     },
     planName: {
         color: '#fff',

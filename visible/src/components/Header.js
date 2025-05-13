@@ -87,27 +87,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    bottomLine: {
-        height: 3,
-        backgroundColor: '#a8adaa',
-        width: '100%',
-        alignSelf: 'center', // center the line
-        marginBottom: 6,
-        borderRadius : 10
-    },
     premiumButton: {
         flexDirection: 'row',
         alignItems: 'center',
         marginRight: 10,
         backgroundColor: 'rgba(255, 223, 0, 0.15)',
         paddingHorizontal: 10,
-        paddingVertical: 6,
+        paddingVertical: 10,
         borderRadius: 20,
     },
     premiumText: {
         marginLeft: 5,
         color: '#FFF085',
         fontWeight: '600',
+        fontSize : 16
     },
     toggleButton: {
         padding: 10,

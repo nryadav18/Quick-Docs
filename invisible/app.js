@@ -141,27 +141,45 @@ const authenticateToken = (req, res, next) => {
 //     }
 // });
 
+//Payment Link sending via Mail
+async function sendMailToUser(email, paymentLink) {
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+        }
+    });
+
+    const mailOptions = {
+        from: process.env.YOUR_EMAIL,
+        to: email,
+        subject: 'Complete Your Payment',
+        html: `<p>Click the link to complete your payment:</p><a href="${paymentLink}">${paymentLink}</a>`
+    };
+
+    await transporter.sendMail(mailOptions);
+}
+
+//Payment - Production
 app.post('/initiate-upi', async (req, res) => {
-    const { upi_id, order_id, amount, username } = req.body;
+    const { order_id, amount, username, email, phone } = req.body;
 
     try {
         const response = await axios.post(
-            'https://api.cashfree.com/pg/orders', // ✅ correct endpoint
+            'https://api.cashfree.com/pg/orders',
             {
-                order_id: order_id,
+                order_id,
                 order_amount: amount,
                 order_currency: 'INR',
                 customer_details: {
                     customer_id: username,
-                    customer_phone: '9398542959', // required
-                    customer_email: 'cserajeswaryadav@gmail.com', // required
-                    customer_name: username,
+                    customer_email: email,
+                    customer_phone: phone,
+                    customer_name: username
                 },
-                payment_method: {
-                    upi: {
-                        channel: 'COLLECT',
-                        upi_id: upi_id
-                    }
+                order_meta: {
+                    return_url: `https://yourdomain.com/payment-success?order_id=${order_id}`, // for redirect
                 }
             },
             {
@@ -174,12 +192,21 @@ app.post('/initiate-upi', async (req, res) => {
             }
         );
 
-        res.json(response.data);
+        const { payment_session_id } = response.data;
+        console.log("Cashfree Response:", response.data);
+
+        const paymentLink = `https://payments.cashfree.com/pg/sessions/${encodeURIComponent(payment_session_id)}`;
+
+        // send the payment link via email
+        await sendMailToUser(email, paymentLink);
+
+        res.json({ success: true, paymentLink });
     } catch (err) {
         console.error(err.response?.data || err.message);
-        res.status(500).json({ error: 'Failed to initiate UPI collect' });
+        res.status(500).json({ error: 'Failed to create payment link' });
     }
 });
+
 
 
 // Get Payment Status

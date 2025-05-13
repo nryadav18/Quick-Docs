@@ -20,6 +20,7 @@
     },
     "android": {
       "permissions": [
+        "NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "INTERNET"
@@ -35,7 +36,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "6435b2d8-e60f-4142-b86e-3cf8bce81252"
+        "projectId": "b4dc2dc8-cf72-4d23-a8b4-fdbd234f5516"
       }
     }
   }

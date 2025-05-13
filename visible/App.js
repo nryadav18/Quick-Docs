@@ -2,14 +2,24 @@ import React, { useEffect, useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
-import { StatusBar } from 'react-native';
+import { StatusBar, Alert, Platform } from 'react-native';
 import useUserStore from './src/store/userStore';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // don't forget this import
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import * as Notifications from 'expo-notifications';
+
+// Setup notification handler (optional but recommended)
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+    }),
+});
 
 const AppContent = () => {
     const { setUser, setToken } = useUserStore();
-    const { isDarkMode } = useContext(ThemeContext); // get dark mode state
+    const { isDarkMode } = useContext(ThemeContext);
 
     useEffect(() => {
         const loadUser = async () => {
@@ -30,7 +40,21 @@ const AppContent = () => {
             }
         };
 
+        const requestNotificationPermission = async () => {
+            const { status } = await Notifications.getPermissionsAsync();
+            if (status !== 'granted') {
+                const { status: newStatus } = await Notifications.requestPermissionsAsync();
+                if (newStatus !== 'granted') {
+                    Alert.alert(
+                        "Permission Needed",
+                        "Please allow notifications to receive updates and reminders."
+                    );
+                }
+            }
+        };
+
         loadUser();
+        requestNotificationPermission();
     }, []);
 
     return (

@@ -17,7 +17,7 @@ const UpiPaymentScreen = ({ navigation }) => {
             return;
         }
         const username = user.username;
-        const id = 'ORDER_' + username + Date.now();
+        const id = 'ORDER_' + `${username}_` + Date.now();
         setOrderId(id);
         setLoading(true);
         setStatus('Sending payment request...');
@@ -81,6 +81,7 @@ const UpiPaymentScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="example@upi"
+                        placeholderTextColor="grey"
                         value={upiId}
                         onChangeText={setUpiId}
                         autoCapitalize="none"

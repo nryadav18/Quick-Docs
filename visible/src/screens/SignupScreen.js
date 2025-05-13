@@ -330,11 +330,12 @@ const SignupScreen = ({ navigation }) => {
                                 </TouchableOpacity>
                             </View>
 
-                            <TextInput placeholder="Full Name" style={styles.input} value={name} onChangeText={setName} />
-                            <TextInput placeholder="Unique Username" style={styles.input} value={username} onChangeText={setUsername} />
+                            <TextInput placeholder="Full Name" placeholderTextColor="grey" style={styles.input} value={name} onChangeText={setName} />
+                            <TextInput placeholder="Unique Username" placeholderTextColor="grey" style={styles.input} value={username} onChangeText={setUsername} />
                             <View style={styles.passwordContainer}>
                                 <TextInput
                                     placeholder="Password"
+                                    placeholderTextColor="grey"
                                     style={styles.passwordInput}
                                     secureTextEntry={!showPassword}
                                     value={password}
@@ -350,7 +351,7 @@ const SignupScreen = ({ navigation }) => {
                             </View>
 
                             <View style={styles.inputRow}>
-                                <TextInput placeholder="Email" style={styles.inputField} value={email} onChangeText={setEmail} />
+                                <TextInput placeholder="Email" placeholderTextColor="grey" style={styles.inputField} value={email} onChangeText={setEmail} />
                                 <TouchableOpacity style={[styles.smallButton, { paddingHorizontal: 12.5 }]} onPress={sendOtp}>
                                     {
                                         sendingOTP ? <ActivityIndicator color="white" style={{ paddingHorizontal: 25 }} /> : <Text style={styles.buttonText}>Send OTP</Text>
@@ -359,7 +360,7 @@ const SignupScreen = ({ navigation }) => {
                             </View>
 
                             <View style={styles.inputRow}>
-                                <TextInput placeholder="Enter OTP" style={styles.inputField} value={otp} onChangeText={setOtp} keyboardType="numeric" />
+                                <TextInput placeholder="Enter OTP" placeholderTextColor="grey" style={styles.inputField} value={otp} onChangeText={setOtp} keyboardType="numeric" />
                                 <TouchableOpacity style={styles.smallButton} onPress={verifyOtp}>
                                     {
                                         verifyingOTP ? <ActivityIndicator color="white" style={{ paddingHorizontal: 28 }} /> : <Text style={styles.buttonText}>Verify OTP</Text>

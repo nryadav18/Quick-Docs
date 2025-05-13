@@ -287,6 +287,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
+        marginBottom : 50
     },
     buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: 16 },
     signupText: { textAlign: "center", marginTop: 20, fontWeight: "500", color: "#333" },
