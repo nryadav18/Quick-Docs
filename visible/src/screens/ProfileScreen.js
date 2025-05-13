@@ -83,7 +83,7 @@ const ProfileScreen = () => {
                 const now = new Date();
 
                 const testTrigger = new Date(now);
-                testTrigger.setHours(20, 8, 0, 0); // Set to 8:00 PM today
+                testTrigger.setHours(21, 40, 0, 0); // Set to 8:00 PM today
 
                 if (testTrigger <= now) {
                     // If it's already past 8:00 PM, schedule for tomorrow
@@ -103,6 +103,7 @@ const ProfileScreen = () => {
                 console.log(`🎯 Notification scheduled for: ${testTrigger}`);
             }
         };
+
 
 
         scheduleBirthdayNotification();
