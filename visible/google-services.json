@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "231279928218",
+    "project_id": "yadavmainserver",
+    "storage_bucket": "yadavmainserver.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:231279928218:android:e218cb3da81353015f1023",
+        "android_client_info": {
+          "package_name": "com.rajeswar.QuickDocs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCZyl8NUNDvxYSGEWO6AW9w77XT2qnY8Ns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

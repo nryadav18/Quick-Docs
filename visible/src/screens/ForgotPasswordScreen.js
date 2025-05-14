@@ -157,6 +157,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                         value={email}
                         onChangeText={setEmail}
                         keyboardType="email-address"
+                        placeholderTextColor="#666"
                     />
                     <TouchableOpacity style={styles.button} onPress={handleSendOTP} disabled={loading}>
                         <Text style={styles.buttonText}>{loading ? 'Sending...' : 'Send OTP'}</Text>
@@ -172,6 +173,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                         value={otp}
                         onChangeText={setOtp}
                         keyboardType="numeric"
+                        placeholderTextColor="#666"
                     />
                     <TouchableOpacity style={styles.button} onPress={handleVerifyOTP} disabled={loading}>
                         <Text style={styles.buttonText}>{loading ? 'Verifying...' : 'Verify OTP'}</Text>
@@ -188,6 +190,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
                             secureTextEntry={!showPassword}
                             value={newPassword}
                             onChangeText={setNewPassword}
+                            placeholderTextColor="#666"
                         />
                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                             <Ionicons

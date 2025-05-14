@@ -80,30 +80,22 @@ const ProfileScreen = () => {
 
         const scheduleBirthdayNotification = async () => {
             if (Constants.isDevice) {
-                const now = new Date();
-
-                const testTrigger = new Date(now);
-                testTrigger.setHours(21, 40, 0, 0); // Set to 8:00 PM today
-
-                if (testTrigger <= now) {
-                    // If it's already past 8:00 PM, schedule for tomorrow
-                    testTrigger.setDate(testTrigger.getDate() + 1);
-                }
-
+                const dob = new Date(user.dob);
                 await Notifications.scheduleNotificationAsync({
                     content: {
                         title: `🎉 Happy Birthday ${user.name}!`,
-                        body: `Wishing you a wonderful day! 🎂🎈 (Test Notification)`,
+                        body: `Wishing you a wonderful day! 🎂🎈`,
                     },
                     trigger: {
-                        date: testTrigger,
+                        month: dob.getMonth() + 1,
+                        day: dob.getDate(),
+                        hour: 0,
+                        minute: 0,
+                        repeats: true,
                     },
                 });
-
-                console.log(`🎯 Notification scheduled for: ${testTrigger}`);
             }
         };
-
 
 
         scheduleBirthdayNotification();
@@ -112,7 +104,6 @@ const ProfileScreen = () => {
             if (intervalId) clearInterval(intervalId);
         };
     }, [user?.dob, hasShownBirthdayModal]);
-
 
 
 

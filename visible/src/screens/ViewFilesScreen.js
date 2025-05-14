@@ -210,6 +210,7 @@ const ViewFilesScreen = () => {
                 placeholder="Search by name, type, or rating..."
                 value={searchText}
                 onChangeText={setSearchText}
+                placeholderTextColor="#666"
             />
 
             {/* Filters */}

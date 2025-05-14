@@ -51,6 +51,7 @@ const UserSchema = new mongoose.Schema({
     verified: { type: Boolean, default: false },
     premiumuser: { type: Boolean, default: false },
     profileImageUrl: String,
+    expoNotificationToken: String,
     myfiles: { type: [fileSchema], default: [] },
     filesdata: [{ type: String }] // Array of strings for extracted text
 });
@@ -255,7 +256,7 @@ app.get('/user/:id', authenticateToken, async (req, res) => {
 
 // Signup
 app.post('/signup', async (req, res) => {
-    const { name, username, email, password, dob, gender, profileImageUrl } = req.body;
+    const { name, username, email, password, dob, gender, expoNotificationToken, profileImageUrl } = req.body;
 
     if (!password) return res.status(400).json({ success: false, message: 'Password is required' });
 
@@ -273,7 +274,8 @@ app.post('/signup', async (req, res) => {
             dob,
             gender,
             verified: true,
-            profileImageUrl
+            profileImageUrl,
+            expoNotificationToken : expoNotificationToken
         });
 
         await newUser.save();
@@ -384,6 +386,26 @@ app.post('/reset-password', async (req, res) => {
     } catch (error) {
         console.error('Reset Password Error:', error);
         return res.status(500).json({ message: 'Internal server error.' });
+    }
+});
+
+//Update Expo Notification Token
+app.post('/update-notification-token', async (req, res) => {
+    const { expoNotificationToken, username } = req.body;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.status(400).json({ message: "User doesn't exist!" });
+        }
+
+        await User.updateOne({ expoNotificationToken : expoNotificationToken })
+
+        return res.status(200).json({ message: 'Notification Token Updated Successfully' });
+
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 

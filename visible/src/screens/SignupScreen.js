@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, RadioButton } from 'react-native-paper';
@@ -10,6 +10,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AntDesign, Entypo } from "@expo/vector-icons"
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from "react-native"
 
 
 const SignupScreen = ({ navigation }) => {
@@ -29,6 +32,7 @@ const SignupScreen = ({ navigation }) => {
     const [sendingOTP, setSendingOTP] = useState(false)
     const [verifyingOTP, setVerifyingOTP] = useState(false)
     const [userCreated, setUserCreated] = useState(false)
+    const [expoPushToken, setExpoPushToken] = useState('');
 
 
     //My Custom Alert Boxes
@@ -43,6 +47,52 @@ const SignupScreen = ({ navigation }) => {
     const [successAlertVisible, setSuccessAlertVisible] = useState(false)
     const [successTitle, setSuccessTitle] = useState("")
     const [successMessage, setSuccessMessage] = useState("")
+
+    useEffect(() => {
+        const registerForPushNotificationsAsync = async () => {
+            let token;
+
+            if (Device.isDevice) {
+                const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                console.log("Existing Permission Status:", existingStatus);
+                let finalStatus = existingStatus;
+
+                if (existingStatus !== 'granted') {
+                    const { status } = await Notifications.requestPermissionsAsync();
+                    finalStatus = status;
+                }
+
+                if (finalStatus !== 'granted') {
+                    alert('Failed to get push token for push notification!');
+                    return;
+                }
+                let token;
+                try {
+                    token = (await Notifications.getExpoPushTokenAsync({
+                        projectId: 'f0d9c531-d84b-40ef-997c-4a9430054d66',
+                    })).data;
+                } catch (error) {
+                    console.error("Error fetching push token:", error);
+                }
+
+                setExpoPushToken(token);
+
+            } else {
+                alert('Must use physical device for Push Notifications');
+            }
+
+            if (Platform.OS === 'android') {
+                await Notifications.setNotificationChannelAsync('default', {
+                    name: 'default',
+                    importance: Notifications.AndroidImportance.MAX,
+                    vibrationPattern: [0, 250, 250, 250],
+                    lightColor: '#FF231F7C',
+                });
+            }
+        };
+
+        registerForPushNotificationsAsync();
+    }, []);
 
     //My Custom Alert Functions
     const showErrorAlert = (title, message) => {
@@ -196,7 +246,8 @@ const SignupScreen = ({ navigation }) => {
                 email: email.trim(),
                 password: password.trim(),
                 gender: gender.trim(),
-                dob: dob ? dob.toISOString() : null
+                dob: dob ? dob.toISOString() : null,
+                expoNotificationToken : expoPushToken
             };
 
             let profileImageUrl = null;
@@ -330,12 +381,12 @@ const SignupScreen = ({ navigation }) => {
                                 </TouchableOpacity>
                             </View>
 
-                            <TextInput placeholder="Full Name" placeholderTextColor="grey" style={styles.input} value={name} onChangeText={setName} />
-                            <TextInput placeholder="Unique Username" placeholderTextColor="grey" style={styles.input} value={username} onChangeText={setUsername} />
+                            <TextInput placeholder="Full Name" placeholderTextColor="#666" style={styles.input} value={name} onChangeText={setName} />
+                            <TextInput placeholder="Unique Username" placeholderTextColor="#666" style={styles.input} value={username} onChangeText={setUsername} />
                             <View style={styles.passwordContainer}>
                                 <TextInput
                                     placeholder="Password"
-                                    placeholderTextColor="grey"
+                                    placeholderTextColor="#666"
                                     style={styles.passwordInput}
                                     secureTextEntry={!showPassword}
                                     value={password}
@@ -351,7 +402,7 @@ const SignupScreen = ({ navigation }) => {
                             </View>
 
                             <View style={styles.inputRow}>
-                                <TextInput placeholder="Email" placeholderTextColor="grey" style={styles.inputField} value={email} onChangeText={setEmail} />
+                                <TextInput placeholder="Email" placeholderTextColor="#666" style={styles.inputField} value={email} onChangeText={setEmail} />
                                 <TouchableOpacity style={[styles.smallButton, { paddingHorizontal: 12.5 }]} onPress={sendOtp}>
                                     {
                                         sendingOTP ? <ActivityIndicator color="white" style={{ paddingHorizontal: 25 }} /> : <Text style={styles.buttonText}>Send OTP</Text>
@@ -360,7 +411,7 @@ const SignupScreen = ({ navigation }) => {
                             </View>
 
                             <View style={styles.inputRow}>
-                                <TextInput placeholder="Enter OTP" placeholderTextColor="grey" style={styles.inputField} value={otp} onChangeText={setOtp} keyboardType="numeric" />
+                                <TextInput placeholder="Enter OTP" placeholderTextColor="#666" style={styles.inputField} value={otp} onChangeText={setOtp} keyboardType="numeric" />
                                 <TouchableOpacity style={styles.smallButton} onPress={verifyOtp}>
                                     {
                                         verifyingOTP ? <ActivityIndicator color="white" style={{ paddingHorizontal: 28 }} /> : <Text style={styles.buttonText}>Verify OTP</Text>

@@ -22,6 +22,26 @@ export const ErrorAlert = ({ visible, title, message, onOk }) => {
     )
 }
 
+export const RetryAlert = ({ visible, title, message, onOk }) => {
+    return (
+        <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onOk}>
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    <View style={styles.iconContainer}>
+                        <AntDesign name="closecircle" size={40} color="#FF3B30" />
+                    </View>
+                    <Text style={styles.modalTitle}>{title}</Text>
+                    <Text style={styles.modalText}>{message}</Text>
+
+                    <TouchableOpacity style={[styles.button, styles.errorButton, {backgroundColor : 'blue'}]} onPress={onOk}>
+                        <Text style={styles.buttonText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    )
+}
+
 // Warning Alert (Yellow) - For warnings like weak password
 export const WarningAlert = ({ visible, title, message, onOk, onCancel }) => {
     return (

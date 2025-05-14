@@ -219,6 +219,7 @@ const UploadFilesScreen = () => {
                     placeholder="Enter File Name"
                     onChangeText={setFileName}
                     value={fileName}
+                    placeholderTextColor="#666"
                 />
                 <TextInput
                     style={styles.input}
@@ -227,6 +228,7 @@ const UploadFilesScreen = () => {
                     maxLength={1}
                     value={importance}
                     onChangeText={setImportance}
+                    placeholderTextColor="#666"
                 />
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>

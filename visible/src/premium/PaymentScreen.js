@@ -81,7 +81,7 @@ const UpiPaymentScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="example@upi"
-                        placeholderTextColor="grey"
+                        placeholderTextColor="#666"
                         value={upiId}
                         onChangeText={setUpiId}
                         autoCapitalize="none"

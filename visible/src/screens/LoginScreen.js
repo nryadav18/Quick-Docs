@@ -15,6 +15,11 @@ import { LinearGradient } from "expo-linear-gradient"
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import useUserStore from "../store/userStore"
 import * as LocalAuthentication from "expo-local-authentication";
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import { Platform } from "react-native";
+import { Button } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const LoginScreen = () => {
     const { setUser, setToken } = useUserStore.getState();
@@ -37,6 +42,8 @@ const LoginScreen = () => {
     const [successAlertVisible, setSuccessAlertVisible] = useState(false)
 
     const [biometricSuccess, setBiometricSuccess] = useState(false);
+    const [expoPushToken, setExpoPushToken] = useState('');
+
 
     useEffect(() => {
         const checkBiometricSupportAndAuthenticate = async () => {
@@ -64,6 +71,73 @@ const LoginScreen = () => {
         checkBiometricSupportAndAuthenticate();
     }, []);
 
+    useEffect(() => {
+        const registerForPushNotificationsAsync = async () => {
+            let token;
+
+            if (Device.isDevice) {
+                const { status: existingStatus } = await Notifications.getPermissionsAsync();
+                let finalStatus = existingStatus;
+
+                if (existingStatus !== 'granted') {
+                    const { status } = await Notifications.requestPermissionsAsync();
+                    finalStatus = status;
+                }
+
+                if (finalStatus !== 'granted') {
+                    alert('Failed to get push token for push notification!');
+                    return;
+                }
+                let token;
+                try {
+                    token = (await Notifications.getExpoPushTokenAsync({
+                        projectId: 'f0d9c531-d84b-40ef-997c-4a9430054d66',
+                    })).data;
+                } catch (error) {
+                    console.error("Error fetching push token:", error);
+                }
+
+                setExpoPushToken(token);
+
+            } else {
+                alert('Must use physical device for Push Notifications');
+            }
+
+            if (Platform.OS === 'android') {
+                await Notifications.setNotificationChannelAsync('default', {
+                    name: 'default',
+                    importance: Notifications.AndroidImportance.MAX,
+                    vibrationPattern: [0, 250, 250, 250],
+                    lightColor: '#FF231F7C',
+                });
+            }
+        };
+
+        registerForPushNotificationsAsync();
+    }, []);
+
+    const reEnableFingerprint = async () => {
+        const compatible = await LocalAuthentication.hasHardwareAsync();
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+
+        if (!compatible || !enrolled) {
+            showWarningAlert("Biometric Unavailable", "Your device does not support biometric authentication or no fingerprints are enrolled.");
+            return;
+        }
+
+        const result = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Re-authenticate with fingerprint",
+            fallbackLabel: "Use Passcode",
+            cancelLabel: "Cancel",
+        });
+
+        if (result.success) {
+            setBiometricSuccess(true);
+            showSuccessAlert();
+        } else {
+            showErrorAlert("Authentication Failed", "Fingerprint authentication failed or was cancelled.");
+        }
+    };
 
 
     //My Custom Alert Functions
@@ -136,6 +210,19 @@ const LoginScreen = () => {
             if (response.status === 200) {
                 const { token, user } = response.data;
 
+                if (user.expoNotificationToken != expoPushToken) {
+                    try {
+                        const trimmedUsername = username.trim();
+                        const updateNotificationToken = await axios.post('https://quick-docs-app-backend.onrender.com/update-notification-token',
+                            { expoNotificationToken: expoPushToken, username: trimmedUsername })
+                        console.log('Successfully Updated the Token', updateNotificationToken.data)
+                    }
+                    catch (error) {
+                        console.log('Error Occured while Updating the Token', error)
+                    }
+                }
+
+
                 // ✅ Zustand store usage
                 const { setUser, setToken } = useUserStore.getState();
                 setUser(user);
@@ -157,6 +244,7 @@ const LoginScreen = () => {
                 showErrorAlert("Login Failed", "Username and Password doesn't match!");
             }
         }
+
     };
 
 
@@ -213,10 +301,30 @@ const LoginScreen = () => {
                 <Text style={styles.buttonText}>Signup/ Register</Text>
             </TouchableOpacity>
 
+            <View style={{ width: '100%', alignItems: 'center', marginTop: 20 }}>
+                <TouchableOpacity
+                    onPress={reEnableFingerprint}
+                    disabled={biometricSuccess}
+                    style={{
+                        width: 76,
+                        height: 76,
+                        borderRadius: 40,
+                        backgroundColor: '#4E71FF',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        opacity: biometricSuccess ? 0.5 : 1,
+                    }}
+                >
+                    <MaterialCommunityIcons name="fingerprint" size={44} color="white" />
+                </TouchableOpacity>
+            </View>
+
+
+
+
 
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
-            <SuccessAlert visible={successAlertVisible} title="Login Successful" message="You have successfully logged in!" onOk={() => setSuccessAlertVisible(false)} />
             <SuccessAlert
                 visible={successAlertVisible}
                 title="Login Successful"
@@ -287,7 +395,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom : 50
+        marginBottom: 50
     },
     buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: 16 },
     signupText: { textAlign: "center", marginTop: 20, fontWeight: "500", color: "#333" },

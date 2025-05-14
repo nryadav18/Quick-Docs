@@ -1,4 +1,4 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
@@ -7,6 +7,8 @@ import useUserStore from './src/store/userStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
+import './firebaseConfig';
+import * as Device from 'expo-device';
 
 // Setup notification handler (optional but recommended)
 Notifications.setNotificationHandler({
@@ -20,6 +22,22 @@ Notifications.setNotificationHandler({
 const AppContent = () => {
     const { setUser, setToken } = useUserStore();
     const { isDarkMode } = useContext(ThemeContext);
+
+    useEffect(() => {
+        const subscriptionReceived = Notifications.addNotificationReceivedListener(notification => {
+            console.log('Notification Received:', notification);
+        });
+
+        const subscriptionResponse = Notifications.addNotificationResponseReceivedListener(response => {
+            console.log('Notification Response:', response);
+        });
+
+        return () => {
+            subscriptionReceived.remove();
+            subscriptionResponse.remove();
+        };
+    }, []);
+
 
     useEffect(() => {
         const loadUser = async () => {
