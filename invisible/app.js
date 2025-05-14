@@ -143,70 +143,70 @@ const authenticateToken = (req, res, next) => {
 // });
 
 //Payment Link sending via Mail
-async function sendMailToUser(email, paymentLink) {
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        }
-    });
+// async function sendMailToUser(email, paymentLink) {
+//     const transporter = nodemailer.createTransport({
+//         service: 'gmail',
+//         auth: {
+//             user: process.env.EMAIL_USER,
+//             pass: process.env.EMAIL_PASS
+//         }
+//     });
 
-    const mailOptions = {
-        from: process.env.YOUR_EMAIL,
-        to: email,
-        subject: 'Complete Your Payment',
-        html: `<p>Click the link to complete your payment:</p><a href="${paymentLink}">${paymentLink}</a>`
-    };
+//     const mailOptions = {
+//         from: process.env.YOUR_EMAIL,
+//         to: email,
+//         subject: 'Complete Your Payment',
+//         html: `<p>Click the link to complete your payment:</p><a href="${paymentLink}">${paymentLink}</a>`
+//     };
 
-    await transporter.sendMail(mailOptions);
-}
+//     await transporter.sendMail(mailOptions);
+// }
 
-//Payment - Production
-app.post('/initiate-upi', async (req, res) => {
-    const { order_id, amount, username, email, phone } = req.body;
+// //Payment - Production
+// app.post('/initiate-upi', async (req, res) => {
+//     const { order_id, amount, username, email, phone } = req.body;
 
-    try {
-        const response = await axios.post(
-            'https://api.cashfree.com/pg/orders',
-            {
-                order_id,
-                order_amount: amount,
-                order_currency: 'INR',
-                customer_details: {
-                    customer_id: username,
-                    customer_email: email,
-                    customer_phone: phone,
-                    customer_name: username
-                },
-                order_meta: {
-                    return_url: `https://yourdomain.com/payment-success?order_id=${order_id}`, // for redirect
-                }
-            },
-            {
-                headers: {
-                    'x-client-id': process.env.CASHFREE_APP_ID,
-                    'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-                    'x-api-version': '2022-09-01',
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+//     try {
+//         const response = await axios.post(
+//             'https://api.cashfree.com/pg/orders',
+//             {
+//                 order_id,
+//                 order_amount: amount,
+//                 order_currency: 'INR',
+//                 customer_details: {
+//                     customer_id: username,
+//                     customer_email: email,
+//                     customer_phone: phone,
+//                     customer_name: username
+//                 },
+//                 order_meta: {
+//                     return_url: `https://yourdomain.com/payment-success?order_id=${order_id}`, // for redirect
+//                 }
+//             },
+//             {
+//                 headers: {
+//                     'x-client-id': process.env.CASHFREE_APP_ID,
+//                     'x-client-secret': process.env.CASHFREE_SECRET_KEY,
+//                     'x-api-version': '2022-09-01',
+//                     'Content-Type': 'application/json'
+//                 }
+//             }
+//         );
 
-        const { payment_session_id } = response.data;
-        console.log("Cashfree Response:", response.data);
+//         const { payment_session_id } = response.data;
+//         console.log("Cashfree Response:", response.data);
 
-        const paymentLink = `https://payments.cashfree.com/pg/sessions/${encodeURIComponent(payment_session_id)}`;
+//         const paymentLink = `https://payments.cashfree.com/pg/sessions/${encodeURIComponent(payment_session_id)}`;
 
-        // send the payment link via email
-        await sendMailToUser(email, paymentLink);
+//         // send the payment link via email
+//         await sendMailToUser(email, paymentLink);
 
-        res.json({ success: true, paymentLink });
-    } catch (err) {
-        console.error(err.response?.data || err.message);
-        res.status(500).json({ error: 'Failed to create payment link' });
-    }
-});
+//         res.json({ success: true, paymentLink });
+//     } catch (err) {
+//         console.error(err.response?.data || err.message);
+//         res.status(500).json({ error: 'Failed to create payment link' });
+//     }
+// });
 
 
 
