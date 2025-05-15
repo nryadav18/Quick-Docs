@@ -210,7 +210,7 @@ const ProfileScreen = () => {
 
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
+            <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
                 {/* Header */}
                 <View style={[styles.header, isDarkMode && styles.darkHeader]}>
                     <TouchableOpacity onPress={pickImage}>
@@ -408,7 +408,6 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F7FA', alignItems: 'center', paddingHorizontal: 20 },
     darkMode: { backgroundColor: '#121212' },
-
     header: {
         alignItems: 'center',
         width: '100%',

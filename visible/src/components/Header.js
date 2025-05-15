@@ -58,6 +58,7 @@ const Header = ({ title }) => {
                     </TouchableOpacity>
                 </View>
             </View>
+            <View style={{ height : 2, width : '100%', backgroundColor : isDarkMode ? '#EAE4D5' : '#B6B09F', marginBottom : 10 }}></View>
         </SafeAreaView>
     );
 };
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
         marginLeft: 5,
         color: '#FFF085',
         fontWeight: '600',
-        fontSize : 16
+        fontSize: 16
     },
     toggleButton: {
         padding: 10,

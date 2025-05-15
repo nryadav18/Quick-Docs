@@ -8,7 +8,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import './firebaseConfig';
-import * as Device from 'expo-device';
 
 // Setup notification handler (optional but recommended)
 Notifications.setNotificationHandler({

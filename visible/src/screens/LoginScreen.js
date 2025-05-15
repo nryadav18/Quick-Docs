@@ -73,7 +73,6 @@ const LoginScreen = () => {
 
     useEffect(() => {
         const registerForPushNotificationsAsync = async () => {
-            let token;
 
             if (Device.isDevice) {
                 const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -133,7 +132,6 @@ const LoginScreen = () => {
 
         if (result.success) {
             setBiometricSuccess(true);
-            showSuccessAlert();
         } else {
             showErrorAlert("Authentication Failed", "Fingerprint authentication failed or was cancelled.");
         }
@@ -312,7 +310,7 @@ const LoginScreen = () => {
                         backgroundColor: '#4E71FF',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        opacity: biometricSuccess ? 0.5 : 1,
+                        opacity: biometricSuccess ? 0 : 1,
                     }}
                 >
                     <MaterialCommunityIcons name="fingerprint" size={44} color="white" />

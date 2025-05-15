@@ -44,7 +44,7 @@ export default function BottomTabNavigator() {
 
 const styles = StyleSheet.create({
     tabBar: {
-        height: 70,
+        height: 60,
         paddingBottom: 5,
         borderTopLeftRadius: 15,
         borderTopRightRadius: 15,
