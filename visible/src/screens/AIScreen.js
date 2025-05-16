@@ -41,7 +41,6 @@ const AI_Support = () => {
 
         if (!inputMessage.trim() || isWaiting) return;
 
-
         const userMessage = { role: 'user', text: inputMessage };
         setMessages((prev) => [...prev, userMessage]);
         setInputMessage('');

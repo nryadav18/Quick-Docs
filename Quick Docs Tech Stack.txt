@@ -1,14 +1,21 @@
 Quick Docs Tech Stack:
 
-React Native
+React Native Expo SDK 53 (Updated)
 Node.js
 Express.js
 MongoDB
-Zustand (Super React Native friendly State Management)
+Zustand (React Native friendly State Management)
 GCS (Google Cloud Services)
 Cloud Storage (Google)
-Vertex API (Google)
+ 1. Vertex API (Google)
+ 2. Data Lineage API (Manages Google Cloud Data Lineage projects on Google Cloud Platform.)
+ 3. Dataplex API (Discover, manage, and monitor data, artifacts, and lineage. Note: It can take 5 or more hours for resources to be indexed after enabling the API.)
+ 4. Dataflow API (Manages Google Cloud Dataflow projects on Google Cloud Platform. Used for: Pipelines)
+ 5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
+
 JWT Tokens (Authorization, Token Generation)
 .env (secure data protection)
 EAS (Expo Building)
+EXPO Notifications
+Firebase Cloud Messaging API (V1)
 Secure API Gateway (GET, POST, DELETE)

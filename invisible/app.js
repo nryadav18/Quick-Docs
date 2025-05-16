@@ -559,7 +559,7 @@ async function deleteOldProfiles(username) {
 }
 
 
-app.post('/file-id-thrower', async (req, res) => {
+app.post('/file-data-thrower', async (req, res) => {
     const { username, itemname } = req.body;
 
     // Find user by username
@@ -575,7 +575,7 @@ app.post('/file-id-thrower', async (req, res) => {
     }
 
     // Return file ID
-    res.json({ fileId: file._id });
+    res.json({ fileId: file._id, fileUrl : file.url, fileType : file.type });
 
 });
 

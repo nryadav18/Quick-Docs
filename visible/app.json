@@ -24,6 +24,7 @@
         "NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
+        "MEDIA_CONTENT_CONTROL",
         "INTERNET"
       ],
       "adaptiveIcon": {
@@ -33,6 +34,7 @@
       "package": "com.rajeswar.QuickDocs"
     },
     "plugins": [
+      "expo-media-library",
       [
         "expo-notifications",
         {

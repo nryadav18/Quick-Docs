@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import useUserStore from '../store/userStore';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import axios from 'axios';
+import * as MediaLibrary from 'expo-media-library';
 import WebView from 'react-native-webview';
 
 const screenWidth = Dimensions.get('window').width;
@@ -123,15 +124,121 @@ const ViewFilesScreen = () => {
         }
     };
 
-    // Download File
-    const handleDownloadFile = async (file) => {
-        let fileUri = file.uri;
+
+    const getExtensionFromMime = (mimeType) => {
+        const map = {
+            'image/jpeg': 'jpg',
+            'image/png': 'png',
+            'application/pdf': 'pdf',
+            'video/mp4': 'mp4',
+            'text/plain': 'txt',
+            'application/msword': 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+        };
+        return map[mimeType]; // No fallback
+    };
+
+    const sendPushNotification = async (expoPushToken, title, body) => {
         try {
-            await Sharing.shareAsync(fileUri);
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Accept-encoding': 'gzip, deflate',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: expoPushToken,
+                    sound: 'default',
+                    title,
+                    body,
+                }),
+            });
         } catch (error) {
-            console.error('Error downloading file:', error);
+            console.warn('Push notification failed:', error);
         }
     };
+
+    const handleDownloadFile = async (file) => {
+        try {
+            const response = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/file-data-thrower', {
+                username: user.username,
+                itemname: file.name,
+            });
+
+            const fileUrl = response.data.fileUrl;
+            const fileType = response.data.fileType;
+            const extension = getExtensionFromMime(fileType);
+
+            if (!extension) {
+                throw new Error(`Unsupported file type: ${fileType}`);
+            }
+
+            const fileName = `${file.name}.${extension}`;
+            const fileUri = FileSystem.documentDirectory + fileName;
+            console.log('Saving to:', fileUri);
+
+            const { uri, status } = await FileSystem.downloadAsync(fileUrl, fileUri);
+            if (status !== 200) {
+                throw new Error(`Download failed with status ${status}`);
+            }
+
+            const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
+            if (mediaStatus !== 'granted') {
+                showWarningAlert("Permission Denied", "Media Library permission is required.");
+                return;
+            }
+
+            const asset = await MediaLibrary.createAssetAsync(uri);
+            await MediaLibrary.createAlbumAsync("Download", asset, false);
+
+            // ✅ Send push notification
+            if (user.expoNotificationToken) {
+                await sendPushNotification(
+                    user.expoNotificationToken,
+                    'Download Complete',
+                    `${fileName} has been saved to your device.`
+                );
+            }
+
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            showErrorAlert("Download Failed", error.message || "Could not download the file.");
+        }
+    };
+
+
+    // Share File
+    const handleShareFile = async (file) => {
+        try {
+            const fileUri = file.url; // assuming file.url is either local or remote
+
+            if (fileUri.startsWith("file://")) {
+                // File is already local
+                await Sharing.shareAsync(fileUri);
+            } else if (fileUri.startsWith("http://") || fileUri.startsWith("https://")) {
+                // Download the file first
+                const fileExtension = file.type || 'file';
+                const fileName = file.name || `downloaded.${fileExtension}`;
+                const localUri = FileSystem.documentDirectory + fileName;
+
+                const downloadResumable = FileSystem.createDownloadResumable(
+                    fileUri,
+                    localUri
+                );
+
+                const { uri } = await downloadResumable.downloadAsync();
+                await Sharing.shareAsync(uri);
+            } else {
+                throw new Error("Invalid file URI format");
+            }
+
+        } catch (error) {
+            console.error('Error sharing file:', error);
+            showErrorAlert("Sharing Failed", "Could not share the file. Try again.");
+        }
+    };
+
 
     const handleDeleteFile = async (item) => {
 
@@ -139,7 +246,7 @@ const ViewFilesScreen = () => {
 
         if (!fileId) {
             try {
-                const response = await axios.post('https://quick-docs-app-backend.onrender.com/file-id-thrower', {
+                const response = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/file-data-thrower', {
                     username: user.username,
                     itemname: item.name,
                 });
@@ -159,7 +266,7 @@ const ViewFilesScreen = () => {
                 try {
                     setLoading(true);
 
-                    const url = `https://quick-docs-app-backend.onrender.com/${fileId}?userId=${user._id}`;
+                    const url = `https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/${fileId}?userId=${user._id}`;
                     const response = await fetch(url, {
                         method: 'DELETE',
                     });
@@ -173,6 +280,15 @@ const ViewFilesScreen = () => {
                     // Update Zustand user store
                     useUserStore.getState().setUser(data.updatedUser);
                     showSuccessAlert("File Deleted", "The File has been deleted successfully.");
+
+                    //Sending Push Notification
+                    if (user.expoNotificationToken) {
+                        await sendPushNotification(
+                            user.expoNotificationToken,
+                            'File Deleted',
+                            `${item.name} has been saved to your device.`
+                        );
+                    }
                     console.log('Deleted Successfully')
                 } catch (error) {
                     console.error('Error deleting file:', error);
@@ -247,6 +363,17 @@ const ViewFilesScreen = () => {
                     {filteredFiles.length > 0 ? (
                         filteredFiles.map((item, index) => (
                             <View key={index} style={[styles.fileCard, isDarkMode && styles.darkFileCard]}>
+                                <TouchableOpacity
+                                    onPress={() => handleShareFile(item)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 15,
+                                        right: 15,
+                                        zIndex: 10,
+                                    }}
+                                >
+                                    <MaterialIcons name="share" size={30} color="#FF3B30" />
+                                </TouchableOpacity>
                                 <View style={styles.previewContainer}>
                                     <View style={styles.previewBox}>
                                         {(
@@ -353,9 +480,9 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
 
-    noDataFound : {
-        width : 220,
-        height : 220
+    noDataFound: {
+        width: 220,
+        height: 220
     },
     fileCard: {
         backgroundColor: 'white',
@@ -555,7 +682,7 @@ const styles = StyleSheet.create({
     },
     emptyText: {
         fontSize: 20,
-        fontWeight : 600,
+        fontWeight: 600,
         color: 'black',
     },
     darkText: {

@@ -45,60 +45,67 @@ const ProfileScreen = () => {
 
         resetModalFlag();
 
-        const calculateNextBirthday = () => {
-            const now = new Date();
-            const dob = new Date(user.dob);
-            const nextBirthday = new Date(now.getFullYear(), dob.getMonth(), dob.getDate(), 0, 0, 0);
-            if (nextBirthday <= now) {
-                nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
-            }
-            return nextBirthday;
-        };
-
         const updateCountdown = () => {
             const now = new Date();
-            const nextBD = calculateNextBirthday();
-            const diff = nextBD - now;
+            const dob = new Date(user.dob);
 
-            if (diff <= 1000 && !hasShownBirthdayModal) {
-                setShowBirthdayModal(true);
-                setHasShownBirthdayModal(true);
-            } else if (nextBD.toDateString() === now.toDateString()) {
+            const isTodayBirthday = now.getDate() === dob.getDate() && now.getMonth() === dob.getMonth();
+
+            if (isTodayBirthday) {
                 setCountdown('🎉 Happy Birthday!');
-            } else {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                const minutes = Math.floor((diff / (1000 * 60)) % 60);
-                const seconds = Math.floor((diff / 1000) % 60);
-
-                setCountdown(`${days}d :: ${hours}h :: ${minutes}m :: ${seconds}s`);
+                if (!hasShownBirthdayModal) {
+                    setShowBirthdayModal(true);
+                    setHasShownBirthdayModal(true);
+                }
+                return;
             }
+
+            // Calculate next birthday only if today is not the birthday
+            const nextBD = new Date(now.getFullYear(), dob.getMonth(), dob.getDate());
+            if (nextBD <= now) {
+                nextBD.setFullYear(nextBD.getFullYear() + 1);
+            }
+
+            const diff = nextBD - now;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            setCountdown(`${days}d :: ${hours}h :: ${minutes}m :: ${seconds}s`);
         };
+
+
 
         updateCountdown();
         intervalId = setInterval(updateCountdown, 1000);
 
-        const scheduleBirthdayNotification = async () => {
-            if (Constants.isDevice) {
-                const dob = new Date(user.dob);
-                await Notifications.scheduleNotificationAsync({
-                    content: {
-                        title: `🎉 Happy Birthday ${user.name}!`,
-                        body: `Wishing you a wonderful day! 🎂🎈`,
-                    },
-                    trigger: {
-                        month: dob.getMonth() + 1,
-                        day: dob.getDate(),
-                        hour: 0,
-                        minute: 0,
-                        repeats: true,
-                    },
-                });
+        const scheduleBirthdayNotification = async (dob) => {
+            const now = new Date();
+            const birthday = new Date(now.getFullYear(), dob.getMonth(), dob.getDate(), 0, 0, 0);
+
+            if (birthday <= now) {
+                birthday.setFullYear(birthday.getFullYear() + 1);
             }
+
+            await Notifications.cancelAllScheduledNotificationsAsync(); // avoid duplicates
+
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: '🎉 Happy Birthday!',
+                    body: 'Wishing you an amazing year ahead!',
+                    sound: true,
+                    priority: Notifications.AndroidNotificationPriority.HIGH,
+                },
+                trigger: {
+                    type: 'date',
+                    date: birthday,
+                },
+            });
         };
 
 
-        scheduleBirthdayNotification();
+        scheduleBirthdayNotification(new Date(user.dob));
 
         return () => {
             if (intervalId) clearInterval(intervalId);
@@ -183,7 +190,7 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://quick-docs-app-backend.onrender.com/deactivate', {
+                    const response = await fetch('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/deactivate', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

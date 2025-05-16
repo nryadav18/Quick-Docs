@@ -132,14 +132,12 @@ const UploadFilesScreen = () => {
             formData.append('username', user.username);
             formData.append('importance', importance);
 
-            const response = await fetch('https://quick-docs-app-backend.onrender.com/upload', {
+            const response = await fetch('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/upload', {
                 method: 'POST',
                 body: formData,
             });
 
             const data = await response.json();
-
-            console.log(data)
 
             if (!response.ok) {
                 showErrorAlert('Upload Failed', data?.message || 'Please ensure your file is less than 5MB and try again.');
@@ -153,6 +151,8 @@ const UploadFilesScreen = () => {
                 url: file,
                 rating: importance,
             };
+
+            console.log(newFile)
 
             const updatedUser = {
                 ...user,

@@ -24,7 +24,7 @@ const UpiPaymentScreen = ({ navigation }) => {
 
         try {
             // Replace with your production API URL
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/initiate-upi', {
+            const res = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/initiate-upi', {
                 upi_id: upiId,
                 order_id: id,
                 amount: 1.00,
@@ -47,7 +47,7 @@ const UpiPaymentScreen = ({ navigation }) => {
     const checkStatus = async (id, paymentUrl) => {
         try {
             // Replace with your production API URL
-            const res = await axios.get(`https://quick-docs-app-backend.onrender.com/check-status/${id}`);
+            const res = await axios.get(`https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/check-status/${id}`);
             const orderStatus = res.data.order_status;
 
             if (orderStatus === 'PAID') {

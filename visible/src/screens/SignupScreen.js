@@ -115,7 +115,7 @@ const SignupScreen = ({ navigation }) => {
 
     const checkUsernameUnique = async (username) => {
         try {
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-username', { username });
+            const res = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/check-username', { username });
             return !res.data.exists;
         } catch (err) {
             return false;
@@ -256,7 +256,7 @@ const SignupScreen = ({ navigation }) => {
                 const fileType = imageUri.split('.').pop().toLowerCase();
                 const fileName = `profile_${Date.now()}.${fileType}`;
 
-                const res = await axios.post('https://quick-docs-app-backend.onrender.com/generate-upload-url', {
+                const res = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/generate-upload-url', {
                     fileName,
                     fileType,
                     username: trimmedData.username
@@ -277,7 +277,7 @@ const SignupScreen = ({ navigation }) => {
             }
 
 
-            const response = await axios.post('https://quick-docs-app-backend.onrender.com/signup', {
+            const response = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/signup', {
                 ...trimmedData,
                 profileImageUrl
             });
@@ -313,14 +313,14 @@ const SignupScreen = ({ navigation }) => {
                 return;
             }
 
-            const emailExistence = await axios.post('https://quick-docs-app-backend.onrender.com/check-user-exists', { email: trimmedEmail })
+            const emailExistence = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/check-user-exists', { email: trimmedEmail })
             if (emailExistence.data.exists) {
                 showErrorAlert("Email already Exists", "A User has been registered with current Email")
                 setSendingOTP(false)
                 return;
             }
 
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/send-otp', { email: trimmedEmail });
+            const res = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/send-otp', { email: trimmedEmail });
             if (res.data.success) {
                 showSuccessAlert("OTP Sent", "Please check out your Inbox for OTP")
                 setIsOtpSent(true)
@@ -352,7 +352,7 @@ const SignupScreen = ({ navigation }) => {
                 return;
             }
 
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
+            const res = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
             if (res.data.success) {
                 showSuccessAlert("OTP Verified", "OTP Verified Successfully!")
                 setIsOtpVerified(true)

@@ -7,13 +7,14 @@ import useUserStore from './src/store/userStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import * as Notifications from 'expo-notifications';
+import * as MediaLibrary from 'expo-media-library';
 import './firebaseConfig';
 
 // Setup notification handler (optional but recommended)
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: false,
+        shouldShowBanner: true,
+        shouldPlaySound: true,
         shouldSetBadge: false,
     }),
 });
@@ -45,7 +46,7 @@ const AppContent = () => {
 
             if (token && userId) {
                 try {
-                    const response = await axios.get(`https://quick-docs-app-backend.onrender.com/user/${userId}`, {
+                    const response = await axios.get(`https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/user/${userId}`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     setUser(response.data);
@@ -70,8 +71,20 @@ const AppContent = () => {
             }
         };
 
+        const requestDownloadPermission = async () => {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(
+                    'Permission Required',
+                    'Storage permission is required to download files.'
+                );
+            }
+        };
+
+        
         loadUser();
         requestNotificationPermission();
+        requestDownloadPermission();
     }, []);
 
     return (

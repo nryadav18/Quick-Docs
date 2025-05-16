@@ -66,7 +66,7 @@ export default function Premium() {
 
     const checkPaymentStatus = async (orderId) => {
         try {
-            const res = await fetch(`https://quick-docs-app-backend.onrender.com/check-status/${orderId}`);
+            const res = await fetch(`https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/check-status/${orderId}`);
             const data = await res.json();
 
             if (data.order_status === 'PAID') {
@@ -87,7 +87,7 @@ export default function Premium() {
         const order_id = `ORDER_${Date.now()}`;
 
         try {
-            const response = await fetch('https://quick-docs-app-backend.onrender.com/initiate-upi', {
+            const response = await fetch('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/initiate-upi', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
