@@ -90,7 +90,6 @@ const UploadFilesScreen = () => {
         if (!result.canceled) {
             const uri = result.assets[0].uri;
             setFile(uri);
-            setFileName('Captured Image');
             setFileType('image/jpeg');
             Image.getSize(uri, (width, height) => {
                 setImageDimensions({ width, height });
@@ -123,16 +122,17 @@ const UploadFilesScreen = () => {
 
         try {
             const formData = new FormData();
+            const newFileName = fileName.trim();
             formData.append('file', {
                 uri: file,
-                name: fileName,
+                name: newFileName,
                 type: fileType,
             });
-            formData.append('originalname', fileName);
+            formData.append('originalname', newFileName);
             formData.append('username', user.username);
             formData.append('importance', importance);
 
-            const response = await fetch('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/upload', {
+            const response = await fetch('https://quick-docs-app-backend.onrender.com/upload', {
                 method: 'POST',
                 body: formData,
             });
@@ -146,7 +146,7 @@ const UploadFilesScreen = () => {
             }
             const newFile = {
                 id: generateId(),
-                name: fileName,
+                name: newFileName,
                 type: fileExtension,
                 url: file,
                 rating: importance,

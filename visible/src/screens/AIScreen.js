@@ -34,10 +34,10 @@ const AI_Support = () => {
     };
 
     const sendMessage = async () => {
-        // if (user.premiumuser == false) {
-        //     navigation.navigate('Premium')
-        //     return;
-        // }
+        if (user.premiumuser == false) {
+            navigation.navigate('Premium')
+            return;
+        }
 
         if (!inputMessage.trim() || isWaiting) return;
 

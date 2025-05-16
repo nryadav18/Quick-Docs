@@ -18,7 +18,6 @@ import * as LocalAuthentication from "expo-local-authentication";
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from "react-native";
-import { Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const LoginScreen = () => {
@@ -90,7 +89,7 @@ const LoginScreen = () => {
                 let token;
                 try {
                     token = (await Notifications.getExpoPushTokenAsync({
-                        projectId: 'f0d9c531-d84b-40ef-997c-4a9430054d66',
+                        projectId: 'c4e2ff4d-6edb-4799-a901-69c02363b13a',
                     })).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
@@ -137,6 +136,26 @@ const LoginScreen = () => {
         }
     };
 
+    const sendPushNotification = async (expoPushToken, title, body) => {
+        try {
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Accept-encoding': 'gzip, deflate',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: expoPushToken,
+                    sound: 'default',
+                    title,
+                    body,
+                }),
+            });
+        } catch (error) {
+            console.warn('Push notification failed:', error);
+        }
+    };
 
     //My Custom Alert Functions
     const showErrorAlert = (title, message) => {
@@ -180,7 +199,7 @@ const LoginScreen = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/check-valid-user', { username });
+            const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-valid-user', { username });
             if (!res.data.exists) {
                 showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
                 setLoading(false)
@@ -198,7 +217,7 @@ const LoginScreen = () => {
             const trimmedUsername = username.trim();
             const trimmedPassword = password.trim();
 
-            const response = await axios.post("https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/login", {
+            const response = await axios.post("https://quick-docs-app-backend.onrender.com/login", {
                 username: trimmedUsername,
                 password: trimmedPassword,
             });
@@ -208,16 +227,15 @@ const LoginScreen = () => {
             if (response.status === 200) {
                 const { token, user } = response.data;
 
-                if (user.expoNotificationToken != expoPushToken) {
-                    try {
-                        const trimmedUsername = username.trim();
-                        const updateNotificationToken = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/update-notification-token',
-                            { expoNotificationToken: expoPushToken, username: trimmedUsername })
-                        console.log('Successfully Updated the Token', updateNotificationToken.data)
-                    }
-                    catch (error) {
-                        console.log('Error Occured while Updating the Token', error)
-                    }
+                try {
+                    const trimmedUsername = username.trim();
+                    const updateNotificationToken = await axios.post('https://quick-docs-app-backend.onrender.com/update-notification-token',
+                        { expoNotificationToken: expoPushToken, username: trimmedUsername })
+                    console.log(expoPushToken)
+                    console.log('Successfully Updated the Token', updateNotificationToken.data)
+                }
+                catch (error) {
+                    console.log('Error Occured while Updating the Token', error)
                 }
 
 
@@ -318,19 +336,23 @@ const LoginScreen = () => {
             </View>
 
 
-
-
-
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
             <SuccessAlert
                 visible={successAlertVisible}
                 title="Login Successful"
                 message="You have successfully logged in!"
-                onOk={() => {
+                onOk={async () => {
                     setSuccessAlertVisible(false);
                     if (validUser) {
                         setValidUser(false)
+                        if (expoPushToken) {
+                            await sendPushNotification(
+                                expoPushToken,
+                                'Welcome to Quick Docs App!',
+                                `One Stop Destination to Store, Summarize your Important Files`
+                            );
+                        }
                         navigation.replace('Home');
                     }
                 }}
@@ -414,4 +436,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default LoginScreen
+export default LoginScreen;

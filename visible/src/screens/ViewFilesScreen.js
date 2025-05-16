@@ -161,7 +161,7 @@ const ViewFilesScreen = () => {
 
     const handleDownloadFile = async (file) => {
         try {
-            const response = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/file-data-thrower', {
+            const response = await axios.post('https://quick-docs-app-backend.onrender.com/file-data-thrower', {
                 username: user.username,
                 itemname: file.name,
             });
@@ -194,6 +194,7 @@ const ViewFilesScreen = () => {
 
             // ✅ Send push notification
             if (user.expoNotificationToken) {
+                console.log(user.expoNotificationToken)
                 await sendPushNotification(
                     user.expoNotificationToken,
                     'Download Complete',
@@ -246,7 +247,7 @@ const ViewFilesScreen = () => {
 
         if (!fileId) {
             try {
-                const response = await axios.post('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/file-data-thrower', {
+                const response = await axios.post('https://quick-docs-app-backend.onrender.com/file-data-thrower', {
                     username: user.username,
                     itemname: item.name,
                 });
@@ -266,7 +267,7 @@ const ViewFilesScreen = () => {
                 try {
                     setLoading(true);
 
-                    const url = `https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/${fileId}?userId=${user._id}`;
+                    const url = `https://quick-docs-app-backend.onrender.com/${fileId}?userId=${user._id}`;
                     const response = await fetch(url, {
                         method: 'DELETE',
                     });
@@ -279,7 +280,6 @@ const ViewFilesScreen = () => {
 
                     // Update Zustand user store
                     useUserStore.getState().setUser(data.updatedUser);
-                    showSuccessAlert("File Deleted", "The File has been deleted successfully.");
 
                     //Sending Push Notification
                     if (user.expoNotificationToken) {

@@ -25,7 +25,9 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "MEDIA_CONTENT_CONTROL",
-        "INTERNET"
+        "INTERNET",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/logomain.png",
@@ -50,7 +52,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "f0d9c531-d84b-40ef-997c-4a9430054d66"
+        "projectId": "c4e2ff4d-6edb-4799-a901-69c02363b13a"
       }
     }
   }

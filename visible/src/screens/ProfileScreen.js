@@ -183,6 +183,27 @@ const ProfileScreen = () => {
         }
     };
 
+    const sendPushNotification = async (expoPushToken, title, body) => {
+        try {
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Accept-encoding': 'gzip, deflate',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: expoPushToken,
+                    sound: 'default',
+                    title,
+                    body,
+                }),
+            });
+        } catch (error) {
+            console.warn('Push notification failed:', error);
+        }
+    };
+
     const handleDeactivateAccount = async () => {
         showWarningAlert(
             "Confirm Deactivation",
@@ -190,7 +211,7 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/deactivate', {
+                    const response = await fetch('https://quick-docs-app-backend.onrender.com/deactivate', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -210,6 +231,14 @@ const ProfileScreen = () => {
                     showErrorAlert("Network Error", "Unable to connect to server. Please try again later.");
                 }
                 setIsDeactivating(false);
+                if (user.expoNotificationToken) {
+                    console.log(user.expoNotificationToken)
+                    await sendPushNotification(
+                        user.expoNotificationToken,
+                        'Logged out Successfully',
+                        `Thanks for using Quick Docs App!`
+                    );
+                }
             }
         );
     };
@@ -282,9 +311,17 @@ const ProfileScreen = () => {
 
                 <TouchableOpacity
                     style={styles.logoutButton}
-                    onPress={() => {
+                    onPress={async () => {
                         clearUser();
                         navigation.replace('Login');
+                        if (user.expoNotificationToken) {
+                            console.log(user.expoNotificationToken)
+                            await sendPushNotification(
+                                user.expoNotificationToken,
+                                'Logged out Successfully',
+                                `Thanks for using Quick Docs App!`
+                            );
+                        }
                     }}
                 >
                     <Text style={styles.buttonText}>Logout</Text>

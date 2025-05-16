@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../context/ThemeContext';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import useUserStore from '../store/userStore';
 
 const Header = ({ title }) => {
     const { isDarkMode, toggleTheme } = useContext(ThemeContext);
     const navigation = useNavigation();
-
+    const user = useUserStore((state) => state.user);
     const rotateValue = useRef(new Animated.Value(isDarkMode ? 1 : 0)).current;
 
     useEffect(() => {
@@ -43,7 +44,7 @@ const Header = ({ title }) => {
                     <TouchableOpacity onPress={goToPremium} style={[styles.premiumButton,
                     (!isDarkMode && { backgroundColor: '#E9A319' })]}>
                         <FontAwesome5 name="crown" size={18} color="#FFD700" />
-                        <Text style={[styles.premiumText, (!isDarkMode && { color: 'black' })]}>Become King</Text>
+                        <Text style={[styles.premiumText, (!isDarkMode && { color: 'black' })]}>Become Pro</Text>
                     </TouchableOpacity>
 
                     {/* Toggle Theme Button */}

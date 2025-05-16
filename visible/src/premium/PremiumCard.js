@@ -12,117 +12,24 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation } from "@react-navigation/native"
+import RazorpayCheckout from 'react-native-razorpay';
+import axios from 'axios';
+import useUserStore from '../store/userStore';
 
 const { width } = Dimensions.get('window');
 
 const plans = {
-    Weekly: {
-        name: 'Weekly Plan',
-        price: '1',
-        type: 'week',
-        features: [
-            { label: '10 Files Upload', available: true },
-            { label: 'Free support 24/7', available: true },
-            { label: 'Databases', available: false },
-            { label: 'Email', available: false },
-            { label: 'Unlimited traffic', available: false },
-        ],
-        color: '#E9A319',
-    },
-    Monthly: {
-        name: 'Monthly Plan',
-        price: '2',
-        type: 'month',
-        features: [
-            { label: 'Unlimited Upload', available: true },
-            { label: 'Free support 24/7', available: true },
-            { label: 'Databases', available: true },
-            { label: 'Email', available: true },
-            { label: 'Unlimited traffic', available: false },
-        ],
-        color: '#D98324',
-    },
-    Yearly: {
-        name: 'Yearly Plan',
-        price: '3',
-        type: 'year',
-        features: [
-            { label: 'Unlimited Upload', available: true },
-            { label: 'Free support 24/7', available: true },
-            { label: 'Databases', available: true },
-            { label: 'Email', available: true },
-            { label: 'Unlimited traffic', available: true },
-        ],
-        color: '#EB8317',
-    },
+    Weekly: { name: 'Weekly Plan', price: '1', type: 'week', features: [{ label: '10 File Uploads', available: true }, { label: '3 AI Prompts', available: true }, { label: 'Advanced Artificial Intellegence', available: false }, { label: 'Premium UI Enhancement', available: false }, { label: 'Special Birthday Gift', available: false },], color: '#E9A319' },
+    Monthly: { name: 'Monthly Plan', price: '2', type: 'month', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '10 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Premium UI Enhancement', available: false }, { label: 'Advanced Articial Intelligence', available: false },], color: '#D98324' },
+    Yearly: { name: 'Yearly Plan', price: '3', type: 'year', features: [{ label: 'Unlimited File Uploads', available: true }, { label: 'Unlimited AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Premium UI Enhancement', available: true }, { label: 'Unlimited traffic', available: true },], color: '#EB8317' },
 };
-
 
 export default function Premium() {
     const planKeys = Object.keys(plans);
     const [selected, setSelected] = useState(planKeys[0]);
     const slideAnim = useRef(new Animated.Value(0)).current;
+    const user = useUserStore((state) => state.user);
     const navigation = useNavigation()
-
-    const checkPaymentStatus = async (orderId) => {
-        try {
-            const res = await fetch(`https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/check-status/${orderId}`);
-            const data = await res.json();
-
-            if (data.order_status === 'PAID') {
-                console.log('✅ Payment successful');
-                alert("✅ Payment successful!");
-            } else {
-                console.log('❌ Payment not completed yet');
-                alert("⏳ Payment pending or failed. Try again.");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("⚠️ Error checking payment status");
-        }
-    };
-
-
-    const handleBuyNow = async (plan) => {
-        const order_id = `ORDER_${Date.now()}`;
-
-        try {
-            const response = await fetch('https://7f29-2409-40f0-1157-f4d9-9cd3-f5f2-a9bb-feb9.ngrok-free.app/initiate-upi', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    order_id,
-                    amount: plan.price,
-                    username: 'Nryadav18',
-                    email: 'cserajeswaryadav@gmail.com',
-                    phone: '9398542959',
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.paymentLink) {
-                console.log("✅ Payment link:", data.paymentLink);
-                alert("📩 Payment link sent to your email!");
-
-                // Optionally open the payment link directly
-                // Linking.openURL(data.paymentLink);
-
-                // Save order ID in state for later status check
-                setTimeout(() => {
-                    checkPaymentStatus(order_id); // Auto-check after 5–10 seconds
-                }, 10000);
-            } else {
-                alert("❌ Failed to initiate payment");
-            }
-        } catch (error) {
-            console.error(error);
-            alert("⚠️ Error while initiating payment");
-        }
-    };
-
 
     const handleSelect = (planKey) => {
         const currentIndex = planKeys.indexOf(selected);
@@ -136,6 +43,113 @@ export default function Premium() {
             useNativeDriver: true,
         }).start();
     };
+
+    const sendPushNotification = async (expoPushToken, title, body) => {
+        try {
+            await fetch('https://exp.host/--/api/v2/push/send', {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Accept-encoding': 'gzip, deflate',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: expoPushToken,
+                    sound: 'default',
+                    title,
+                    body,
+                }),
+            });
+        } catch (error) {
+            console.warn('Push notification failed:', error);
+        }
+    };
+
+    const makePremiumUser = (plan) => {
+        const { setUser } = useUserStore.getState();
+        const currentUser = useUserStore.getState().user;
+
+        const updatedUser = {
+            ...currentUser,
+            premiumuser: true,
+            premiumtype: Array.isArray(currentUser.premiumtype)
+                ? [...new Set([...currentUser.premiumtype, plan.name])]
+                : [plan.name], // fallback in case premiumtype is not an array
+        };
+
+        setUser(updatedUser);
+    }
+
+    const handleBuyNow = async (plan) => {
+        try {
+            const response = await axios.post('https://quick-docs-app-backend.onrender.com/create-order', {
+                amount: parseInt(plan.price),
+                username: user.username
+            });
+
+            const { order } = response.data;
+
+            if (!order) {
+                console.log('❌ No order received from backend');
+                return;
+            }
+
+            var options = {
+                description: plan.name,
+                image: 'https://storage.googleapis.com/agent-qd-data/logomain.png',
+                currency: 'INR',
+                key: 'rzp_live_ytSSS6VVuUNHPy',
+                amount: order.amount,
+                name: 'Quick Docs App',
+                order_id: order.id,
+                prefill: {
+                    email: user.email,
+                    contact: '9876543210',
+                    name: user.name,
+                },
+                theme: { color: plan.color },
+            };
+
+            RazorpayCheckout.open(options)
+                .then(async (paymentData) => {
+                    console.log('Payment Success:', paymentData);
+                    try {
+                        const verifyResponse = await axios.post(
+                            'https://quick-docs-app-backend.onrender.com/verify-payment',
+                            {
+                                ...paymentData,
+                                username: user.username, // optional
+                                planName: plan.name      // optional
+                            }
+                        );
+
+                        if (verifyResponse.data.success) {
+                            console.log('✅ Payment Verified Successfully');
+                            if (user.premiumuser == false) makePremiumUser(plan);
+                            if (user.expoNotificationToken) {
+                                console.log(user.expoNotificationToken)
+                                await sendPushNotification(
+                                    user.expoNotificationToken,
+                                    'Logged out Successfully',
+                                    `Thanks for using Quick Docs App!`
+                                );
+                            }
+                            navigation.navigate('PaymentSuccess');
+                        } else {
+                            console.warn('⚠️ Payment verification failed on backend');
+                        }
+                    } catch (verifyError) {
+                        console.error('❌ Error verifying payment on backend:', verifyError);
+                    }
+                })
+                .catch((error) => {
+                    console.log(`Error: ${error.code} | ${error.description}`);
+                });
+        } catch (error) {
+            console.error('Payment Error:', error);
+        }
+    };
+
 
     return (
         <LinearGradient colors={["#F3C623", "#F3FEB8", "#F3C623"]} style={styles.container}>
@@ -173,58 +187,70 @@ export default function Premium() {
                         alignItems: 'center',
                     }}
                 >
-                    <PlanCard plan={plans[selected]} onBuyNow={handleBuyNow} />
+                    <PlanCard plan={plans[selected]} onBuyNow={handleBuyNow} user={user} />
                 </Animated.View>
             </SafeAreaView>
         </LinearGradient>
     );
 }
 
-const PlanCard = ({ plan, onBuyNow }) => (
-    <View style={[styles.card, { borderColor: plan.color }]}>
-        <StatusBar
-            barStyle="dark-content"
-            backgroundColor="#F3C623"
-        />
-        <Text style={[styles.planName, { backgroundColor: plan.color }]}>
-            {plan.name}
-        </Text>
-        <Text style={styles.price}>
-            <Text style={{ fontSize: 50 }}>₹{plan.price}</Text>
-            <Text style={styles.perMonth}> / {plan.type}</Text>
-        </Text>
+const PlanCard = ({ plan, onBuyNow, user }) => {
+    const alreadyBought = Array.isArray(user?.premiumtype)
+        ? user.premiumtype.includes(plan.name)
+        : false;
 
-        <View style={styles.features}>
-            {plan.features.map((f, i) => (
-                <View key={i} style={styles.featureRow}>
-                    <Icon
-                        name={f.available ? 'check' : 'close'}
-                        size={22}
-                        color={f.available ? 'green' : 'gray'}
-                        style={{ marginRight: 10 }}
-                    />
-                    <Text
-                        style={{
-                            color: f.available ? '#000' : '#999',
-                            fontWeight: f.available ? 'bold' : 'normal',
-                            fontSize: 18,
-                        }}
-                    >
-                        {f.label}
-                    </Text>
-                </View>
-            ))}
+    return (
+        <View style={[styles.card, { borderColor: plan.color }]}>
+            <StatusBar barStyle="dark-content" backgroundColor="#F3C623" />
+            <Text style={[styles.planName, { backgroundColor: plan.color }]}>
+                {plan.name}
+            </Text>
+            <Text style={styles.price}>
+                <Text style={{ fontSize: 50 }}>₹{plan.price}</Text>
+                <Text style={styles.perMonth}> / {plan.type}</Text>
+            </Text>
+
+            <View style={styles.features}>
+                {plan.features.map((f, i) => (
+                    <View key={i} style={styles.featureRow}>
+                        <Icon
+                            name={f.available ? 'check' : 'close'}
+                            size={22}
+                            color={f.available ? 'green' : 'gray'}
+                            style={{ marginRight: 10 }}
+                        />
+                        <Text
+                            style={{
+                                color: f.available ? '#000' : '#999',
+                                fontWeight: f.available ? 'bold' : 'normal',
+                                fontSize: 18,
+                            }}
+                        >
+                            {f.label}
+                        </Text>
+                    </View>
+                ))}
+            </View>
+
+            <TouchableOpacity
+                style={[
+                    styles.button,
+                    {
+                        backgroundColor: alreadyBought ? 'gray' : plan.color,
+                        opacity: alreadyBought ? 0.6 : 1,
+                    },
+                ]}
+                onPress={() => !alreadyBought && onBuyNow(plan)}
+                disabled={alreadyBought}
+            >
+                <Text style={styles.buttonText}>
+                    {alreadyBought ? 'ALREADY PURCHASED' : 'BUY NOW'}
+                </Text>
+            </TouchableOpacity>
         </View>
+    );
+};
 
-        <TouchableOpacity
-            style={[styles.button, { backgroundColor: plan.color }]}
-            onPress={() => onBuyNow(plan)}  // 👈 Fixed here
-        >
-            <Text style={styles.buttonText}>BUY NOW</Text>
-        </TouchableOpacity>
-
-    </View>
-);
 
 const styles = StyleSheet.create({
     container: {
@@ -264,7 +290,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         elevation: 4,
-        marginBottom : 100
+        marginBottom: 100
     },
     planName: {
         color: '#fff',

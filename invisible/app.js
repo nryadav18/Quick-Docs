@@ -12,6 +12,7 @@ const path = require('path')
 const { Readable } = require('stream')
 const axios = require('axios')
 const app = express();
+const Razorpay = require("razorpay");
 
 
 app.use(cors());
@@ -50,6 +51,7 @@ const UserSchema = new mongoose.Schema({
     gender: String,
     verified: { type: Boolean, default: false },
     premiumuser: { type: Boolean, default: false },
+    premiumtype: { type: [String], default: [] },
     profileImageUrl: String,
     expoNotificationToken: String,
     myfiles: { type: [fileSchema], default: [] },
@@ -91,147 +93,59 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-//Payment - Test
-// async function generateCashfreeToken(orderId, orderAmount, customerId) {
-//     try {
-//         const requestBody = {
-//             order_id: orderId,
-//             order_amount: Number(orderAmount), // ensure it's a number, not string
-//             order_currency: 'INR',
-//             customer_details: {
-//                 customer_id: customerId,
-//                 customer_email: 'user@example.com',  // Replace with actual email
-//                 customer_phone: '9999999999',       // Replace with actual phone number
-//             }
-//         };
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
-//         console.log('Request Body:', JSON.stringify(requestBody));
+app.post("/verify-payment", async (req, res) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, username, planName } = req.body;
 
-//         const response = await axios.post('https://sandbox.cashfree.com/pg/orders', requestBody, {
-//             headers: {
-//                 'x-client-id': process.env.CASHFREE_APP_ID,
-//                 'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-//                 'x-api-version': '2022-09-01', // ✅ required header
-//                 'Content-Type': 'application/json',
-//             }
-//         });
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
 
-//         console.log('Response:', response.data);
-//         return response.data.payment_session_id; // this is the token
-//     } catch (error) {
-//         console.error('Error generating Cashfree token:', error.response ? error.response.data : error.message);
-//         throw new Error('Payment session creation failed');
-//     }
-// }
+    const expectedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(body.toString())
+        .digest("hex");
 
+    if (expectedSignature === razorpay_signature) {
+        const user = await User.findOne({ username });
 
+        if (!user) {
+            return res.status(400).json({ message: "User doesn't exist!" });
+        }
 
-// // Create order route
-// app.post('/create-order', async (req, res) => {
-//     const { amount, planType, customerId } = req.body;
-
-//     try {
-//         // Generate the payment session token from Cashfree API
-//         const paymentSessionId = await generateCashfreeToken('ORDER127', amount, customerId);
-
-//         // Return the payment session ID (or payment link) to the frontend
-//         res.json({ paymentLink: `https://sandbox.cashfree.com/pg/redirect?payment_session_id=${paymentSessionId}` });
-//     } catch (err) {
-//         console.error(err);
-//         res.status(500).json({ error: 'Failed to create order' });
-//     }
-// });
-
-//Payment Link sending via Mail
-// async function sendMailToUser(email, paymentLink) {
-//     const transporter = nodemailer.createTransport({
-//         service: 'gmail',
-//         auth: {
-//             user: process.env.EMAIL_USER,
-//             pass: process.env.EMAIL_PASS
-//         }
-//     });
-
-//     const mailOptions = {
-//         from: process.env.YOUR_EMAIL,
-//         to: email,
-//         subject: 'Complete Your Payment',
-//         html: `<p>Click the link to complete your payment:</p><a href="${paymentLink}">${paymentLink}</a>`
-//     };
-
-//     await transporter.sendMail(mailOptions);
-// }
-
-// //Payment - Production
-// app.post('/initiate-upi', async (req, res) => {
-//     const { order_id, amount, username, email, phone } = req.body;
-
-//     try {
-//         const response = await axios.post(
-//             'https://api.cashfree.com/pg/orders',
-//             {
-//                 order_id,
-//                 order_amount: amount,
-//                 order_currency: 'INR',
-//                 customer_details: {
-//                     customer_id: username,
-//                     customer_email: email,
-//                     customer_phone: phone,
-//                     customer_name: username
-//                 },
-//                 order_meta: {
-//                     return_url: `https://yourdomain.com/payment-success?order_id=${order_id}`, // for redirect
-//                 }
-//             },
-//             {
-//                 headers: {
-//                     'x-client-id': process.env.CASHFREE_APP_ID,
-//                     'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-//                     'x-api-version': '2022-09-01',
-//                     'Content-Type': 'application/json'
-//                 }
-//             }
-//         );
-
-//         const { payment_session_id } = response.data;
-//         console.log("Cashfree Response:", response.data);
-
-//         const paymentLink = `https://payments.cashfree.com/pg/sessions/${encodeURIComponent(payment_session_id)}`;
-
-//         // send the payment link via email
-//         await sendMailToUser(email, paymentLink);
-
-//         res.json({ success: true, paymentLink });
-//     } catch (err) {
-//         console.error(err.response?.data || err.message);
-//         res.status(500).json({ error: 'Failed to create payment link' });
-//     }
-// });
-
-
-
-// Get Payment Status
-app.get('/check-status/:order_id', async (req, res) => {
-    try {
-        const response = await axios.get(
-            `https://api.cashfree.com/pg/orders/${req.params.order_id}`,
+        // Correct way: use a filter + update fields
+        await User.updateOne(
+            { username },
             {
-                headers: {
-                    'x-client-id': process.env.CASHFREE_APP_ID,
-                    'x-client-secret': process.env.CASHFREE_SECRET_KEY,
-                    'x-api-version': '2022-09-01', // ✅ REQUIRED
-                    'Content-Type': 'application/json'
-                }
+                $set: { premiumuser: true },
+                $addToSet: { premiumtype: planName }, // ✅ ensures no duplicates
             }
         );
-
-        res.json(response.data);
-    } catch (err) {
-        console.error(err.response?.data || err.message);
-        res.status(500).json({ error: 'Failed to check status' });
+        return res.json({ success: true, message: "Payment verified successfully" });
+    } else {
+        return res.status(400).json({ success: false, message: "Payment verification failed" });
     }
 });
 
+app.post("/create-order", async (req, res) => {
+    try {
+        const { amount, username } = req.body;
+
+        const options = {
+            amount: amount * 100,
+            currency: "INR",
+            receipt: `rcptid_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        res.json({ success: true, order });
+    } catch (err) {
+        console.error("Order creation failed:", err);
+        res.status(500).json({ success: false, error: "Order creation failed" });
+    }
+});
 
 // Get User Data by ID (Secure)
 app.get('/user/:id', authenticateToken, async (req, res) => {
@@ -275,7 +189,7 @@ app.post('/signup', async (req, res) => {
             gender,
             verified: true,
             profileImageUrl,
-            expoNotificationToken : expoNotificationToken
+            expoNotificationToken: expoNotificationToken
         });
 
         await newUser.save();
@@ -389,7 +303,8 @@ app.post('/reset-password', async (req, res) => {
     }
 });
 
-//Update Expo Notification Token
+
+// Update Expo Notification Token
 app.post('/update-notification-token', async (req, res) => {
     const { expoNotificationToken, username } = req.body;
 
@@ -400,14 +315,20 @@ app.post('/update-notification-token', async (req, res) => {
             return res.status(400).json({ message: "User doesn't exist!" });
         }
 
-        await User.updateOne({ expoNotificationToken : expoNotificationToken })
+        // Correct way: use a filter + update fields
+        await User.updateOne(
+            { username },
+            { $set: { expoNotificationToken } }
+        );
 
         return res.status(200).json({ message: 'Notification Token Updated Successfully' });
 
     } catch (error) {
+        console.error('Error updating notification token:', error);
         return res.status(500).json({ message: 'Internal server error' });
     }
 });
+
 
 
 //Checking Uniqueness of Username
@@ -575,7 +496,7 @@ app.post('/file-data-thrower', async (req, res) => {
     }
 
     // Return file ID
-    res.json({ fileId: file._id, fileUrl : file.url, fileType : file.type });
+    res.json({ fileId: file._id, fileUrl: file.url, fileType: file.type });
 
 });
 

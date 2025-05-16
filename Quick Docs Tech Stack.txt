@@ -19,3 +19,4 @@ EAS (Expo Building)
 EXPO Notifications
 Firebase Cloud Messaging API (V1)
 Secure API Gateway (GET, POST, DELETE)
+RazorPay Payments (Secure Payment Gateway)

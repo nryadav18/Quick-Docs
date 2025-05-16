@@ -7,7 +7,7 @@ import BottomTabNavigator from './BottomTabNavigator';
 import ViewFilesScreen from '../screens/ViewFilesScreen';
 import Premium from '../premium/PremiumCard';
 import PremiumHeader from '../premium/PremiumHeader';
-import PaymentScreen from '../premium/PaymentScreen';
+import PaymentSuccessScreen from '../premium/PaymentSuccess';
 
 const Stack = createStackNavigator();
 
@@ -21,11 +21,11 @@ export default function StackNavigator() {
             <Stack.Screen name="Files" component={ViewFilesScreen} />
             <Stack.Screen name="Premium" component={Premium}
                 options={{
-                    headerShown : true,
+                    headerShown: true,
                     header: () => <PremiumHeader title="Premium" />,
                 }}
             />
-            <Stack.Screen name="Payment" component={PaymentScreen} />
+            <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
         </Stack.Navigator>
     );
 }
