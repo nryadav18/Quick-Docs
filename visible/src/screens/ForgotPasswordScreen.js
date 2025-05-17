@@ -48,7 +48,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         setSuccessMessage(message)
     }
 
-    const API_BASE_URL = 'https://quick-docs-app-backend.onrender.com'; // Replace with your actual backend URL
+    const API_BASE_URL = 'https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app'; // Replace with your actual backend URL
 
     // Step 1: Send OTP
     const handleSendOTP = async () => {

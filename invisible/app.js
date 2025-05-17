@@ -13,13 +13,15 @@ const { Readable } = require('stream')
 const axios = require('axios')
 const app = express();
 const Razorpay = require("razorpay");
+const vision = require('@google-cloud/vision');
+const client = new vision.ImageAnnotatorClient();
 
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const storage = new Storage({
-    keyFilename: path.join(__dirname, './yadavmainserver-gcs-storage-keys.json'),
+    keyFilename: path.join(__dirname, './yadavmainserver-firebase.json'),
     projectId: 'yadavmainserver',
 });
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
@@ -32,14 +34,33 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch((err) => console.error("MongoDB error:", err));
 
+
+const fileDataSchema = new mongoose.Schema({
+    name: String,
+    url: String,
+    filepath: String,
+    type: String,
+    rating: Number,
+    uploadedAt: Date,
+    extractedText: String,
+    embedding: {
+        type: [Number], // For vector search
+        index: true,
+        required: true
+    },
+    username: String // To associate with user
+})
+
+
 const fileSchema = new mongoose.Schema({
     name: String,
     url: String,
     filepath: String,
     type: String,
     rating: Number,
-    uploadedAt: Date
+    uploadedAt: Date,
 });
+
 
 // User Schema
 const UserSchema = new mongoose.Schema({
@@ -51,15 +72,25 @@ const UserSchema = new mongoose.Schema({
     gender: String,
     verified: { type: Boolean, default: false },
     premiumuser: { type: Boolean, default: false },
-    premiumtype: { type: [String], default: [] },
+    premiumDetails: {
+        type: [{
+            type: {
+                type: String, // Plan name
+            },
+            timestamp: {
+                type: String,   // Time of purchase
+            }
+        }],
+        default: []
+    },
     profileImageUrl: String,
     expoNotificationToken: String,
-    myfiles: { type: [fileSchema], default: [] },
-    filesdata: [{ type: String }] // Array of strings for extracted text
+    myfiles: { type: [fileSchema], default: [] }
 });
 
 
 const User = mongoose.model('User', UserSchema);
+const FileData = mongoose.model('FileData', fileDataSchema);
 
 // OTP Schema
 const OtpSchema = new mongoose.Schema({
@@ -99,7 +130,14 @@ const razorpay = new Razorpay({
 });
 
 app.post("/verify-payment", async (req, res) => {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, username, planName } = req.body;
+    const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        username,
+        planName,
+        premiumTime // Should be a timestamp or ISO string
+    } = req.body;
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
@@ -115,19 +153,25 @@ app.post("/verify-payment", async (req, res) => {
             return res.status(400).json({ message: "User doesn't exist!" });
         }
 
-        // Correct way: use a filter + update fields
         await User.updateOne(
             { username },
             {
                 $set: { premiumuser: true },
-                $addToSet: { premiumtype: planName }, // ✅ ensures no duplicates
+                $push: {
+                    premiumDetails: {
+                        type: planName,
+                        timestamp: premiumTime // use provided time or now
+                    }
+                }
             }
         );
+
         return res.json({ success: true, message: "Payment verified successfully" });
     } else {
         return res.status(400).json({ success: false, message: "Payment verification failed" });
     }
 });
+
 
 app.post("/create-order", async (req, res) => {
     try {
@@ -329,6 +373,105 @@ app.post('/update-notification-token', async (req, res) => {
     }
 });
 
+async function generateEmbedding(text) {
+    const response = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`,
+        {
+            content: { parts: [{ text }] },
+            taskType: 'RETRIEVAL_QUERY'
+        },
+        {
+            headers: { 'Content-Type': 'application/json' }
+        }
+    );
+
+    return response.data?.embedding?.values || [];
+}
+
+
+//AI RESPONSE
+app.post('/ask', async (req, res) => {
+    const { question, username } = req.body;
+    if (!question || !username) return res.status(400).json({ message: 'Missing fields' });
+
+    try {
+        // Step 1: Generate embedding for the question
+        const queryEmbedding = await generateEmbedding(question); // should return a float array of 768 dims (or whatever you use)
+
+        // Step 2: Perform vector search in files collection
+        const results = await FileData.aggregate([
+            {
+                $vectorSearch: {
+                    index: 'fileDataIndex', // Your actual index name here
+                    queryVector: queryEmbedding,
+                    path: 'embedding',
+                    numCandidates: 100,
+                    limit: 3
+                }
+            },
+            {
+                $match: { username } // Filter to only this user's files
+            }
+        ]);
+
+
+        // Step 3: Extract the text from matching files
+        const topMatches = results
+            .map(doc => doc.extractedText)
+            .filter(Boolean)
+            .join('\n---\n');
+
+        if (!topMatches) {
+            return res.json({ answer: 'No related content found.' });
+        }
+
+        // Step 4: Construct prompt
+        const prompt = `
+You are a helpful assistant. Answer the question based only on the provided content below.
+If no relevant information is found, say "No relevant content found in the documents."
+
+Question: "${question}"
+
+Context:
+"""
+${topMatches}
+"""
+`;
+
+
+
+        // Step 5: Call Gemini
+        const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            role: 'user',
+                            parts: [{ text: `You are a helpful assistant. Use this context:\n\n${topMatches}\n\nQuestion: ${question}` }]
+                        }
+                    ]
+                })
+            }
+        );
+
+
+
+
+        const data = await geminiRes.json();
+        console.log('Gemini Response:', JSON.stringify(data, null, 2));
+        const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No meaningful response.';
+
+        res.json({ answer });
+    } catch (err) {
+        console.error('Ask route error:', err);
+        res.status(500).json({ message: 'Something went wrong', error: err.message });
+    }
+});
+
+
 
 
 //Checking Uniqueness of Username
@@ -504,9 +647,7 @@ app.post('/file-data-thrower', async (req, res) => {
 // DELETE /:fileId?userId=<userId>
 app.delete('/:fileId', async (req, res) => {
     const { fileId } = req.params;
-    const { userId } = req.query;
-
-    console.log('Delete request received:', { fileId, userId });
+    const { userId, fileUrl } = req.query;
 
     if (!userId) {
         return res.status(400).json({ message: 'User ID is required.' });
@@ -536,6 +677,9 @@ app.delete('/:fileId', async (req, res) => {
         user.myfiles.pull(fileId);
         await user.save();
 
+        const fileDataDeleteResult = await FileData.deleteOne({ url: fileUrl });
+        console.log('FileData deletion:', fileDataDeleteResult);
+
         return res.json({ message: 'File deleted successfully.', updatedUser: user });
 
     } catch (err) {
@@ -552,32 +696,35 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
         const { importance, originalname, username } = req.body;
-
         if (!file || !originalname || !username || !importance) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
-
         // Generate unique file name and GCS key
         const fileName = Date.now() + '-' + originalname;
         const gcsKey = `${username}/${fileName}`;
         const gcsFile = bucket.file(gcsKey);
-
         // Upload to GCS
         const stream = gcsFile.createWriteStream({
             metadata: {
                 contentType: file.mimetype
             }
         });
-
         stream.on('error', (err) => {
             console.error('Stream error:', err);
             return res.status(500).json({ message: 'Upload failed', error: err.message });
         });
-
         stream.on('finish', async () => {
             try {
-
                 const fileUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`;
+                const [result] = await client.textDetection(`gs://${process.env.GCS_BUCKET_NAME}/${gcsKey}`);
+                const detections = result.textAnnotations;
+                const extractedText = detections.length > 0 ? detections[0].description : '';
+
+                console.log('Extracted Text:', extractedText);
+
+                // 🔥 Generate Embedding from Text
+                const embedding = await generateEmbedding(extractedText);
+                console.log('Generated Embedding:', embedding);
 
                 const newFile = {
                     name: originalname,
@@ -585,14 +732,27 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                     filepath: gcsKey,
                     type: file.mimetype,
                     rating: parseInt(importance) || 1,
-                    uploadedAt: new Date()
+                    uploadedAt: new Date(),
                 };
 
                 const user = await User.findOneAndUpdate(
                     { username },
-                    { $push: { myfiles: newFile } },
-                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                    { $push: { myfiles: newFile } }
                 );
+
+                const newFileDoc = new FileData({
+                    name: originalname,
+                    url: fileUrl,
+                    filepath: gcsKey,
+                    type: file.mimetype,
+                    rating: parseInt(importance) || 1,
+                    uploadedAt: new Date(),
+                    extractedText,
+                    embedding,
+                    username
+                });
+
+                await newFileDoc.save();
 
                 res.status(200).json({
                     message: 'File uploaded and saved successfully',
@@ -603,8 +763,6 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                 res.status(500).json({ message: 'Failed to finalize upload', error: err.message });
             }
         });
-
-
         stream.end(file.buffer);
     } catch (err) {
         console.error('Upload error:', err);

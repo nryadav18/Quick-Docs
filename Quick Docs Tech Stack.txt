@@ -11,7 +11,8 @@ Cloud Storage (Google)
  2. Data Lineage API (Manages Google Cloud Data Lineage projects on Google Cloud Platform.)
  3. Dataplex API (Discover, manage, and monitor data, artifacts, and lineage. Note: It can take 5 or more hours for resources to be indexed after enabling the API.)
  4. Dataflow API (Manages Google Cloud Dataflow projects on Google Cloud Platform. Used for: Pipelines)
- 5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
+ *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
+ 6. Gemini 1.5 PRO LLM API (RAG)
 
 JWT Tokens (Authorization, Token Generation)
 .env (secure data protection)
@@ -20,3 +21,6 @@ EXPO Notifications
 Firebase Cloud Messaging API (V1)
 Secure API Gateway (GET, POST, DELETE)
 RazorPay Payments (Secure Payment Gateway)
+Optional Chaining Methodology (Safer way to prevent Run time errors in the frontend development, say: React, React Native)
+Using Vector Search (Mongodb) for efficiency
+Storing the data as embeddings (faster, quicker, special data structure) - Highly Secure

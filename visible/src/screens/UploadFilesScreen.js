@@ -18,6 +18,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ErrorAlert, WarningAlert, SuccessAlert } from '../components/AlertBox';
 import useUserStore from '../store/userStore';
 import { FontAwesome5 } from 'react-native-vector-icons'
+import useThemedStatusBar from '../hooks/StatusBar';
+import CrownIcon from 'react-native-vector-icons/FontAwesome5';
+import { useNavigation } from "@react-navigation/native"
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -26,6 +29,7 @@ const UploadFilesScreen = () => {
     const setUser = useUserStore((state) => state.setUser);
 
     const { isDarkMode } = useContext(ThemeContext);
+    const navigation = useNavigation()
 
     const [file, setFile] = useState(null);
     const [fileName, setFileName] = useState('');
@@ -44,6 +48,8 @@ const UploadFilesScreen = () => {
     const [successAlertVisible, setSuccessAlertVisible] = useState(false);
     const [successTitle, setSuccessTitle] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    useThemedStatusBar(isDarkMode)
 
     // Custom Alert Functions
     const showErrorAlert = (title, message) => {
@@ -129,10 +135,10 @@ const UploadFilesScreen = () => {
                 type: fileType,
             });
             formData.append('originalname', newFileName);
-            formData.append('username', user.username);
+            formData.append('username', user?.username ?? '');
             formData.append('importance', importance);
 
-            const response = await fetch('https://quick-docs-app-backend.onrender.com/upload', {
+            const response = await fetch('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/upload', {
                 method: 'POST',
                 body: formData,
             });
@@ -156,8 +162,9 @@ const UploadFilesScreen = () => {
 
             const updatedUser = {
                 ...user,
-                myfiles: [...user.myfiles, newFile],
+                myfiles: [...(user?.myfiles ?? []), newFile],
             };
+
 
             setUser(updatedUser); // Update Zustand
 
@@ -260,12 +267,44 @@ const UploadFilesScreen = () => {
                         </Text>
                     )}
                 </View>
-                <TouchableOpacity style={styles.submitButton} onPress={uploadFile}>
-                    {uploadingState ? <ActivityIndicator color="white" /> : <View style={styles.buttonStylings}>
-                        <FontAwesome5 name="file-upload" size={24} color="white" />
-                        <Text style={styles.buttonText}>Upload File</Text>
-                    </View>}
-                </TouchableOpacity>
+                {
+                    (
+                        (!user?.premiumuser && (user?.myfiles?.length) >= 1) ||
+                        (
+                            user?.premiumuser &&
+                            (user?.premiumDetails?.length) === 1 &&
+                            user?.premiumDetails?.[0]?.type === 'Pro Plan' &&
+                            (user?.myfiles?.length) >= 10
+                        )
+                    ) ? (
+                        <TouchableOpacity
+                            style={[
+                                styles.submitButton,
+                                { backgroundColor: isDarkMode ? 'rgba(209, 184, 17, 0.26)' : '#E9A319' }
+                            ]}
+                            onPress={() => navigation.navigate('Premium')}
+                        >
+                            <View style={styles.buttonStylings}>
+                                <CrownIcon name="crown" size={24} color="#FFD700" style={styles.crownContainer} />
+                                <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
+                                    Buy Premium to Upload
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.submitButton} onPress={uploadFile}>
+                            {uploadingState ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <View style={styles.buttonStylings}>
+                                    <FontAwesome5 name="file-upload" size={24} color="white" />
+                                    <Text style={styles.buttonText}>Upload File</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    )
+                }
+
             </ScrollView>
 
             {/* Alert Components */}
@@ -315,7 +354,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap : 10,
+        gap: 10,
     },
     buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
     previewContainer: {

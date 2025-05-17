@@ -41,11 +41,20 @@ const Header = ({ title }) => {
 
                 <View style={styles.actions}>
                     {/* Premium Button */}
-                    <TouchableOpacity onPress={goToPremium} style={[styles.premiumButton,
-                    (!isDarkMode && { backgroundColor: '#E9A319' })]}>
-                        <FontAwesome5 name="crown" size={18} color="#FFD700" />
-                        <Text style={[styles.premiumText, (!isDarkMode && { color: 'black' })]}>Become Pro</Text>
-                    </TouchableOpacity>
+                    {user?.premiumDetails.length < 3 && (
+                        <TouchableOpacity onPress={goToPremium} style={[styles.premiumButton,
+                        (!isDarkMode && { backgroundColor: '#E9A319' })]}>
+                            <FontAwesome5 name="crown" size={18} color="#FFD700" />
+                            <Text style={[styles.premiumText, (!isDarkMode && { color: 'black' })]}>
+                                Become {
+                                    !user?.premiumuser
+                                        ? 'Pro'
+                                        : (user?.premiumDetails?.length === 1 ? 'Ultra Pro' : 'Ultra Pro Max')
+                                }
+                            </Text>
+
+                        </TouchableOpacity>
+                    )}
 
                     {/* Toggle Theme Button */}
                     <TouchableOpacity onPress={toggleDarkMode} style={styles.toggleButton}>
@@ -59,7 +68,7 @@ const Header = ({ title }) => {
                     </TouchableOpacity>
                 </View>
             </View>
-            <View style={{ height : 2, width : '100%', backgroundColor : isDarkMode ? '#EAE4D5' : '#B6B09F', marginBottom : 10 }}></View>
+            <View style={{ height: 2, width: '100%', backgroundColor: isDarkMode ? '#EAE4D5' : '#B6B09F', marginBottom: 10 }}></View>
         </SafeAreaView>
     );
 };

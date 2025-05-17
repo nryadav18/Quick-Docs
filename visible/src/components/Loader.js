@@ -8,7 +8,7 @@ const Loader = () => {
             <LottieView 
                 source={require('../assets/loading.json')} 
                 autoPlay 
-                loop 
+                loop  
                 style={styles.animation}
             />
         </View>

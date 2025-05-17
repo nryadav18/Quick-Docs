@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,10 @@ import {
     Dimensions,
     Modal,
     ScrollView,
+    StatusBar,
+    Platform
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -22,6 +25,7 @@ import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import axios from 'axios';
 import * as MediaLibrary from 'expo-media-library';
 import WebView from 'react-native-webview';
+import useThemedStatusBar from '../hooks/StatusBar';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
@@ -65,14 +69,13 @@ const ViewFilesScreen = () => {
 
     const [onWarningConfirm, setOnWarningConfirm] = useState(null);
 
+    useThemedStatusBar(isDarkMode)
+
 
     useEffect(() => {
-        if (user?.myfiles) {
-            setFiles(user.myfiles);
-        } else {
-            setFiles([]);
-        }
+        setFiles(user?.myfiles ?? []);
     }, [user?.myfiles]);
+
 
     useEffect(() => {
         setLoading(true);
@@ -161,10 +164,11 @@ const ViewFilesScreen = () => {
 
     const handleDownloadFile = async (file) => {
         try {
-            const response = await axios.post('https://quick-docs-app-backend.onrender.com/file-data-thrower', {
-                username: user.username,
-                itemname: file.name,
+            const response = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/file-data-thrower', {
+                username: user?.username ?? 'unknown',
+                itemname: file?.name ?? 'unnamed-file',
             });
+
 
             const fileUrl = response.data.fileUrl;
             const fileType = response.data.fileType;
@@ -193,8 +197,7 @@ const ViewFilesScreen = () => {
             await MediaLibrary.createAlbumAsync("Download", asset, false);
 
             // ✅ Send push notification
-            if (user.expoNotificationToken) {
-                console.log(user.expoNotificationToken)
+            if (user?.expoNotificationToken) {
                 await sendPushNotification(
                     user.expoNotificationToken,
                     'Download Complete',
@@ -244,15 +247,17 @@ const ViewFilesScreen = () => {
     const handleDeleteFile = async (item) => {
 
         let fileId = item._id;
+        let fileUrl;
 
         if (!fileId) {
             try {
-                const response = await axios.post('https://quick-docs-app-backend.onrender.com/file-data-thrower', {
+                const response = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/file-data-thrower', {
                     username: user.username,
                     itemname: item.name,
                 });
 
                 fileId = response.data.fileId;
+                fileUrl = response.data.fileUrl;
             } catch (err) {
                 console.error('Error:', err.response?.data || err.message);
             }
@@ -267,7 +272,7 @@ const ViewFilesScreen = () => {
                 try {
                     setLoading(true);
 
-                    const url = `https://quick-docs-app-backend.onrender.com/${fileId}?userId=${user._id}`;
+                    const url = `https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/${fileId}?userId=${user?._id}&fileUrl=${encodeURIComponent(fileUrl)}`;
                     const response = await fetch(url, {
                         method: 'DELETE',
                     });
@@ -282,7 +287,7 @@ const ViewFilesScreen = () => {
                     useUserStore.getState().setUser(data.updatedUser);
 
                     //Sending Push Notification
-                    if (user.expoNotificationToken) {
+                    if (user?.expoNotificationToken) {
                         await sendPushNotification(
                             user.expoNotificationToken,
                             'File Deleted',

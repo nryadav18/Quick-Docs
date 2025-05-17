@@ -199,7 +199,7 @@ const LoginScreen = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post('https://quick-docs-app-backend.onrender.com/check-valid-user', { username });
+            const res = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/check-valid-user', { username });
             if (!res.data.exists) {
                 showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
                 setLoading(false)
@@ -217,7 +217,7 @@ const LoginScreen = () => {
             const trimmedUsername = username.trim();
             const trimmedPassword = password.trim();
 
-            const response = await axios.post("https://quick-docs-app-backend.onrender.com/login", {
+            const response = await axios.post("https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/login", {
                 username: trimmedUsername,
                 password: trimmedPassword,
             });
@@ -229,7 +229,7 @@ const LoginScreen = () => {
 
                 try {
                     const trimmedUsername = username.trim();
-                    const updateNotificationToken = await axios.post('https://quick-docs-app-backend.onrender.com/update-notification-token',
+                    const updateNotificationToken = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/update-notification-token',
                         { expoNotificationToken: expoPushToken, username: trimmedUsername })
                     console.log(expoPushToken)
                     console.log('Successfully Updated the Token', updateNotificationToken.data)
@@ -353,6 +353,17 @@ const LoginScreen = () => {
                                 `One Stop Destination to Store, Summarize your Important Files`
                             );
                         }
+                        const currentTimestamp = new Date().toLocaleString("en-IN", {
+                            timeZone: "Asia/Kolkata",
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: false
+                        });
+                        console.log(currentTimestamp)
                         navigation.replace('Home');
                     }
                 }}

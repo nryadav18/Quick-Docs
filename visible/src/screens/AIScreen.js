@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import useUserStore from '../store/userStore';
 import { useNavigation } from "@react-navigation/native"
 import FadeInText from '../components/FadeInText';
+import useThemedStatusBar from '../hooks/StatusBar';
 
 const AI_Support = () => {
     const [messages, setMessages] = useState([{ role: 'assistant', text: 'Hello! I am Agent QD, How can I assist you today?', loading: false }]);
@@ -22,6 +23,7 @@ const AI_Support = () => {
     const navigation = useNavigation()
     const scrollRef = useRef(null);
     const abortControllerRef = useRef(null); // Ref to store AbortController
+    useThemedStatusBar(isDarkMode)
 
 
     const cleanBotResponse = (text) => {
@@ -34,10 +36,10 @@ const AI_Support = () => {
     };
 
     const sendMessage = async () => {
-        if (user.premiumuser == false) {
-            navigation.navigate('Premium')
-            return;
-        }
+        // if (user?.premiumuser == false) {
+        //     navigation.navigate('Premium')
+        //     return;
+        // }
 
         if (!inputMessage.trim() || isWaiting) return;
 
@@ -87,33 +89,33 @@ const AI_Support = () => {
     };
 
     const generateBotResponse = async (history, signal) => {
-        const formattedHistory = history.map(({ role, text }) => ({
-            role,
-            parts: [{ text }],
-        }));
-
-        const requestOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: formattedHistory }),
-            signal,
-        };
+        const latestUserMessage = history[history.length - 1]?.text;
 
         try {
-            const response = await fetch(
-                'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyALQs3LTRymA9eq3gyGp5rqNn1kBVBgDbE',
-                requestOptions
-            );
+            const response = await fetch('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                signal,
+                body: JSON.stringify({
+                    username: user?.username,
+                    question: latestUserMessage
+                })
+            });
 
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error.message || 'Something went wrong');
-
-            return data;
+            return {
+                candidates: [{
+                    content: {
+                        parts: [{ text: data.answer }]
+                    }
+                }]
+            };
         } catch (error) {
-            console.error('Error in generateBotResponse:', error);
+            console.error('Error fetching vector response:', error);
             throw error;
         }
     };
+
 
     // Function to stop the ongoing message generation
     const stopResponse = () => {
@@ -156,7 +158,7 @@ const AI_Support = () => {
                                         source={
                                             item.role === 'user'
                                                 ? user?.profileImageUrl
-                                                    ? { uri: user.profileImageUrl }
+                                                    ? { uri: user?.profileImageUrl }
                                                     : require('../../assets/logomain.png')
                                                 : AI
                                         }

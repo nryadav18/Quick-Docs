@@ -12,7 +12,8 @@ import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons'
 import BirthdayIcon from 'react-native-vector-icons/FontAwesome5'
-
+import useThemedStatusBar from '../hooks/StatusBar';
+import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 
 
 const ProfileScreen = () => {
@@ -25,6 +26,7 @@ const ProfileScreen = () => {
     const [showBirthdayModal, setShowBirthdayModal] = useState(false);
     const [hasShownBirthdayModal, setHasShownBirthdayModal] = useState(false);
     const user = useUserStore((state) => state.user);
+    useThemedStatusBar(isDarkMode)
 
     useEffect(() => {
         let intervalId;
@@ -47,7 +49,7 @@ const ProfileScreen = () => {
 
         const updateCountdown = () => {
             const now = new Date();
-            const dob = new Date(user.dob);
+            const dob = new Date(user?.dob);
 
             const isTodayBirthday = now.getDate() === dob.getDate() && now.getMonth() === dob.getMonth();
 
@@ -105,7 +107,13 @@ const ProfileScreen = () => {
         };
 
 
-        scheduleBirthdayNotification(new Date(user.dob));
+        const dobDate = new Date(user.dob);
+        if (isNaN(dobDate)) {
+            showErrorAlert("User DOB Error", "Invalid Date Format for User.Dob");
+            return;
+        }
+        scheduleBirthdayNotification(dobDate);
+
 
         return () => {
             if (intervalId) clearInterval(intervalId);
@@ -211,12 +219,12 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://quick-docs-app-backend.onrender.com/deactivate', {
+                    const response = await fetch('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/deactivate', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            email: user.email,
-                            username: user.username
+                            email: user?.email,
+                            username: user?.username
                         })
                     });
 
@@ -231,10 +239,10 @@ const ProfileScreen = () => {
                     showErrorAlert("Network Error", "Unable to connect to server. Please try again later.");
                 }
                 setIsDeactivating(false);
-                if (user.expoNotificationToken) {
-                    console.log(user.expoNotificationToken)
+                if (user?.expoNotificationToken) {
+                    console.log(user?.expoNotificationToken)
                     await sendPushNotification(
-                        user.expoNotificationToken,
+                        user?.expoNotificationToken,
                         'Logged out Successfully',
                         `Thanks for using Quick Docs App!`
                     );
@@ -250,23 +258,58 @@ const ProfileScreen = () => {
                 {/* Header */}
                 <View style={[styles.header, isDarkMode && styles.darkHeader]}>
                     <TouchableOpacity onPress={pickImage}>
-                        <Image
-                            key={user?.profileImageUrl || 'default-image'}
-                            source={
-                                user?.profileImageUrl
-                                    ? { uri: `${user.profileImageUrl}?${new Date().getTime()}` }
-                                    : require('../../assets/logomain.png')
-                            }
-                            style={styles.profileImage}
-                            priority="high" // Ensures the image is preloaded
-                        />
+                        <View style={{ position: 'relative' }}>
 
-                        <View style={styles.cameraIcon}>
-                            <Ionicons name="camera" size={20} color="#FFF" />
+                            {/* Profile Image */}
+                            <Image
+                                key={user?.profileImageUrl ? `${user.profileImageUrl}-${new Date().getTime()}` : 'default-image'}
+                                source={
+                                    user?.profileImageUrl
+                                        ? { uri: `${user.profileImageUrl}?t=${new Date().getTime()}` } // query param for cache-busting
+                                        : require('../../assets/logomain.png')
+                                }
+                                style={styles.profileImage}
+                                priority="high"
+                            />
+
+
+                            {/* Camera Icon */}
+                            <View style={styles.cameraIcon}>
+                                <Ionicons name="camera" size={20} color="#FFF" />
+                            </View>
                         </View>
                     </TouchableOpacity>
-                    <Text style={[styles.name, isDarkMode && styles.darkText]}>{user.name}</Text>
-                    <Text style={[styles.username, isDarkMode && styles.darkSubText]}>{user.username}</Text>
+                    <Text style={[styles.name, isDarkMode && styles.darkText]}>{user?.name}</Text>
+                    <View
+                        style={[
+                            {
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'flex-end',
+                                gap: 10,
+                            },
+                            user?.premiumuser && {
+                                paddingVertical: 8,
+                                backgroundColor: isDarkMode ? 'rgba(255, 221, 2, 0.28)' : '#E9A319',
+                                paddingHorizontal: 26,
+                                borderRadius: 30,
+                            },
+                        ]}
+                    >
+                        {!!user?.username && (
+                            <Text style={[styles.username, isDarkMode && styles.darkSubText]}>
+                                {user.username}
+                            </Text>
+                        )}
+                        {user?.premiumuser && (
+                            <CrownIcon
+                                name="crown"
+                                size={24}
+                                color="#FFD700"
+                                style={styles.crownContainer}
+                            />
+                        )}
+                    </View>
                 </View>
 
                 {/* Stats Card */}
@@ -280,7 +323,7 @@ const ProfileScreen = () => {
                         <View style={styles.statItem}>
                             <Ionicons name="calendar-outline" size={30} color="#FF8C00" />
                             <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>
-                                {formatDate(user.dob)}
+                                {user?.dob ? formatDate(user.dob) : 'N/A'}
                             </Text>
                             <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
                                 Date of Birth
@@ -290,7 +333,9 @@ const ProfileScreen = () => {
                     <View style={[styles.statRow, styles.emailRow]}>
                         <View style={styles.statItem}>
                             <Ionicons name="mail-outline" size={30} color="#CB0404" />
-                            <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>{user.email}</Text>
+                            <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>
+                                {user?.email ?? 'N/A'}
+                            </Text>
                             <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>Email</Text>
                         </View>
                     </View>
@@ -314,12 +359,12 @@ const ProfileScreen = () => {
                     onPress={async () => {
                         clearUser();
                         navigation.replace('Login');
-                        if (user.expoNotificationToken) {
-                            console.log(user.expoNotificationToken)
+                        if (user?.expoNotificationToken) {
+
                             await sendPushNotification(
                                 user.expoNotificationToken,
                                 'Logged out Successfully',
-                                `Thanks for using Quick Docs App!`
+                                'Thanks for using Quick Docs App!'
                             );
                         }
                     }}
@@ -385,14 +430,17 @@ const ProfileScreen = () => {
                                 />
                             </View>
 
-                            <Text style={{
-                                fontSize: 26,
-                                fontWeight: 'bold',
-                                color: isDarkMode ? '#fff' : '#333',
-                                textAlign: 'center'
-                            }}>
-                                🎉 Happy Birthday, {user.name}!
+                            <Text
+                                style={{
+                                    fontSize: 26,
+                                    fontWeight: 'bold',
+                                    color: isDarkMode ? '#fff' : '#333',
+                                    textAlign: 'center',
+                                }}
+                            >
+                                🎉 Happy Birthday, {user?.name ?? 'User'}!
                             </Text>
+
 
                             <Text style={{
                                 marginTop: 12,
@@ -477,7 +525,16 @@ const styles = StyleSheet.create({
     },
 
     name: { fontSize: 22, fontWeight: 'bold', color: 'black', marginBottom: 6 },
-    username: { fontSize: 16, fontWeight: 'bold', fontStyle: 'italic', color: 'black', marginBottom: 5 },
+    username: { fontSize: 16, fontWeight: 'bold', fontStyle: 'italic', color: 'black', marginTop: 2 },
+
+    crownContainer: {
+        backgroundColor: 'transparent',
+        shadowColor: 'grey',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: .7,
+        shadowRadius: 6,
+        elevation: 10,
+    },
 
     card: {
         width: '90%',

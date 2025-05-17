@@ -20,7 +20,7 @@ export const ErrorAlert = ({ visible, title, message, onOk }) => {
             </View>
         </Modal>
     )
-}
+} 
 
 export const RetryAlert = ({ visible, title, message, onOk }) => {
     return (

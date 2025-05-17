@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
@@ -24,6 +24,16 @@ const AppContent = () => {
     const { isDarkMode } = useContext(ThemeContext);
 
     useEffect(() => {
+
+        StatusBar.setBarStyle(isDarkMode ? 'light-content' : 'dark-content');
+
+        if (Platform.OS === 'android') {
+            StatusBar.setBackgroundColor(isDarkMode ? '#0f0c29' : '#89f7fe'); // Your theme
+        }
+    }, []);
+
+
+    useEffect(() => {
         const subscriptionReceived = Notifications.addNotificationReceivedListener(notification => {
             console.log('Notification Received:', notification);
         });
@@ -46,7 +56,7 @@ const AppContent = () => {
 
             if (token && userId) {
                 try {
-                    const response = await axios.get(`https://quick-docs-app-backend.onrender.com/user/${userId}`, {
+                    const response = await axios.get(`https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/user/${userId}`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });
                     setUser(response.data);
@@ -89,10 +99,6 @@ const AppContent = () => {
 
     return (
         <>
-            <StatusBar
-                barStyle={isDarkMode ? "light-content" : "dark-content"}
-                backgroundColor={isDarkMode ? "#0f0c29" : "#89f7fe"}
-            />
             <NavigationContainer>
                 <StackNavigator />
             </NavigationContainer>

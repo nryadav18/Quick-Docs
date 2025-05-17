@@ -5,6 +5,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     Platform,
+    StatusBar
 } from 'react-native';
 import LottieView from 'lottie-react-native';
 import Animated, {
@@ -12,12 +13,20 @@ import Animated, {
     withSpring,
     useAnimatedStyle,
 } from 'react-native-reanimated';
-import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const PaymentSuccessScreen = ({ navigation }) => {
     const badgeRef = useRef(null);
     const scale = useSharedValue(0); // Start with invisible
+
+    useEffect(() => {
+
+        StatusBar.setBarStyle('dark-content');
+
+        if (Platform.OS === 'android') {
+            StatusBar.setBackgroundColor('#F3C623'); // Your theme
+        }
+    }, []);
 
     useEffect(() => {
         // Show badge animation after payment animation completes
@@ -35,6 +44,7 @@ const PaymentSuccessScreen = ({ navigation }) => {
             clearTimeout(navTimer);
         };
     }, []);
+
 
     const animatedBadgeStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
@@ -119,7 +129,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         borderRadius: 25,
         zIndex: 1,
-        marginBottom : 50
+        marginBottom: 50
     },
     buttonText: {
         color: '#fff',
