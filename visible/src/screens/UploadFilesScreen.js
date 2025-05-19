@@ -21,6 +21,7 @@ import { FontAwesome5 } from 'react-native-vector-icons'
 import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from "@react-navigation/native"
+import { BACKEND_URL } from '@env';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -138,39 +139,48 @@ const UploadFilesScreen = () => {
             formData.append('username', user?.username ?? '');
             formData.append('importance', importance);
 
-            const response = await fetch('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/upload', {
+            const response = await fetch(`${BACKEND_URL}/upload`, {
                 method: 'POST',
                 body: formData,
             });
 
-            const data = await response.json();
+            const text = await response.text();
 
-            if (!response.ok) {
-                showErrorAlert('Upload Failed', data?.message || 'Please ensure your file is less than 5MB and try again.');
+            try {
+                const data = JSON.parse(text);   // parse manually to catch errors
+                if (!response.ok) {
+                    showErrorAlert('Upload Failed', data?.message || 'Unknown error');
+                    setUploadingState(false);
+                    return;
+                }
+                const newFile = {
+                    id: generateId(),
+                    name: newFileName,
+                    type: fileExtension,
+                    url: file,
+                    rating: importance,
+                };
+
+                console.log(newFile)
+
+                const updatedUser = {
+                    ...user,
+                    myfiles: [...(user?.myfiles ?? []), newFile],
+                };
+
+
+                setUser(updatedUser); // Update Zustand
+
+                showSuccessAlert('Success', 'File uploaded successfully.');
                 setUploadingState(false)
+                resetForm();
+            } catch (e) {
+                console.error('Response parsing error:', e, 'Raw response:', text);
+                showErrorAlert('Upload Failed', 'Server returned invalid response');
+                setUploadingState(false);
                 return;
             }
-            const newFile = {
-                id: generateId(),
-                name: newFileName,
-                type: fileExtension,
-                url: file,
-                rating: importance,
-            };
 
-            console.log(newFile)
-
-            const updatedUser = {
-                ...user,
-                myfiles: [...(user?.myfiles ?? []), newFile],
-            };
-
-
-            setUser(updatedUser); // Update Zustand
-
-            showSuccessAlert('Success', 'File uploaded successfully.');
-            setUploadingState(false)
-            resetForm();
         } catch (err) {
             console.error('Upload error:', err);
             showErrorAlert('Error', 'Failed to upload file.');
@@ -285,7 +295,7 @@ const UploadFilesScreen = () => {
                             onPress={() => navigation.navigate('Premium')}
                         >
                             <View style={styles.buttonStylings}>
-                                <CrownIcon name="crown" size={24} color="#FFD700" style={styles.crownContainer} />
+                                <CrownIcon name="crown" size={24} color="#FFD700" />
                                 <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
                                     Buy Premium to Upload
                                 </Text>

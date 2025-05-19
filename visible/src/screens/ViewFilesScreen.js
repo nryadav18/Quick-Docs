@@ -13,7 +13,6 @@ import {
     StatusBar,
     Platform
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -26,9 +25,8 @@ import axios from 'axios';
 import * as MediaLibrary from 'expo-media-library';
 import WebView from 'react-native-webview';
 import useThemedStatusBar from '../hooks/StatusBar';
+import { BACKEND_URL } from '@env';
 
-const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
 
 // File Icons
 const fileIcons = {
@@ -164,7 +162,7 @@ const ViewFilesScreen = () => {
 
     const handleDownloadFile = async (file) => {
         try {
-            const response = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/file-data-thrower', {
+            const response = await axios.post(`${BACKEND_URL}/file-data-thrower`, {
                 username: user?.username ?? 'unknown',
                 itemname: file?.name ?? 'unnamed-file',
             });
@@ -196,10 +194,10 @@ const ViewFilesScreen = () => {
             const asset = await MediaLibrary.createAssetAsync(uri);
             await MediaLibrary.createAlbumAsync("Download", asset, false);
 
-            // ✅ Send push notification
+            // ✅ Send push notification 
             if (user?.expoNotificationToken) {
                 await sendPushNotification(
-                    user.expoNotificationToken,
+                    user?.expoNotificationToken,
                     'Download Complete',
                     `${fileName} has been saved to your device.`
                 );
@@ -247,17 +245,15 @@ const ViewFilesScreen = () => {
     const handleDeleteFile = async (item) => {
 
         let fileId = item._id;
-        let fileUrl;
 
         if (!fileId) {
             try {
-                const response = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/file-data-thrower', {
-                    username: user.username,
+                const response = await axios.post(`${BACKEND_URL}/file-data-thrower`, {
+                    username: user?.username,
                     itemname: item.name,
                 });
 
                 fileId = response.data.fileId;
-                fileUrl = response.data.fileUrl;
             } catch (err) {
                 console.error('Error:', err.response?.data || err.message);
             }
@@ -272,7 +268,7 @@ const ViewFilesScreen = () => {
                 try {
                     setLoading(true);
 
-                    const url = `https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/${fileId}?userId=${user?._id}&fileUrl=${encodeURIComponent(fileUrl)}`;
+                    const url = `${BACKEND_URL}/${fileId}?username=${user?.username}`;
                     const response = await fetch(url, {
                         method: 'DELETE',
                     });
@@ -289,7 +285,7 @@ const ViewFilesScreen = () => {
                     //Sending Push Notification
                     if (user?.expoNotificationToken) {
                         await sendPushNotification(
-                            user.expoNotificationToken,
+                            user?.expoNotificationToken,
                             'File Deleted',
                             `${item.name} has been saved to your device.`
                         );

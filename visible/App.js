@@ -4,8 +4,6 @@ import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
 import { StatusBar, Alert, Platform } from 'react-native';
 import useUserStore from './src/store/userStore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
 import './firebaseConfig';
@@ -35,11 +33,11 @@ const AppContent = () => {
 
     useEffect(() => {
         const subscriptionReceived = Notifications.addNotificationReceivedListener(notification => {
-            console.log('Notification Received:', notification);
+            console.log('Notification Received');
         });
 
         const subscriptionResponse = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log('Notification Response:', response);
+            console.log('Notification Response');
         });
 
         return () => {
@@ -50,23 +48,6 @@ const AppContent = () => {
 
 
     useEffect(() => {
-        const loadUser = async () => {
-            const token = await AsyncStorage.getItem("userToken");
-            const userId = await AsyncStorage.getItem("userId");
-
-            if (token && userId) {
-                try {
-                    const response = await axios.get(`https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/user/${userId}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    setUser(response.data);
-                    setToken(token);
-                } catch (error) {
-                    console.log("Failed to fetch user data:", error);
-                    await AsyncStorage.clear();
-                }
-            }
-        };
 
         const requestNotificationPermission = async () => {
             const { status } = await Notifications.getPermissionsAsync();
@@ -91,8 +72,6 @@ const AppContent = () => {
             }
         };
 
-
-        loadUser();
         requestNotificationPermission();
         requestDownloadPermission();
     }, []);

@@ -24,3 +24,4 @@ RazorPay Payments (Secure Payment Gateway)
 Optional Chaining Methodology (Safer way to prevent Run time errors in the frontend development, say: React, React Native)
 Using Vector Search (Mongodb) for efficiency
 Storing the data as embeddings (faster, quicker, special data structure) - Highly Secure
+Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficiency)

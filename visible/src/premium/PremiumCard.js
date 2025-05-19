@@ -16,13 +16,16 @@ import { useNavigation } from "@react-navigation/native"
 import RazorpayCheckout from 'react-native-razorpay';
 import axios from 'axios';
 import useUserStore from '../store/userStore';
+import { BACKEND_URL, RAZOR_PAY_KEY } from '@env';
+
 
 const { width } = Dimensions.get('window');
 
+
 const plans = {
-    Pro: { name: 'Pro Plan', price: '1', type: 'Pro', features: [{ label: '10 File Uploads', available: true }, { label: '3 AI Prompts / Day', available: true }, { label: 'Advanced Artificial Intellegence', available: false }, { label: 'Premium UI Enhancement', available: false }, { label: 'Special Birthday Gift', available: false },], color: '#E9A319' },
-    Ultra_Pro: { name: 'Ultra Pro Plan', price: '2', type: 'Ultra Pro', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '10 AI Prompts / Day', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Premium UI Enhancement', available: false }, { label: 'Advanced Articial Intelligence', available: false },], color: '#D98324' },
-    Ultra_Pro_Max: { name: 'Ultra Pro Max Plan', price: '3', type: 'Ultra Pro Max', features: [{ label: 'Unlimited File Uploads', available: true }, { label: 'Unlimited AI Prompts / Day', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Premium UI Enhancement', available: true }, { label: 'Advanced Articial Intelligence', available: true },], color: '#EB8317' },
+    Pro: { name: 'Pro Plan', price: '1', type: 'Pro', features: [{ label: '10 File Uploads', available: true }, { label: '3 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: false }, { label: 'Advanced Artificial Intellegence', available: false }], color: '#E9A319' },
+    Ultra_Pro: { name: 'Ultra Pro Plan', price: '2', type: 'Ultra Pro', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '10 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Advanced Articial Intelligence', available: false },], color: '#D98324' },
+    Ultra_Pro_Max: { name: 'Ultra Pro Max Plan', price: '3', type: 'Ultra Pro Max', features: [{ label: 'Unlimited File Uploads', available: true }, { label: 'Unlimited AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Advanced Articial Intelligence', available: true },], color: '#EB8317' },
 };
 
 export default function Premium() {
@@ -106,9 +109,8 @@ export default function Premium() {
 
     const handleBuyNow = async (plan) => {
         try {
-            const response = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/create-order', {
-                amount: parseInt(plan.price),
-                username: user?.username
+            const response = await axios.post(`${BACKEND_URL}/create-order`, {
+                amount: parseInt(plan.price)
             });
             const { order } = response.data;
 
@@ -119,9 +121,9 @@ export default function Premium() {
 
             var options = {
                 description: plan.name,
-                image: 'https://storage.googleapis.com/agent-qd-data/logomain.png',
+                image: 'https://storage.googleapis.com/agent-qd-data/updatedLogo1.png',
                 currency: 'INR',
-                key: 'rzp_live_ytSSS6VVuUNHPy',
+                key: RAZOR_PAY_KEY,
                 amount: order.amount,
                 name: 'Quick Docs App',
                 order_id: order.id,
@@ -150,7 +152,7 @@ export default function Premium() {
                     setPremiumTime(currentTimestamp);
                     try {
                         const verifyResponse = await axios.post(
-                            'https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/verify-payment',
+                            `${BACKEND_URL}/verify-payment`,
                             {
                                 ...paymentData,
                                 username: user?.username, // optional
@@ -163,7 +165,8 @@ export default function Premium() {
 
                         if (verifyResponse.data.success) {
                             console.log('✅ Payment Verified Successfully');
-                            if (user?.premiumuser == false) makePremiumUser(plan);
+
+                            makePremiumUser(plan);
                             if (user?.expoNotificationToken) {
                                 console.log(user?.expoNotificationToken)
                                 await sendPushNotification(
@@ -233,6 +236,7 @@ export default function Premium() {
 }
 
 const PlanCard = ({ plan, onBuyNow, user }) => {
+    console.log(user)
     const alreadyBought = Array.isArray(user?.premiumDetails)
         ? user?.premiumDetails.some(detail => detail.type === plan.name)
         : false;
@@ -327,7 +331,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         elevation: 4,
-        marginBottom: 100
+        marginBottom: 80
     },
     planName: {
         color: '#fff',

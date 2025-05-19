@@ -13,6 +13,7 @@ import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from "react-native"
+import { BACKEND_URL } from '@env';
 
 
 const SignupScreen = ({ navigation }) => {
@@ -69,7 +70,7 @@ const SignupScreen = ({ navigation }) => {
                 let token;
                 try {
                     token = (await Notifications.getExpoPushTokenAsync({
-                        projectId: 'c4e2ff4d-6edb-4799-a901-69c02363b13a',
+                        projectId : 'eee6faa4-26ec-4782-b7dd-5229f79b8d3a'
                     })).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
@@ -115,7 +116,7 @@ const SignupScreen = ({ navigation }) => {
 
     const checkUsernameUnique = async (username) => {
         try {
-            const res = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/check-username', { username });
+            const res = await axios.post(`${BACKEND_URL}/check-username`, { username });
             return !res.data.exists;
         } catch (err) {
             return false;
@@ -256,7 +257,7 @@ const SignupScreen = ({ navigation }) => {
                 const fileType = imageUri.split('.').pop().toLowerCase();
                 const fileName = `profile_${Date.now()}.${fileType}`;
 
-                const res = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/generate-upload-url', {
+                const res = await axios.post(`${BACKEND_URL}/generate-upload-url`, {
                     fileName,
                     fileType,
                     username: trimmedData.username
@@ -277,7 +278,7 @@ const SignupScreen = ({ navigation }) => {
             }
 
 
-            const response = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/signup', {
+            const response = await axios.post(`${BACKEND_URL}/signup`, {
                 ...trimmedData,
                 profileImageUrl
             });
@@ -313,14 +314,15 @@ const SignupScreen = ({ navigation }) => {
                 return;
             }
 
-            const emailExistence = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/check-user-exists', { email: trimmedEmail })
+            const emailExistence = await axios.post(`${BACKEND_URL}/check-user-exists`, { email: trimmedEmail })
             if (emailExistence.data.exists) {
                 showErrorAlert("Email already Exists", "A User has been registered with current Email")
                 setSendingOTP(false)
                 return;
             }
 
-            const res = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/send-otp', { email: trimmedEmail });
+
+            const res = await axios.post(`${BACKEND_URL}/send-otp`, { email: trimmedEmail });
             if (res.data.success) {
                 showSuccessAlert("OTP Sent", "Please check out your Inbox for OTP")
                 setIsOtpSent(true)
@@ -352,7 +354,7 @@ const SignupScreen = ({ navigation }) => {
                 return;
             }
 
-            const res = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/verify-otp', { email: trimmedEmail, otp: trimmedOtp });
+            const res = await axios.post(`${BACKEND_URL}/verify-otp`, { email: trimmedEmail, otp: trimmedOtp });
             if (res.data.success) {
                 showSuccessAlert("OTP Verified", "OTP Verified Successfully!")
                 setIsOtpVerified(true)

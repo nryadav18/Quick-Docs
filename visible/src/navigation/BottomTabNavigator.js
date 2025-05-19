@@ -22,7 +22,7 @@ export default function BottomTabNavigator() {
                     let iconName;
                     if (route.name === 'Files') iconName = 'folder-open';
                     else if (route.name === 'Upload') iconName = 'cloud-upload-alt';
-                    else if (route.name === 'AI') iconName = 'robot';
+                    else if (route.name === 'Agent-QD') iconName = 'robot';
                     else if (route.name === 'Profile') iconName = 'user-alt';
                     return <FontAwesome5 name={iconName} size={size} color={color} />;
                 },
@@ -36,7 +36,7 @@ export default function BottomTabNavigator() {
         >
             <Tab.Screen name="Files" component={ViewFilesScreen} />
             <Tab.Screen name="Upload" component={UploadFilesScreen} />
-            <Tab.Screen name="AI" component={AIScreen} />
+            <Tab.Screen name="Agent-QD" component={AIScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );

@@ -49,7 +49,7 @@ const Header = ({ title }) => {
                                 Become {
                                     !user?.premiumuser
                                         ? 'Pro'
-                                        : (user?.premiumDetails?.length === 1 ? 'Ultra Pro' : 'Ultra Pro Max')
+                                        : 'Super Pro'
                                 }
                             </Text>
 

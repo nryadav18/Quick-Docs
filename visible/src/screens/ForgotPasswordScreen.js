@@ -4,6 +4,7 @@ import axios from 'axios';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import { Ionicons } from '@expo/vector-icons'; // add this to your imports
+import { BACKEND_URL } from '@env';
 
 
 const ForgotPasswordScreen = ({ navigation }) => {
@@ -48,8 +49,6 @@ const ForgotPasswordScreen = ({ navigation }) => {
         setSuccessMessage(message)
     }
 
-    const API_BASE_URL = 'https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app'; // Replace with your actual backend URL
-
     // Step 1: Send OTP
     const handleSendOTP = async () => {
         if (!email) {
@@ -60,7 +59,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
         setLoading(true);
         try {
             // Step 1: Check if email exists in DB
-            const checkRes = await axios.post(`${API_BASE_URL}/check-user-exists`, { email });
+            const checkRes = await axios.post(`${BACKEND_URL}/check-user-exists`, { email });
 
             if (!checkRes.data.exists) {
                 showErrorAlert("User Not Found", "This email is not registered.");
@@ -69,7 +68,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
             }
 
             // Step 2: Send OTP
-            await axios.post(`${API_BASE_URL}/send-otp`, { email });
+            await axios.post(`${BACKEND_URL}/send-otp`, { email });
             showSuccessAlert("OTP Sent", "Please check your Inbox for the OTP.");
             setStep(2);
         } catch (error) {
@@ -89,7 +88,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            await axios.post(`${API_BASE_URL}/verify-otp`, { email, otp });
+            await axios.post(`${BACKEND_URL}/verify-otp`, { email, otp });
             showSuccessAlert('OTP Verified', 'You can now create a New Password!')
             setStep(3);
         } catch (error) {
@@ -135,7 +134,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
         setLoading(true);
         try {
-            await axios.post(`${API_BASE_URL}/reset-password`, { email, newPassword });
+            await axios.post(`${BACKEND_URL}/reset-password`, { email, newPassword });
             setPasswordResetDone(true);
             showSuccessAlert('Successfull', 'Your Password is now Updated')
         } catch (error) {

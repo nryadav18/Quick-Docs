@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import { Text, View, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import AI from '../../assets/robo1.jpg';
 import { ThemeContext } from '../context/ThemeContext';
@@ -12,18 +12,35 @@ import useUserStore from '../store/userStore';
 import { useNavigation } from "@react-navigation/native"
 import FadeInText from '../components/FadeInText';
 import useThemedStatusBar from '../hooks/StatusBar';
+import CrownIcon from 'react-native-vector-icons/FontAwesome5';
+import { BACKEND_URL } from '@env';
 
 const AI_Support = () => {
     const [messages, setMessages] = useState([{ role: 'assistant', text: 'Hello! I am Agent QD, How can I assist you today?', loading: false }]);
     const [inputMessage, setInputMessage] = useState('');
     const [isWaiting, setIsWaiting] = useState(false);
     const [isStopped, setIsStopped] = useState(false);
+    const [promptLimit, setPromptLimit] = useState(false)
     const { isDarkMode } = useContext(ThemeContext);
     const user = useUserStore((state) => state.user);
     const navigation = useNavigation()
     const scrollRef = useRef(null);
-    const abortControllerRef = useRef(null); // Ref to store AbortController
+    const abortControllerRef = useRef(null);
     useThemedStatusBar(isDarkMode)
+
+
+    useEffect(() => {
+        const planNames = user?.premiumDetails.map(p => (p.type || ''))
+
+        let allowedPrompts = 3;
+        if (planNames.some(name => name.includes('Ultra Pro Max'))) allowedPrompts = Infinity;
+        else if (planNames.some(name => name.includes('Ultra Pro'))) allowedPrompts = 10;
+
+        if (user?.aipromptscount >= allowedPrompts) {
+            setPromptLimit(true)
+        }
+    }, [user?.premiumDetails])
+
 
 
     const cleanBotResponse = (text) => {
@@ -35,15 +52,62 @@ const AI_Support = () => {
             .trim();
     };
 
+
+    const blockedKeywords = [
+        "generate code",
+        "write code",
+        "give me code",
+        "create an app",
+        "build an app",
+        "weather in",
+        "what is the weather",
+        "current weather",
+        "app prompt",
+        "how to code",
+        "GPT plugin",
+        "generate a project",
+        "open source",
+        "location in",
+        "my location",
+    ];
+
+    function isBlockedPrompt(prompt) {
+        const lowerPrompt = prompt.toLowerCase();
+        return blockedKeywords.some((keyword) => lowerPrompt.includes(keyword));
+    }
+
+
     const sendMessage = async () => {
-        // if (user?.premiumuser == false) {
-        //     navigation.navigate('Premium')
-        //     return;
-        // }
+        const { user, incrementPromptCount, setUser } = useUserStore.getState();
+
+        if (!user) return;
 
         if (!inputMessage.trim() || isWaiting) return;
 
         const userMessage = { role: 'user', text: inputMessage };
+
+
+        if (isBlockedPrompt(inputMessage)) {
+            setMessages((prev) => [...prev, userMessage]);
+            setInputMessage('');
+            setIsWaiting(true);
+
+            setTimeout(() => {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        role: "assistant",
+                        text: "Sorry, I can only respond to general questions. I cannot assist with app prompts, coding, or weather-related queries.",
+                    },
+                ]);
+                setIsWaiting(false);
+            }, 2000);
+
+            abortControllerRef.current = new AbortController();
+            return;
+        }
+
+
         setMessages((prev) => [...prev, userMessage]);
         setInputMessage('');
         setIsWaiting(true);
@@ -55,11 +119,40 @@ const AI_Support = () => {
         abortControllerRef.current = new AbortController();
 
         try {
+            // Step 2: Call API to validate and increment prompt count
+            const promptRes = await fetch(`${BACKEND_URL}/check-prompt-limitation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user?.username }),
+            });
+
+            const promptData = await promptRes.json();
+            if (!promptRes.ok) {
+                if (promptData?.message === 'Prompt limit reached') {
+                    setPromptLimit(true)
+                    setTimeout(() => {
+                        setMessages((prev) =>
+                            prev.map((msg, index) =>
+                                index === prev.length - 1
+                                    ? { role: 'assistant', text: 'Ohh God! I am Sorry Buddy, Your Limit has Reached, Explore our Budget Friendly Premiums and Purchase them to Enjoy our Valuable Services', loading: false }
+                                    : msg
+                            )
+                        );
+                    }, 2000);
+                    return;
+                } else {
+                    throw new Error(promptData.message || 'Prompt check failed');
+                }
+            }
+
+            // Step 3: Update Zustand count
+            incrementPromptCount();
+
+            // Step 4: Call AI service
             const response = await generateBotResponse([...messages, userMessage], abortControllerRef.current.signal);
             if (isStopped) return;
             const rawResponse = response?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not understand that.';
             const botResponse = cleanBotResponse(rawResponse);
-
 
             setMessages((prev) =>
                 prev.map((msg, index) =>
@@ -68,12 +161,10 @@ const AI_Support = () => {
                         : msg
                 )
             );
+
         } catch (error) {
             if (error.name === 'AbortError') {
-                // Fetch was aborted - update last message accordingly or remove loading message
-                setMessages((prev) =>
-                    prev.filter((msg) => !(msg.loading && msg.role === 'assistant'))
-                );
+                setMessages((prev) => prev.filter((msg) => !(msg.loading && msg.role === 'assistant')));
             } else {
                 setMessages((prev) =>
                     prev.map((msg, index) =>
@@ -88,11 +179,12 @@ const AI_Support = () => {
         }
     };
 
+
     const generateBotResponse = async (history, signal) => {
         const latestUserMessage = history[history.length - 1]?.text;
 
         try {
-            const response = await fetch('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/ask', {
+            const response = await fetch(`${BACKEND_URL}/ask`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 signal,
@@ -130,11 +222,10 @@ const AI_Support = () => {
         <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
             <SafeAreaView style={styles.container}>
                 <View style={styles.LogoParent}>
-                    <Text style={[styles.mainTitle, isDarkMode && { color: '#FFF085' }]}>Agent QD ✨</Text>
                     <LottieView
                         source={require('../../assets/AI_Intro_Loader.json')}
                         autoPlay={true}
-                        loop={false}
+                        loop={true}
                         speed={1}
                         style={styles.lottie}
                     />
@@ -159,7 +250,7 @@ const AI_Support = () => {
                                             item.role === 'user'
                                                 ? user?.profileImageUrl
                                                     ? { uri: user?.profileImageUrl }
-                                                    : require('../../assets/logomain.png')
+                                                    : require('../../assets/updatedLogo1.png')
                                                 : AI
                                         }
                                         style={styles.miniLogo}
@@ -195,31 +286,54 @@ const AI_Support = () => {
                     </ScrollView>
 
                     <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Ask your queries to our Agent QD..."
-                            placeholderTextColor="grey"
-                            value={inputMessage}
-                            onChangeText={setInputMessage}
-                            editable={!isWaiting}
-                        />
-
-                        {!isWaiting ? (
-                            <TouchableOpacity
-                                style={styles.sendButton}
-                                onPress={sendMessage}
-                            >
-                                <Image source={Stars2} style={{ height: 30, width: 30 }} />
-                            </TouchableOpacity>
-                        ) : (
-                            <TouchableOpacity
-                                style={[styles.sendButton, { backgroundColor: '#e74c3c' }]} // red stop button
-                                onPress={stopResponse}
-                            >
-                                <Text style={{ color: 'white', fontWeight: 'bold' }}>Stop</Text>
-                            </TouchableOpacity>
-                        )}
+                        {
+                            (!user?.premiumuser || promptLimit) ? (
+                                <TouchableOpacity
+                                    style={{
+                                        paddingVertical: 10, width: '100%', height: '100%', borderRadius: 20,
+                                        backgroundColor: isDarkMode ? 'rgba(209, 184, 17, 0.26)' : '#E9A319',
+                                    }}
+                                    onPress={() => navigation.navigate('Premium')}
+                                >
+                                    <View style={styles.buttonStylings}>
+                                        <CrownIcon name="crown" size={24} color="#FFD700" />
+                                        <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
+                                            Buy Premium to use Agent QD
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ) : (
+                                <>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Ask your queries to our Agent QD..."
+                                        placeholderTextColor="grey"
+                                        value={inputMessage}
+                                        onChangeText={setInputMessage}
+                                        editable={!isWaiting}
+                                    />
+                                    {
+                                        !isWaiting ? (
+                                            <TouchableOpacity
+                                                style={styles.sendButton}
+                                                onPress={sendMessage}
+                                            >
+                                                <Image source={Stars2} style={{ height: 30, width: 30 }} />
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <TouchableOpacity
+                                                style={[styles.sendButton, { backgroundColor: '#e74c3c', paddingVertical: 17, paddingHorizontal: 12.5 }]}
+                                                onPress={stopResponse}
+                                            >
+                                                <Text style={{ color: 'white', fontWeight: 'bold' }}>Stop</Text>
+                                            </TouchableOpacity>
+                                        )
+                                    }
+                                </>
+                            )
+                        }
                     </View>
+
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </LinearGradient>
@@ -232,12 +346,13 @@ const styles = StyleSheet.create({
         justifyContent: 'space-evenly',
         alignItems: 'center',
         flexDirection: 'row',
-        height: 160,
+        height: 180,
         marginBottom: 10,
     },
+    buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
     lottie: {
-        width: 120,
-        height: 120,
+        width: 180,
+        height: 180,
         resizeMode: 'contain',
     },
     container: {
@@ -245,6 +360,12 @@ const styles = StyleSheet.create({
     },
     keyboardAvoidingView: {
         flex: 1,
+    },
+    buttonStylings: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 10,
     },
     mainTitle: {
         fontSize: 32,
@@ -255,7 +376,8 @@ const styles = StyleSheet.create({
     AIMessage: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginVertical: 5,
+        marginRight: 10,
     },
     AIMsgLogoParent: {
         marginRight: 10,
@@ -279,11 +401,14 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontSize: 15,
         lineHeight: 20,
+        flexShrink: 1,
+        flexWrap: 'wrap',
     },
     HumanMessage: {
         flexDirection: 'row-reverse',
         alignItems: 'flex-start',
-        marginBottom: 12,
+        marginVertical: 8,
+        marginLeft: 10,
     },
     HumanTextParent: {
         maxWidth: '80%',
@@ -352,7 +477,7 @@ const styles = StyleSheet.create({
     chatContainer: {
         flexGrow: 1,
         padding: 16,
-        paddingBottom: 120,
+        paddingBottom: 130,
     },
 
 });

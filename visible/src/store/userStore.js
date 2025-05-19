@@ -15,7 +15,17 @@ const useUserStore = create((set) => ({
     clearUser: () => {
         console.log("Clearing user data...");
         set({ user: null, token: null });
-    }
+    },
+    incrementPromptCount: () =>
+        set((state) => {
+            if (!state.user) return {};
+            return {
+                user: {
+                    ...state.user,
+                    aipromptscount: (state.user.aipromptscount || 0) + 1
+                }
+            };
+        }),
 }));
 
 export default useUserStore;

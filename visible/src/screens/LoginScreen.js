@@ -19,6 +19,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from "react-native";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { BACKEND_URL } from '@env';
 
 const LoginScreen = () => {
     const { setUser, setToken } = useUserStore.getState();
@@ -89,7 +90,7 @@ const LoginScreen = () => {
                 let token;
                 try {
                     token = (await Notifications.getExpoPushTokenAsync({
-                        projectId: 'c4e2ff4d-6edb-4799-a901-69c02363b13a',
+
                     })).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
@@ -199,7 +200,8 @@ const LoginScreen = () => {
         setLoading(true);
 
         try {
-            const res = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/check-valid-user', { username });
+            console.log(BACKEND_URL)
+            const res = await axios.post(`${BACKEND_URL}/check-valid-user`, { username });
             if (!res.data.exists) {
                 showErrorAlert("User doesn't Exist", "Please create an Account to Login.");
                 setLoading(false)
@@ -217,7 +219,7 @@ const LoginScreen = () => {
             const trimmedUsername = username.trim();
             const trimmedPassword = password.trim();
 
-            const response = await axios.post("https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/login", {
+            const response = await axios.post(`${BACKEND_URL}/login`, {
                 username: trimmedUsername,
                 password: trimmedPassword,
             });
@@ -227,9 +229,11 @@ const LoginScreen = () => {
             if (response.status === 200) {
                 const { token, user } = response.data;
 
+                console.log(user)
+
                 try {
                     const trimmedUsername = username.trim();
-                    const updateNotificationToken = await axios.post('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/update-notification-token',
+                    const updateNotificationToken = await axios.post(`${BACKEND_URL}/update-notification-token`,
                         { expoNotificationToken: expoPushToken, username: trimmedUsername })
                     console.log(expoPushToken)
                     console.log('Successfully Updated the Token', updateNotificationToken.data)
@@ -241,6 +245,7 @@ const LoginScreen = () => {
 
                 // ✅ Zustand store usage
                 const { setUser, setToken } = useUserStore.getState();
+
                 setUser(user);
                 setToken(token);
                 showSuccessAlert();
@@ -266,7 +271,7 @@ const LoginScreen = () => {
 
     return (
         <LinearGradient colors={["#89f7fe", "#fad0c4"]} style={styles.container}>
-            <Image source={require("../../assets/logomain.png")} style={styles.logo} />
+            <Image source={require("../../assets/updatedLogo1.png")} style={styles.logo} />
             <Text style={styles.title}>Welcome Back</Text>
 
             <TextInput

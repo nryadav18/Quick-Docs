@@ -14,6 +14,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons'
 import BirthdayIcon from 'react-native-vector-icons/FontAwesome5'
 import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
+import { BACKEND_URL } from '@env';
 
 
 const ProfileScreen = () => {
@@ -109,7 +110,7 @@ const ProfileScreen = () => {
 
         const dobDate = new Date(user.dob);
         if (isNaN(dobDate)) {
-            showErrorAlert("User DOB Error", "Invalid Date Format for User.Dob");
+            showErrorAlert("User DOB Error", "Invalid Date Format for User Dob");
             return;
         }
         scheduleBirthdayNotification(dobDate);
@@ -219,7 +220,7 @@ const ProfileScreen = () => {
             async () => {
                 setIsDeactivating(true);
                 try {
-                    const response = await fetch('https://2fe7-2409-40f0-1157-f4d9-e844-ff21-9e29-3327.ngrok-free.app/deactivate', {
+                    const response = await fetch(`${BACKEND_URL}/deactivate`, {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -262,11 +263,11 @@ const ProfileScreen = () => {
 
                             {/* Profile Image */}
                             <Image
-                                key={user?.profileImageUrl ? `${user.profileImageUrl}-${new Date().getTime()}` : 'default-image'}
+                                key={user?.profileImageUrl ? `${user.profileImageUrl}` : 'default-image'}
                                 source={
                                     user?.profileImageUrl
-                                        ? { uri: `${user.profileImageUrl}?t=${new Date().getTime()}` } // query param for cache-busting
-                                        : require('../../assets/logomain.png')
+                                        ? { uri: `${user.profileImageUrl}` }
+                                        : require('../../assets/updatedLogo1.png')
                                 }
                                 style={styles.profileImage}
                                 priority="high"
@@ -339,19 +340,25 @@ const ProfileScreen = () => {
                             <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>Email</Text>
                         </View>
                     </View>
-                    <View style={[styles.statRow, { marginTop: 10 }]}>
-                        <View style={[styles.statItem, { gap: 10 }]}>
-                            {countdown === '🎉 Happy Birthday!' ? <BirthdayIcon name="birthday-cake" size={30} color="#DC8BE0" />
-                                : <Ionicons name="time-outline" size={30} color="#6a1b9a" />}
-                            <Text style={[styles.statNumber, isDarkMode && styles.darkText,
-                            countdown === '🎉 Happy Birthday!' ? { fontSize: 24 } : { fontSize: 20 }]}>
-                                {countdown === '🎉 Happy Birthday!' ? '🎉 Happy Birthday!' : countdown}
-                            </Text>
-                            <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
-                                {countdown === '🎉 Happy Birthday!' ? 'Wishing you a wonderful day! 🎂🎈' : 'Your Next Birthday🎈'}
-                            </Text>
-                        </View>
-                    </View>
+                    {
+                        user?.premiumuser && (user?.premiumDetails.length >= 2 ||
+                            (user?.premiumDetails.length == 1 && user?.premiumDetails[0].type != "Pro Plan")
+                        ) && (
+                            <View style={[styles.statRow, { marginTop: 10 }]}>
+                                <View style={[styles.statItem, { gap: 10 }]}>
+                                    {countdown === '🎉 Happy Birthday!' ? <BirthdayIcon name="birthday-cake" size={30} color="#DC8BE0" />
+                                        : <Ionicons name="time-outline" size={30} color="#6a1b9a" />}
+                                    <Text style={[styles.statNumber, isDarkMode && styles.darkText,
+                                    countdown === '🎉 Happy Birthday!' ? { fontSize: 24 } : { fontSize: 20 }]}>
+                                        {countdown === '🎉 Happy Birthday!' ? '🎉 Happy Birthday!' : countdown}
+                                    </Text>
+                                    <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
+                                        {countdown === '🎉 Happy Birthday!' ? 'Wishing you a wonderful day! 🎂🎈' : 'Your Next Birthday🎈'}
+                                    </Text>
+                                </View>
+                            </View>
+                        )
+                    }
                 </View>
 
                 <TouchableOpacity
@@ -472,8 +479,6 @@ const ProfileScreen = () => {
                         </View>
                     </View>
                 </Modal>
-
-
 
 
                 <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />

@@ -4,11 +4,11 @@
     "slug": "Quick-Docs",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logomain.png",
+    "icon": "./assets/updatedLogo1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logomain.png",
+      "image": "./assets/updatedLogo1.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -30,7 +30,7 @@
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logomain.png",
+        "foregroundImage": "./assets/updatedLogo2.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.rajeswar.QuickDocs"
@@ -48,11 +48,11 @@
       ]
     ],
     "web": {
-      "favicon": "./assets/logomain.png"
+      "favicon": "./assets/updatedLogo1.png"
     },
     "extra": {
       "eas": {
-        "projectId": "c4e2ff4d-6edb-4799-a901-69c02363b13a"
+        "projectId": "eee6faa4-26ec-4782-b7dd-5229f79b8d3a"
       }
     }
   }
