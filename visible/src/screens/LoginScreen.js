@@ -327,16 +327,16 @@ const LoginScreen = () => {
                     onPress={reEnableFingerprint}
                     disabled={biometricSuccess}
                     style={{
-                        width: 76,
-                        height: 76,
+                        width: 70,
+                        height: 70,
                         borderRadius: 40,
-                        backgroundColor: '#4E71FF',
+                        backgroundColor: '#00796b',
                         justifyContent: 'center',
                         alignItems: 'center',
                         opacity: biometricSuccess ? 0 : 1,
                     }}
                 >
-                    <MaterialCommunityIcons name="fingerprint" size={44} color="white" />
+                    <MaterialCommunityIcons name="fingerprint" size={40} color="white" />
                 </TouchableOpacity>
             </View>
 

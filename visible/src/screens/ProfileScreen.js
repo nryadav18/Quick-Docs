@@ -19,7 +19,6 @@ import { BACKEND_URL } from '@env';
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
-    const { clearUser } = useUserStore.getState();
     const { isDarkMode } = useContext(ThemeContext);
     const [onWarningConfirm, setOnWarningConfirm] = useState(null);
     const [isDeactivating, setIsDeactivating] = useState(false);
@@ -231,7 +230,6 @@ const ProfileScreen = () => {
 
                     if (response.ok) {
                         showSuccessAlert("Account Deactivated", "Your account has been deactivated successfully.");
-                        clearUser();
                         navigation.replace('Login');
                     } else {
                         showErrorAlert("Error", "Failed to deactivate account. Please try again.");
@@ -364,10 +362,8 @@ const ProfileScreen = () => {
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={async () => {
-                        clearUser();
                         navigation.replace('Login');
                         if (user?.expoNotificationToken) {
-
                             await sendPushNotification(
                                 user.expoNotificationToken,
                                 'Logged out Successfully',

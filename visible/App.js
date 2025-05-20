@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { ThemeProvider, ThemeContext } from './src/context/ThemeContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
 import { StatusBar, Alert, Platform } from 'react-native';
 import useUserStore from './src/store/userStore';
@@ -19,14 +19,13 @@ Notifications.setNotificationHandler({
 
 const AppContent = () => {
     const { setUser, setToken } = useUserStore();
-    const { isDarkMode } = useContext(ThemeContext);
 
     useEffect(() => {
 
-        StatusBar.setBarStyle(isDarkMode ? 'light-content' : 'dark-content');
+        StatusBar.setBarStyle('dark-content');
 
         if (Platform.OS === 'android') {
-            StatusBar.setBackgroundColor(isDarkMode ? '#0f0c29' : '#89f7fe'); // Your theme
+            StatusBar.setBackgroundColor('#89f7fe'); // Your theme
         }
     }, []);
 

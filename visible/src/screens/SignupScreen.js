@@ -70,7 +70,7 @@ const SignupScreen = ({ navigation }) => {
                 let token;
                 try {
                     token = (await Notifications.getExpoPushTokenAsync({
-                        projectId : 'eee6faa4-26ec-4782-b7dd-5229f79b8d3a'
+                        projectId : '80585e66-89ca-4d53-8a55-048ccdbf77fd'
                     })).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
