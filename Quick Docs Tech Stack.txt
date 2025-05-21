@@ -5,11 +5,14 @@ Node.js
 Express.js
 MongoDB
 Zustand (React Native friendly State Management)
++ Expo-Secure-Storage (Token Based Authentication and Auto Load of User Account until logged out or deactivate)
 GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)
  *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
- 6. Gemini 1.5 PRO LLM API (RAG)
+ 6. Gemini 1.5 PRO LLM API (RAG) & Privacy with User Specific Information
+
+Google Cloud Run (Backend Running)
 
 JWT Tokens (Authorization, Token Generation)
 .env (secure data protection)

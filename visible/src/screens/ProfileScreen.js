@@ -230,6 +230,11 @@ const ProfileScreen = () => {
 
                     if (response.ok) {
                         showSuccessAlert("Account Deactivated", "Your account has been deactivated successfully.");
+                        const clearingUserDetails = async () => {
+                            useUserStore.getState().clearUser();
+                            await SecureStore.deleteItemAsync('user_token');
+                        };
+                        clearingUserDetails();
                         navigation.replace('Login');
                     } else {
                         showErrorAlert("Error", "Failed to deactivate account. Please try again.");
@@ -362,6 +367,11 @@ const ProfileScreen = () => {
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={async () => {
+                        const clearingUserDetails = async () => {
+                            useUserStore.getState().clearUser();
+                            await SecureStore.deleteItemAsync('user_token');
+                        };
+                        clearingUserDetails();
                         navigation.replace('Login');
                         if (user?.expoNotificationToken) {
                             await sendPushNotification(

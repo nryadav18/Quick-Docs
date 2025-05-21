@@ -28,6 +28,7 @@
     "expo-local-authentication": "~16.0.4",
     "expo-media-library": "~17.1.6",
     "expo-notifications": "~0.31.1",
+    "expo-secure-store": "^14.2.3",
     "expo-sharing": "~13.1.5",
     "expo-web-browser": "~14.1.6",
     "firebase": "^11.7.1",

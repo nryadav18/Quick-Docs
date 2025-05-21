@@ -464,9 +464,8 @@ async function generateEmbedding(text) {
 
 //AI RESPONSE
 app.post('/ask', async (req, res) => {
-    const { question, username } = req.body;
+    const { question, username, userfullname, email, dob, gender, ispremiumuser, numberoffilesuploaded } = req.body;
     if (!question || !username) return res.status(400).json({ message: 'Missing fields' });
-    console.log(question, username)
     try {
         const lowerQuestion = question.toLowerCase();
 
@@ -524,7 +523,7 @@ app.post('/ask', async (req, res) => {
                         {
                             role: 'user',
                             parts: [{
-                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers. Context:\n\n${systemContext}\n\nQuestion: ${question}`
+                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.\n Here are the user details: User Full Name = ${userfullname}, Username in the application : ${username}, User Gender : ${gender}, User Email : ${email}, User Date of Birth : ${dob} Is the user a premium user : ${ispremiumuser}, Total Number of files uploaded : ${numberoffilesuploaded}, if the ${numberoffilesuploaded} is equal to 0, then suggest him to upload the files and tell us about the usage of appliation through application. \n Make sure that, if the files uploaded are relevant to user then only try to give the response, otherwise tell user that, giving someones information is crossing the guidelines of the application. Context:\n\n${systemContext}\n\nQuestion: ${question}`
                             }]
                         }
                     ]
@@ -553,7 +552,7 @@ app.post('/check-prompt-limitation', async (req, res) => {
     const hashedUsername = hashValues(username)
 
     try {
-        const user = await User.findOne({ usernameHash : hashedUsername });
+        const user = await User.findOne({ usernameHash: hashedUsername });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (!user.premiumuser) {
@@ -855,18 +854,40 @@ app.delete('/:fileId', async (req, res) => {
         await user.save();
 
         // Delete corresponding FileData document (assuming filepath is stored encrypted there too)
+
         try {
-            const fileDataDeleteResult = await FileData.deleteOne({ filepathHash: hashValues(decrypt(file.filepath)) });
+            const fileDataDeleteResult = await FileData.deleteOne({ filePathHash: hashValues(decrypt(file.filepath)) });
             console.log('FileData deletion:', fileDataDeleteResult);
         } catch (err) {
             console.error('FileData deletion error:', err);
         }
 
-        // Decrypt user fields before sending updated user back
-        user.username = decrypt(user.username);
-        // Optionally decrypt other sensitive user fields here
+        const decryptedUser = {
+            name: decrypt(user.name),
+            username: decrypt(user.username),
+            email: decrypt(user.email),
+            dob: user.dob,
+            gender: decrypt(user.gender),
+            verified: user.verified,
+            premiumuser: user.premiumuser,
+            profileImageUrl: decrypt(user.profileImageUrl),
+            expoNotificationToken: decrypt(user.expoNotificationToken),
+            aipromptscount: user.aipromptscount,
+            myfiles: user.myfiles.map(file => ({
+                name: decrypt(file.name),
+                url: decrypt(file.url),
+                filepath: decrypt(file.filepath),
+                type: file.type,
+                rating: file.rating,
+                uploadedAt: file.uploadedAt
+            })),
+            premiumDetails: user.premiumDetails.map(prem => ({
+                type: decrypt(prem.type),
+                timestamp: prem.timestamp
+            }))
+        };
 
-        return res.json({ message: 'File deleted successfully.', updatedUser: user });
+        return res.json({ message: 'File deleted successfully.', updatedUser: decryptedUser });
     } catch (err) {
         console.error('Delete file error:', err);
         return res.status(500).json({ message: 'Internal server error.' });

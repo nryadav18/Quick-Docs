@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
@@ -18,24 +18,60 @@ Notifications.setNotificationHandler({
 });
 
 const AppContent = () => {
-    const { setUser, setToken } = useUserStore();
+    const { setUser, setToken, loadToken } = useUserStore(); // ← Added `loadToken`
+
 
     useEffect(() => {
+        const initializeAuth = async () => {
+            try {
+                const storedToken = await SecureStore.getItemAsync('user_token');
+                if (storedToken) {
+                    // Optionally validate the token with backend
+                    useUserStore.getState().setToken(storedToken);
 
+                    // Optional: fetch user data using the token
+                    const response = await fetch('https://yourapi.com/auth/me', {
+                        headers: { Authorization: `Bearer ${storedToken}` },
+                    });
+                    const userData = await response.json();
+                    if (response.ok) {
+                        useUserStore.getState().setUser(userData);
+                    } else {
+                        // Token is invalid
+                        useUserStore.getState().clearUser();
+                        await SecureStore.deleteItemAsync('user_token');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to auto-load user session:', error);
+            }
+        };
+
+        initializeAuth();
+    }, []);
+
+
+    useEffect(() => {
+        // Load token securely from SecureStore on app start
+        const initializeApp = async () => {
+            await loadToken();
+        };
+        initializeApp();
+    }, []);
+
+    useEffect(() => {
         StatusBar.setBarStyle('dark-content');
-
         if (Platform.OS === 'android') {
             StatusBar.setBackgroundColor('#89f7fe'); // Your theme
         }
     }, []);
 
-
     useEffect(() => {
-        const subscriptionReceived = Notifications.addNotificationReceivedListener(notification => {
+        const subscriptionReceived = Notifications.addNotificationReceivedListener(() => {
             console.log('Notification Received');
         });
 
-        const subscriptionResponse = Notifications.addNotificationResponseReceivedListener(response => {
+        const subscriptionResponse = Notifications.addNotificationResponseReceivedListener(() => {
             console.log('Notification Response');
         });
 
@@ -45,9 +81,7 @@ const AppContent = () => {
         };
     }, []);
 
-
     useEffect(() => {
-
         const requestNotificationPermission = async () => {
             const { status } = await Notifications.getPermissionsAsync();
             if (status !== 'granted') {
@@ -76,11 +110,9 @@ const AppContent = () => {
     }, []);
 
     return (
-        <>
-            <NavigationContainer>
-                <StackNavigator />
-            </NavigationContainer>
-        </>
+        <NavigationContainer>
+            <StackNavigator />
+        </NavigationContainer>
     );
 };
 

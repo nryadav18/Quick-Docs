@@ -190,7 +190,13 @@ const AI_Support = () => {
                 signal,
                 body: JSON.stringify({
                     username: user?.username,
-                    question: latestUserMessage
+                    question: latestUserMessage,
+                    userfullname : user?.name,
+                    email : user?.email,
+                    dob : user?.dob,
+                    gender : user?.gender,
+                    ispremiumuser : user?.premiumuser,
+                    numberoffilesuploaded : user?.myfiles.length
                 })
             });
 

@@ -22,7 +22,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { BACKEND_URL } from '@env';
 
 const LoginScreen = () => {
-    const { setUser, setToken } = useUserStore.getState();
+    const { setUser, setToken, loadToken } = useUserStore.getState();
     const navigation = useNavigation()
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
@@ -61,10 +61,6 @@ const LoginScreen = () => {
                 cancelLabel: "Cancel",
             });
 
-            if (!result.success) {
-                showErrorAlert("Authentication Failed", "Fingerprint authentication failed or was cancelled.");
-                return;
-            }
             setBiometricSuccess(true);
         };
 
@@ -132,8 +128,6 @@ const LoginScreen = () => {
 
         if (result.success) {
             setBiometricSuccess(true);
-        } else {
-            showErrorAlert("Authentication Failed", "Fingerprint authentication failed or was cancelled.");
         }
     };
 

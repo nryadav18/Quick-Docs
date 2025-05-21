@@ -168,6 +168,7 @@ const UploadFilesScreen = () => {
                     myfiles: [...(user?.myfiles ?? []), newFile],
                 };
 
+                console.log(updatedUser)
 
                 setUser(updatedUser); // Update Zustand
 

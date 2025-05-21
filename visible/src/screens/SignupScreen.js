@@ -70,7 +70,7 @@ const SignupScreen = ({ navigation }) => {
                 let token;
                 try {
                     token = (await Notifications.getExpoPushTokenAsync({
-                        projectId : '80585e66-89ca-4d53-8a55-048ccdbf77fd'
+                        projectId: '80585e66-89ca-4d53-8a55-048ccdbf77fd'
                     })).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
@@ -248,7 +248,7 @@ const SignupScreen = ({ navigation }) => {
                 password: password.trim(),
                 gender: gender.trim(),
                 dob: dob ? dob.toISOString() : null,
-                expoNotificationToken : expoPushToken
+                expoNotificationToken: expoPushToken
             };
 
             let profileImageUrl = null;
