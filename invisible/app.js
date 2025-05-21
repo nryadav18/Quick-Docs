@@ -225,34 +225,47 @@ app.post("/create-order", async (req, res) => {
 });
 
 
-// app.get('/user/:id', authenticateToken, async (req, res) => {
-//     const { id } = req.params;
+app.get('/user', authenticateToken, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-//     if (req.user.id !== id) {
-//         return res.status(403).json({ message: 'Access denied' });
-//     }
+        const decryptedUser = {
+            name: decrypt(user.name),
+            username: decrypt(user.username),
+            email: decrypt(user.email),
+            dob: user.dob,
+            gender: decrypt(user.gender),
+            verified: user.verified,
+            premiumuser: user.premiumuser,
+            profileImageUrl: decrypt(user.profileImageUrl),
+            expoNotificationToken: decrypt(user.expoNotificationToken),
+            aipromptscount: user.aipromptscount,
+            myfiles: Array.isArray(user.myfiles)
+                ? user.myfiles.map(file => ({
+                    name: decrypt(file.name),
+                    url: decrypt(file.url),
+                    filepath: decrypt(file.filepath),
+                    type: file.type,
+                    rating: file.rating,
+                    uploadedAt: file.uploadedAt
+                }))
+                : [],
+            premiumDetails: Array.isArray(user.premiumDetails)
+                ? user.premiumDetails.map(prem => ({
+                    type: decrypt(prem.type),
+                    timestamp: prem.timestamp
+                }))
+                : []
+        };
 
-//     try {
-//         const user = await User.findById(id).select('-password');
-//         if (!user) return res.status(404).json({ message: 'User not found' });
+        res.status(200).json(decryptedUser);
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
-//         // Decrypt fields
-//         const decryptedUser = {
-//             ...user._doc,
-//             username: decrypt(user.username),
-//             email: decrypt(user.email),
-//             premiumDetails: user.premiumDetails.map(p => ({
-//                 type: decrypt(p.type),
-//                 timestamp: p.timestamp
-//             }))
-//         };
-
-//         res.status(200).json(decryptedUser);
-//     } catch (error) {
-//         console.error('Error fetching user data:', error);
-//         res.status(500).json({ message: 'Server error' });
-//     }
-// });
 
 
 app.post('/signup', async (req, res) => {
@@ -433,7 +446,7 @@ app.post('/update-notification-token', async (req, res) => {
 
         await User.updateOne(
             { usernameHash: hashedUsername },
-            { $set: { encryptedExpoNotificationToken } }
+            { $set: { expoNotificationToken: encryptedExpoNotificationToken } }
         );
 
         return res.status(200).json({ message: 'Notification Token Updated Successfully' });

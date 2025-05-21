@@ -19,6 +19,8 @@ const useUserStore = create((set, get) => ({
         set({ token });
     },
 
+    setAlreadyLoggedIn: (status) => set({ alreadyLoggedIn: status }),
+
     loadToken: async () => {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
         if (token) {

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
@@ -6,7 +6,9 @@ import { StatusBar, Alert, Platform } from 'react-native';
 import useUserStore from './src/store/userStore';
 import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
+import * as SecureStore from 'expo-secure-store';
 import './firebaseConfig';
+import { BACKEND_URL } from '@env';
 
 // Setup notification handler (optional but recommended)
 Notifications.setNotificationHandler({
@@ -18,32 +20,37 @@ Notifications.setNotificationHandler({
 });
 
 const AppContent = () => {
-    const { setUser, setToken, loadToken } = useUserStore(); // ← Added `loadToken`
-
+    const { setUser, setToken, loadToken, alreadyLoggedIn, setAlreadyLoggedIn } = useUserStore();
+    const [loadingAuth, setLoadingAuth] = useState(true);
 
     useEffect(() => {
         const initializeAuth = async () => {
             try {
                 const storedToken = await SecureStore.getItemAsync('user_token');
                 if (storedToken) {
-                    // Optionally validate the token with backend
-                    useUserStore.getState().setToken(storedToken);
-
-                    // Optional: fetch user data using the token
-                    const response = await fetch('https://yourapi.com/auth/me', {
-                        headers: { Authorization: `Bearer ${storedToken}` },
+                    // Fetch user from your API using the stored token
+                    const response = await fetch(`${BACKEND_URL}/user`, {
+                        method: 'GET',
+                        headers: {
+                            Authorization: `Bearer ${storedToken}`,
+                            'Content-Type': 'application/json',
+                        },
                     });
-                    const userData = await response.json();
+
                     if (response.ok) {
-                        useUserStore.getState().setUser(userData);
+                        const userData = await response.json();
+                        setUser(userData);
+                        setToken(storedToken);
+                        setAlreadyLoggedIn(true)
                     } else {
-                        // Token is invalid
-                        useUserStore.getState().clearUser();
+                        console.warn('Token invalid or expired');
                         await SecureStore.deleteItemAsync('user_token');
                     }
                 }
             } catch (error) {
                 console.error('Failed to auto-load user session:', error);
+            } finally {
+                setLoadingAuth(false);  // done loading no matter what
             }
         };
 
@@ -109,9 +116,13 @@ const AppContent = () => {
         requestDownloadPermission();
     }, []);
 
+    if (loadingAuth) {
+        return null;
+    }
+
     return (
         <NavigationContainer>
-            <StackNavigator />
+            <StackNavigator alreadyLoggedIn={alreadyLoggedIn} />
         </NavigationContainer>
     );
 };

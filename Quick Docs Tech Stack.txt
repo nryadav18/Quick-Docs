@@ -1,15 +1,17 @@
 Quick Docs Tech Stack:
 
 React Native Expo SDK 53 (Updated)
-Node.js
-Express.js
-MongoDB
 Zustand (React Native friendly State Management)
 + Expo-Secure-Storage (Token Based Authentication and Auto Load of User Account until logged out or deactivate)
+
+Node.js, Express.js, MongoDB
+
 GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)
- *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
+
+AI Agent: 
+*5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
  6. Gemini 1.5 PRO LLM API (RAG) & Privacy with User Specific Information
 
 Google Cloud Run (Backend Running)
@@ -21,7 +23,8 @@ EXPO Notifications
 Firebase Cloud Messaging API (V1)
 Secure API Gateway (GET, POST, DELETE)
 RazorPay Payments (Secure Payment Gateway)
-Optional Chaining Methodology (Safer way to prevent Run time errors in the frontend development, say: React, React Native)
+Optional Chaining Methodology (?.) and Nullish coalescing operator (??) for a Safer way to prevent Run time errors in the frontend development, say: React, React Native
+
 Using Vector Search (Mongodb) for efficiency
 Storing the data as embeddings (faster, quicker, special data structure) - Highly Secure
 Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficiency)

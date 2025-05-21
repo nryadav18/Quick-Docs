@@ -15,7 +15,7 @@ import BirthdayIcon from 'react-native-vector-icons/FontAwesome5'
 import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 import { BACKEND_URL } from '@env';
-
+const { setAlreadyLoggedIn } = useUserStore.getState();
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
@@ -107,7 +107,7 @@ const ProfileScreen = () => {
         };
 
 
-        const dobDate = new Date(user.dob);
+        const dobDate = new Date(user?.dob);
         if (isNaN(dobDate)) {
             showErrorAlert("User DOB Error", "Invalid Date Format for User Dob");
             return;
@@ -229,13 +229,20 @@ const ProfileScreen = () => {
                     });
 
                     if (response.ok) {
-                        showSuccessAlert("Account Deactivated", "Your account has been deactivated successfully.");
+                        const token = user?.expoNotificationToken ?? ''
+                        if (token) {
+                            sendPushNotification(
+                                token,
+                                'Your account has been deactivated 😢💔',
+                                'If you change your mind, we will be here for you!'
+                            );
+                        }
                         const clearingUserDetails = async () => {
                             useUserStore.getState().clearUser();
                             await SecureStore.deleteItemAsync('user_token');
                         };
                         clearingUserDetails();
-                        navigation.replace('Login');
+                        setAlreadyLoggedIn(false)
                     } else {
                         showErrorAlert("Error", "Failed to deactivate account. Please try again.");
                     }
@@ -243,14 +250,6 @@ const ProfileScreen = () => {
                     showErrorAlert("Network Error", "Unable to connect to server. Please try again later.");
                 }
                 setIsDeactivating(false);
-                if (user?.expoNotificationToken) {
-                    console.log(user?.expoNotificationToken)
-                    await sendPushNotification(
-                        user?.expoNotificationToken,
-                        'Logged out Successfully',
-                        `Thanks for using Quick Docs App!`
-                    );
-                }
             }
         );
     };
@@ -302,7 +301,7 @@ const ProfileScreen = () => {
                     >
                         {!!user?.username && (
                             <Text style={[styles.username, isDarkMode && styles.darkSubText]}>
-                                {user.username}
+                                {user?.username}
                             </Text>
                         )}
                         {user?.premiumuser && (
@@ -367,19 +366,20 @@ const ProfileScreen = () => {
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={async () => {
+                        const token = user?.expoNotificationToken ?? ''
+                        if (token) {
+                            sendPushNotification(
+                                token,
+                                'You have logged out safely👋😌',
+                                `See you soon! Take care!`
+                            );
+                        }
                         const clearingUserDetails = async () => {
                             useUserStore.getState().clearUser();
                             await SecureStore.deleteItemAsync('user_token');
                         };
                         clearingUserDetails();
-                        navigation.replace('Login');
-                        if (user?.expoNotificationToken) {
-                            await sendPushNotification(
-                                user.expoNotificationToken,
-                                'Logged out Successfully',
-                                'Thanks for using Quick Docs App!'
-                            );
-                        }
+                        setAlreadyLoggedIn(false)
                     }}
                 >
                     <Text style={styles.buttonText}>Logout</Text>

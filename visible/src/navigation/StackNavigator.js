@@ -11,21 +11,29 @@ import PaymentSuccessScreen from '../premium/PaymentSuccess';
 
 const Stack = createStackNavigator();
 
-export default function StackNavigator() {
+export default function StackNavigator({ alreadyLoggedIn }) {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <Stack.Screen name="Signup" component={SignupScreen} />
-            <Stack.Screen name="Home" component={BottomTabNavigator} />
-            <Stack.Screen name="Files" component={ViewFilesScreen} />
-            <Stack.Screen name="Premium" component={Premium}
-                options={{
-                    headerShown: true,
-                    header: () => <PremiumHeader title="Premium" />,
-                }}
-            />
-            <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
+            {
+                alreadyLoggedIn ?
+                    <>
+                        <Stack.Screen name="Home" component={BottomTabNavigator} />
+                        <Stack.Screen name="Files" component={ViewFilesScreen} />
+                        <Stack.Screen name="Premium" component={Premium}
+                            options={{
+                                headerShown: true,
+                                header: () => <PremiumHeader title="Premium" />,
+                            }}
+                        />
+                        <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
+                    </>
+                    :
+                    <>
+                        <Stack.Screen name="Login" component={LoginScreen} />
+                        <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+                        <Stack.Screen name="Signup" component={SignupScreen} />
+                    </>
+            }
         </Stack.Navigator>
     );
 }

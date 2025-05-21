@@ -20,9 +20,11 @@ import * as Device from 'expo-device';
 import { Platform } from "react-native";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BACKEND_URL } from '@env';
+import * as SecureStore from 'expo-secure-store';
+
+const { setUser, setToken, loadToken, setAlreadyLoggedIn } = useUserStore.getState();
 
 const LoginScreen = () => {
-    const { setUser, setToken, loadToken } = useUserStore.getState();
     const navigation = useNavigation()
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
@@ -45,6 +47,7 @@ const LoginScreen = () => {
     const [expoPushToken, setExpoPushToken] = useState('');
 
 
+
     useEffect(() => {
         const checkBiometricSupportAndAuthenticate = async () => {
             const compatible = await LocalAuthentication.hasHardwareAsync();
@@ -61,7 +64,11 @@ const LoginScreen = () => {
                 cancelLabel: "Cancel",
             });
 
-            setBiometricSuccess(true);
+            if (result.success) {
+                setBiometricSuccess(true);
+            } else {
+                setBiometricSuccess(false); // explicitly mark it as false
+            }
         };
 
         checkBiometricSupportAndAuthenticate();
@@ -85,9 +92,7 @@ const LoginScreen = () => {
                 }
                 let token;
                 try {
-                    token = (await Notifications.getExpoPushTokenAsync({
-
-                    })).data;
+                    token = (await Notifications.getExpoPushTokenAsync()).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
                 }
@@ -242,6 +247,7 @@ const LoginScreen = () => {
 
                 setUser(user);
                 setToken(token);
+                await SecureStore.setItemAsync('user_token', token);
                 showSuccessAlert();
                 setValidUser(true)
             } else {
@@ -334,7 +340,6 @@ const LoginScreen = () => {
                 </TouchableOpacity>
             </View>
 
-
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
             <SuccessAlert
@@ -348,7 +353,7 @@ const LoginScreen = () => {
                         if (expoPushToken) {
                             await sendPushNotification(
                                 expoPushToken,
-                                'Welcome to Quick Docs App!',
+                                'Welcome to Quick Docs App! 🎉😊',
                                 `One Stop Destination to Store, Summarize your Important Files`
                             );
                         }
@@ -357,13 +362,12 @@ const LoginScreen = () => {
                             year: "numeric",
                             month: "2-digit",
                             day: "2-digit",
-                            hour: "2-digit",
                             minute: "2-digit",
                             second: "2-digit",
                             hour12: false
                         });
                         console.log(currentTimestamp)
-                        navigation.replace('Home');
+                        setAlreadyLoggedIn(true);
                     }
                 }}
             />

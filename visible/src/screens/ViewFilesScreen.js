@@ -69,7 +69,6 @@ const ViewFilesScreen = () => {
 
     useThemedStatusBar(isDarkMode)
 
-
     useEffect(() => {
         setFiles(user?.myfiles ?? []);
     }, [user?.myfiles]);
@@ -101,6 +100,14 @@ const ViewFilesScreen = () => {
         setWarningAlertVisible(true)
         setOnWarningConfirm(() => onConfirm);  // Store the callback
     };
+
+    useEffect(() => {
+        StatusBar.setBarStyle(isDarkMode ? 'light-content' : 'dark-content');
+
+        if (Platform.OS === 'android') {
+            StatusBar.setBackgroundColor(isDarkMode ? '#0f0c29' : '#89f7fe');
+        }
+    }, [])
 
 
     // View File Function
@@ -198,7 +205,7 @@ const ViewFilesScreen = () => {
             if (user?.expoNotificationToken) {
                 await sendPushNotification(
                     user?.expoNotificationToken,
-                    'Download Complete',
+                    'Download Completed 📥👍',
                     `${fileName} has been saved to your device.`
                 );
             }
@@ -287,8 +294,8 @@ const ViewFilesScreen = () => {
                     if (user?.expoNotificationToken) {
                         await sendPushNotification(
                             user?.expoNotificationToken,
-                            'File Deleted',
-                            `${item.name} has been saved to your device.`
+                            'File Deleted 🗑️😔',
+                            `Feeling Sad, Rest in Peace to ${item.name}`
                         );
                     }
                     console.log('Deleted Successfully')

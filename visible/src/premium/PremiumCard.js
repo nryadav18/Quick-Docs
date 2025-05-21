@@ -171,7 +171,7 @@ export default function Premium() {
                                 console.log(user?.expoNotificationToken)
                                 await sendPushNotification(
                                     user?.expoNotificationToken,
-                                    'Payment Successfull',
+                                    'Payment Successfull 💳🎉',
                                     `Thanks for the Trust, Welcome to PRO Club!`
                                 );
                             }
