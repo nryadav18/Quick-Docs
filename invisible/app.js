@@ -852,7 +852,6 @@ app.delete('/:fileId', async (req, res) => {
 
         // Decrypt filepath before deleting from GCS
         const gcsFilePath = decrypt(file.filepath);
-        console.log('Deleting GCS file:', gcsFilePath);
 
         try {
             await bucket.file(gcsFilePath).delete();

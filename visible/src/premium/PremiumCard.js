@@ -237,9 +237,10 @@ export default function Premium() {
 
 const PlanCard = ({ plan, onBuyNow, user }) => {
     console.log(user)
-    const alreadyBought = Array.isArray(user?.premiumDetails)
-        ? user?.premiumDetails.some(detail => detail.type === plan.name)
+    const alreadyBought = Array.isArray(user?.premiumDetails) && user.premiumDetails.length > 0
+        ? user.premiumDetails.some(detail => detail?.type === plan?.name)
         : false;
+
 
 
     return (

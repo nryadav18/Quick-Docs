@@ -15,6 +15,7 @@ import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 import { BACKEND_URL } from '@env';
 
+
 const AI_Support = () => {
     const [messages, setMessages] = useState([{ role: 'assistant', text: 'Hello! I am Agent QD, How can I assist you today?', loading: false }]);
     const [inputMessage, setInputMessage] = useState('');
@@ -30,16 +31,23 @@ const AI_Support = () => {
 
 
     useEffect(() => {
-        const planNames = user?.premiumDetails.map(p => (p.type || ''))
+        const planNames = Array.isArray(user?.premiumDetails)
+            ? user.premiumDetails.map(p => p?.type || '')
+            : [];
 
         let allowedPrompts = 3;
-        if (planNames.some(name => name.includes('Ultra Pro Max'))) allowedPrompts = Infinity;
-        else if (planNames.some(name => name.includes('Ultra Pro'))) allowedPrompts = 10;
 
-        if (user?.aipromptscount >= allowedPrompts) {
-            setPromptLimit(true)
+        if (planNames.some(name => name.includes('Ultra Pro Max'))) {
+            allowedPrompts = Infinity;
+        } else if (planNames.some(name => name.includes('Ultra Pro'))) {
+            allowedPrompts = 10;
         }
-    }, [user?.premiumDetails])
+
+        if ((user?.aipromptscount ?? 0) >= allowedPrompts) {
+            setPromptLimit(true);
+        }
+    }, [user?.premiumDetails, user?.aipromptscount]);
+
 
 
 
@@ -72,9 +80,15 @@ const AI_Support = () => {
     ];
 
     function isBlockedPrompt(prompt) {
+        if (typeof prompt !== 'string') return false;
+
         const lowerPrompt = prompt.toLowerCase();
-        return blockedKeywords.some((keyword) => lowerPrompt.includes(keyword));
+
+        return Array.isArray(blockedKeywords)
+            ? blockedKeywords.some((keyword) => typeof keyword === 'string' && lowerPrompt.includes(keyword))
+            : false;
     }
+
 
 
     const sendMessage = async () => {
@@ -191,12 +205,12 @@ const AI_Support = () => {
                 body: JSON.stringify({
                     username: user?.username,
                     question: latestUserMessage,
-                    userfullname : user?.name,
-                    email : user?.email,
-                    dob : user?.dob,
-                    gender : user?.gender,
-                    ispremiumuser : user?.premiumuser,
-                    numberoffilesuploaded : user?.myfiles.length
+                    userfullname: user?.name,
+                    email: user?.email,
+                    dob: user?.dob,
+                    gender: user?.gender,
+                    ispremiumuser: user?.premiumuser,
+                    numberoffilesuploaded: user?.myfiles.length
                 })
             });
 
