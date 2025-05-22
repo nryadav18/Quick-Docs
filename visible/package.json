@@ -34,6 +34,7 @@
     "expo-secure-store": "^14.2.3",
     "expo-sharing": "~13.1.5",
     "expo-speech": "~13.1.7",
+    "expo-speech-recognition": "^2.0.0",
     "expo-web-browser": "~14.1.6",
     "firebase": "^11.7.1",
     "lottie-react-native": "7.2.2",
