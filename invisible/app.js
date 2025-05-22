@@ -14,6 +14,7 @@ const axios = require('axios')
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
+const { Translate } = require('@google-cloud/translate').v2;
 const client = new vision.ImageAnnotatorClient();
 const AES_SECRET_KEY = process.env.AES_SECRET_KEY;
 const IV_LENGTH = 16;
@@ -28,6 +29,7 @@ const storage = new Storage({
 });
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
+const translate = new Translate();
 
 
 // MongoDB connection
@@ -600,6 +602,33 @@ app.post('/check-prompt-limitation', async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+
+
+app.post('/translate-speech', async (req, res) => {
+    const { text, targetLanguage = 'en' } = req.body;
+
+    if (!text) {
+        return res.status(400).json({ error: 'Text is required for translation.' });
+    }
+
+    try {
+        // Automatically detect language and then translate to targetLanguage
+        let [translations] = await translate.translate(text, { to: targetLanguage });
+        translations = Array.isArray(translations) ? translations : [translations];
+        const translatedText = translations[0];
+
+        // You can also get the detected source language if needed
+        // const [detection] = await translate.detect(text);
+        // const sourceLanguage = detection.language;
+
+        res.json({ translatedText });
+    } catch (error) {
+        console.error('Google Cloud Translate API Error:', error);
+        res.status(500).json({ error: 'Failed to translate speech using Google Cloud Translate API.', details: error.message });
+    }
+});
+
+
 
 
 // Check Username Uniqueness (case-insensitive)

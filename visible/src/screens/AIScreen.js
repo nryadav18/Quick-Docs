@@ -1,20 +1,24 @@
 import React, { useState, useContext, useRef, useEffect } from 'react';
-import { Text, View, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
-import AI from '../../assets/robo1.jpg';
+import { Text, View, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import AI from '../../assets/robo1.jpg'; // Ensure this path is correct
+// import Human from '../../assets/squad.jpg'; // This was in your original, but user profile image is now dynamic
 import { ThemeContext } from '../context/ThemeContext';
-import Human from '../../assets/squad.jpg';
-import { SafeAreaView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // Use from react-native-safe-area-context
 import LottieView from 'lottie-react-native';
-import Stars1 from '../../assets/stars1.png';
-import Stars2 from '../../assets/stars2.png';
+// import Stars1 from '../../assets/stars1.png'; // Not used in this version
+import Stars2 from '../../assets/stars2.png'; // Ensure this path is correct
 import { LinearGradient } from 'expo-linear-gradient';
 import useUserStore from '../store/userStore';
 import { useNavigation } from "@react-navigation/native"
 import FadeInText from '../components/FadeInText';
 import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
-import { BACKEND_URL } from '@env';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // For the microphone icon
+import * as Speech from 'expo-speech'; // Keep if you plan to use text-to-speech for AI response
+import * as SpeechRecognition from 'expo-speech-recognition';
+import { BACKEND_URL } from '@env'; // Make sure you have babel-plugin-dotenv-import or similar for @env to work
 
+const GOOGLE_TRANSLATE_API_ENDPOINT = `${BACKEND_URL}/translate-speech`; // Example backend endpoint
 
 const AI_Support = () => {
     const [messages, setMessages] = useState([{ role: 'assistant', text: 'Hello! I am Agent QD, How can I assist you today?', loading: false }]);
@@ -22,6 +26,7 @@ const AI_Support = () => {
     const [isWaiting, setIsWaiting] = useState(false);
     const [isStopped, setIsStopped] = useState(false);
     const [promptLimit, setPromptLimit] = useState(false)
+    const [isListening, setIsListening] = useState(false);
     const { isDarkMode } = useContext(ThemeContext);
     const user = useUserStore((state) => state.user);
     const navigation = useNavigation()
@@ -29,13 +34,22 @@ const AI_Support = () => {
     const abortControllerRef = useRef(null);
     useThemedStatusBar(isDarkMode)
 
+    useEffect(() => {
+        // Scroll to end when messages update
+        if (scrollRef.current) {
+            setTimeout(() => {
+                scrollRef.current.scrollToEnd({ animated: true });
+            }, 100); // Small delay to allow layout to settle
+        }
+    }, [messages]);
+
 
     useEffect(() => {
         const planNames = Array.isArray(user?.premiumDetails)
             ? user.premiumDetails.map(p => p?.type || '')
             : [];
 
-        let allowedPrompts = 3;
+        let allowedPrompts = 3; // Default for non-premium
 
         if (planNames.some(name => name.includes('Ultra Pro Max'))) {
             allowedPrompts = Infinity;
@@ -45,61 +59,60 @@ const AI_Support = () => {
 
         if ((user?.aipromptscount ?? 0) >= allowedPrompts) {
             setPromptLimit(true);
+        } else {
+            setPromptLimit(false); // Reset if user becomes premium or count is less than limit
         }
     }, [user?.premiumDetails, user?.aipromptscount]);
 
+    useEffect(() => {
+        (async () => {
+            const { status } = await SpeechRecognition.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Speech recognition needs microphone permission to work.');
+            }
+        })();
 
-
+        // Clean up listeners on unmount
+        return () => {
+            SpeechRecognition.removeListener('onSpeechResults', () => {});
+            SpeechRecognition.removeListener('onSpeechEnd', () => {});
+            SpeechRecognition.removeListener('onSpeechError', () => {});
+            SpeechRecognition.stopAsync().catch(() => {}); // Attempt to stop if active
+        };
+    }, []);
 
     const cleanBotResponse = (text) => {
         return text
-            .replace(/\*\*\*/g, '')  // Remove triple asterisks
-            .replace(/\*\*/g, '')    // Remove bold asterisks
-            .replace(/\*/g, '')      // Remove italic asterisks
-            .replace(/[_~`]/g, '')   // Remove other markdown-like characters
+            .replace(/\*\*\*/g, '')
+            .replace(/\*\*/g, '')
+            .replace(/\*/g, '')
+            .replace(/[_~`]/g, '')
             .trim();
     };
 
-
     const blockedKeywords = [
-        "generate code",
-        "write code",
-        "give me code",
-        "create an app",
-        "build an app",
-        "weather in",
-        "what is the weather",
-        "current weather",
-        "app prompt",
-        "how to code",
-        "GPT plugin",
-        "generate a project",
-        "open source",
-        "location in",
-        "my location",
+        "generate code", "write code", "give me code", "create an app", "build an app",
+        "weather in", "what is the weather", "current weather", "app prompt", "how to code",
+        "GPT plugin", "generate a project", "open source", "location in", "my location",
     ];
 
     function isBlockedPrompt(prompt) {
         if (typeof prompt !== 'string') return false;
-
         const lowerPrompt = prompt.toLowerCase();
-
-        return Array.isArray(blockedKeywords)
-            ? blockedKeywords.some((keyword) => typeof keyword === 'string' && lowerPrompt.includes(keyword))
-            : false;
+        return blockedKeywords.some((keyword) => lowerPrompt.includes(keyword));
     }
 
-
-
     const sendMessage = async () => {
-        const { user, incrementPromptCount, setUser } = useUserStore.getState();
+        const { user: currentUser, incrementPromptCount } = useUserStore.getState();
 
-        if (!user) return;
+        if (!currentUser) {
+            Alert.alert("User Not Found", "Please log in to use Agent QD.");
+            return;
+        }
 
         if (!inputMessage.trim() || isWaiting) return;
 
         const userMessage = { role: 'user', text: inputMessage };
-
 
         if (isBlockedPrompt(inputMessage)) {
             setMessages((prev) => [...prev, userMessage]);
@@ -116,11 +129,8 @@ const AI_Support = () => {
                 ]);
                 setIsWaiting(false);
             }, 2000);
-
-            abortControllerRef.current = new AbortController();
             return;
         }
-
 
         setMessages((prev) => [...prev, userMessage]);
         setInputMessage('');
@@ -133,56 +143,59 @@ const AI_Support = () => {
         abortControllerRef.current = new AbortController();
 
         try {
-            // Step 2: Call API to validate and increment prompt count
             const promptRes = await fetch(`${BACKEND_URL}/check-prompt-limitation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user?.username }),
+                body: JSON.stringify({ username: currentUser?.username }),
+                signal: abortControllerRef.current.signal, // Allow aborting this fetch too
             });
 
             const promptData = await promptRes.json();
             if (!promptRes.ok) {
                 if (promptData?.message === 'Prompt limit reached') {
                     setPromptLimit(true)
-                    setTimeout(() => {
-                        setMessages((prev) =>
-                            prev.map((msg, index) =>
-                                index === prev.length - 1
-                                    ? { role: 'assistant', text: 'Ohh God! I am Sorry Buddy, Your Limit has Reached, Explore our Budget Friendly Premiums and Purchase them to Enjoy our Valuable Services', loading: false }
-                                    : msg
-                            )
-                        );
-                    }, 2000);
-                    return;
+                    // Update only the last message if it's the loading message
+                    setMessages((prev) =>
+                        prev.map((msg, index) =>
+                            index === prev.length - 1 && msg.loading && msg.role === 'assistant'
+                                ? { role: 'assistant', text: 'Ohh God! I am Sorry Buddy, Your Limit has Reached, Explore our Budget Friendly Premiums and Purchase them to Enjoy our Valuable Services', loading: false }
+                                : msg
+                        )
+                    );
+                    return; // Stop further processing
                 } else {
                     throw new Error(promptData.message || 'Prompt check failed');
                 }
             }
 
-            // Step 3: Update Zustand count
+            // Only increment if the prompt check was successful
             incrementPromptCount();
 
-            // Step 4: Call AI service
-            const response = await generateBotResponse([...messages, userMessage], abortControllerRef.current.signal);
-            if (isStopped) return;
-            const rawResponse = response?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not understand that.';
-            const botResponse = cleanBotResponse(rawResponse);
+            // Proceed with AI service call only if not stopped
+            if (!isStopped) {
+                const response = await generateBotResponse([...messages, userMessage], abortControllerRef.current.signal);
+                const rawResponse = response?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not understand that.';
+                const botResponse = cleanBotResponse(rawResponse);
 
-            setMessages((prev) =>
-                prev.map((msg, index) =>
-                    index === prev.length - 1
-                        ? { role: 'assistant', text: botResponse, loading: false }
-                        : msg
-                )
-            );
+                setMessages((prev) =>
+                    prev.map((msg, index) =>
+                        index === prev.length - 1 && msg.loading && msg.role === 'assistant'
+                            ? { role: 'assistant', text: botResponse, loading: false }
+                            : msg
+                    )
+                );
+            }
 
         } catch (error) {
             if (error.name === 'AbortError') {
+                // If aborted, remove the loading message and don't show an error
                 setMessages((prev) => prev.filter((msg) => !(msg.loading && msg.role === 'assistant')));
             } else {
+                console.error("Error in sendMessage:", error);
+                // Update only the last message if it's the loading message
                 setMessages((prev) =>
                     prev.map((msg, index) =>
-                        index === prev.length - 1
+                        index === prev.length - 1 && msg.loading && msg.role === 'assistant'
                             ? { role: 'assistant', text: 'Oops, something went wrong. Please try again later.', loading: false }
                             : msg
                     )
@@ -190,9 +203,9 @@ const AI_Support = () => {
             }
         } finally {
             setIsWaiting(false);
+            setIsStopped(false); // Reset stopped state
         }
     };
-
 
     const generateBotResponse = async (history, signal) => {
         const latestUserMessage = history[history.length - 1]?.text;
@@ -215,6 +228,9 @@ const AI_Support = () => {
             });
 
             const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Backend AI response failed');
+            }
             return {
                 candidates: [{
                     content: {
@@ -223,20 +239,124 @@ const AI_Support = () => {
                 }]
             };
         } catch (error) {
-            console.error('Error fetching vector response:', error);
+            console.error('Error fetching AI response from backend:', error);
             throw error;
         }
     };
 
-
-    // Function to stop the ongoing message generation
     const stopResponse = () => {
         if (abortControllerRef.current) {
-            abortControllerRef.current.abort(); // abort the fetch
+            abortControllerRef.current.abort(); // Abort the fetch requests
         }
         setIsStopped(true);
         setIsWaiting(false);
+        // Remove the loading message immediately
+        setMessages((prev) => prev.filter((msg) => !(msg.loading && msg.role === 'assistant')));
     };
+
+    // --- Speech-to-Text and Translation Logic ---
+    const startListening = async () => {
+        const isAvailable = await SpeechRecognition.isAvailableAsync();
+        if (!isAvailable) {
+            Alert.alert('Speech Recognition Not Available', 'Your device does not support speech recognition.');
+            return;
+        }
+
+        const hasPermission = await SpeechRecognition.hasPermissionAsync();
+        if (!hasPermission.granted) {
+            const { status } = await SpeechRecognition.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Microphone permission is required for speech-to-text.');
+                return;
+            }
+        }
+
+        try {
+            setIsListening(true);
+            setInputMessage('Listening...'); // Indicate listening state in input field
+
+            // Clear previous listeners to avoid duplicates
+            SpeechRecognition.removeAllListeners();
+
+            // Set up listeners for speech recognition events
+            SpeechRecognition.addListener('onSpeechResults', async ({ results }) => {
+                if (results && results.length > 0) {
+                    const spokenText = results[0]; // Get the most confident result
+                    console.log("Spoken Text:", spokenText);
+
+                    // Send spoken text to your backend for translation
+                    try {
+                        const translationResponse = await fetch(GOOGLE_TRANSLATE_API_ENDPOINT, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                text: spokenText,
+                                targetLanguage: 'en', // Always translate to English
+                            }),
+                        });
+
+                        const translationData = await translationResponse.json();
+                        if (translationResponse.ok && translationData.translatedText) {
+                            setInputMessage(translationData.translatedText);
+                        } else {
+                            console.error('Translation failed:', translationData.error || 'Unknown error');
+                            setInputMessage(spokenText); // Fallback to original text if translation fails
+                        }
+                    } catch (error) {
+                        console.error('Error during translation API call:', error);
+                        setInputMessage(spokenText); // Fallback to original text on network error
+                    }
+                }
+            });
+
+            SpeechRecognition.addListener('onSpeechEnd', () => {
+                console.log("Speech recognition ended.");
+                setIsListening(false);
+                // If no text was captured, clear "Listening..." message
+                if (inputMessage === 'Listening...') {
+                    setInputMessage('');
+                }
+            });
+
+            SpeechRecognition.addListener('onSpeechError', (error) => {
+                console.error('Speech Recognition Error:', error);
+                setIsListening(false);
+                setInputMessage(''); // Clear input on error
+                Alert.alert('Speech Error', 'Could not process speech. Please try again.');
+            });
+
+            // Start the recognition
+            await SpeechRecognition.startAsync({
+                continuous: false, // Set to true for continuous listening
+                interimResults: false, // Set to true to get results as user speaks
+            });
+
+        } catch (error) {
+            console.error('Error starting speech recognition:', error);
+            setIsListening(false);
+            setInputMessage('');
+            Alert.alert('Speech Error', 'Failed to start speech recognition. Make sure your microphone is working and permissions are granted.');
+        }
+    };
+
+    const stopListening = async () => {
+        try {
+            await SpeechRecognition.stopAsync();
+            setIsListening(false);
+            // After stopping, if the input still says "Listening...", clear it.
+            // Actual text will be set by onSpeechResults if successful.
+            if (inputMessage === 'Listening...') {
+                setInputMessage('');
+            }
+        } catch (error) {
+            console.error('Error stopping speech recognition:', error);
+            Alert.alert('Error', 'Failed to stop speech recognition.');
+        }
+    };
+
+    // --- End Speech-to-Text and Translation Logic ---
 
     return (
         <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
@@ -252,12 +372,11 @@ const AI_Support = () => {
                 </View>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    keyboardVerticalOffset={65}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 65} // Adjusted offset for better visibility
                     style={styles.keyboardAvoidingView}
                 >
-
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.chatContainer}
-                        ref={scrollRef} onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
+                        ref={scrollRef}>
                         {messages.map((item, index) => (
                             <View
                                 key={`message-${index}`}
@@ -270,11 +389,11 @@ const AI_Support = () => {
                                             item.role === 'user'
                                                 ? user?.profileImageUrl
                                                     ? { uri: user?.profileImageUrl }
-                                                    : require('../../assets/updatedLogo1.png')
+                                                    : require('../../assets/updatedLogo1.png') // Fallback user image
                                                 : AI
                                         }
                                         style={styles.miniLogo}
-                                        priority="high"
+                                        // No 'priority' prop for Image in React Native
                                     />
                                 </View>
                                 <View
@@ -299,7 +418,6 @@ const AI_Support = () => {
                                             )}
                                         </View>
                                     )}
-
                                 </View>
                             </View>
                         ))}
@@ -312,6 +430,8 @@ const AI_Support = () => {
                                     style={{
                                         paddingVertical: 10, width: '100%', height: '100%', borderRadius: 20,
                                         backgroundColor: isDarkMode ? 'rgba(209, 184, 17, 0.26)' : '#E9A319',
+                                        justifyContent: 'center', // Center content
+                                        alignItems: 'center',     // Center content
                                     }}
                                     onPress={() => navigation.navigate('Premium')}
                                 >
@@ -324,19 +444,31 @@ const AI_Support = () => {
                                 </TouchableOpacity>
                             ) : (
                                 <>
+                                    <TouchableOpacity
+                                        style={[styles.microphoneButton, isListening && styles.microphoneButtonActive]}
+                                        onPress={isListening ? stopListening : startListening}
+                                        disabled={isWaiting} // Disable microphone if AI is generating a response
+                                    >
+                                        <Icon
+                                            name={isListening ? "microphone-off" : "microphone"}
+                                            size={24}
+                                            color={isListening ? "#fff" : "#555"}
+                                        />
+                                    </TouchableOpacity>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="Ask your queries to our Agent QD..."
+                                        placeholder={isListening ? "Say something..." : "Ask your queries to our Agent QD..."}
                                         placeholderTextColor="grey"
                                         value={inputMessage}
                                         onChangeText={setInputMessage}
-                                        editable={!isWaiting}
+                                        editable={!isWaiting && !isListening} // Disable typing when listening
                                     />
                                     {
                                         !isWaiting ? (
                                             <TouchableOpacity
                                                 style={styles.sendButton}
                                                 onPress={sendMessage}
+                                                disabled={isListening || !inputMessage.trim()} // Disable send if listening or input is empty
                                             >
                                                 <Image source={Stars2} style={{ height: 30, width: 30 }} />
                                             </TouchableOpacity>
@@ -481,6 +613,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         fontSize: 14,
         color: '#333',
+        marginLeft: 8,
     },
     sendButton: {
         marginLeft: 8,
@@ -497,10 +630,20 @@ const styles = StyleSheet.create({
     chatContainer: {
         flexGrow: 1,
         padding: 16,
-        paddingBottom: 130,
+        paddingBottom: 130, // Ensure space for the input field
     },
-
+    microphoneButton: {
+        backgroundColor: '#f2f2f2',
+        borderRadius: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 5,
+    },
+    microphoneButtonActive: {
+        backgroundColor: '#e74c3c',
+    },
 });
-
 
 export default AI_Support;

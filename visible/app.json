@@ -14,7 +14,8 @@
     },
     "ios": {
       "infoPlist": {
-        "NSDocumentsFolderUsageDescription": "This app needs access to your documents folder to display PDFs."
+        "NSDocumentsFolderUsageDescription": "This app needs access to your documents folder to display PDFs.",
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to enable speech-to-text functionality for AI queries."
       },
       "supportsTablet": true
     },
@@ -27,7 +28,8 @@
         "MEDIA_CONTENT_CONTROL",
         "INTERNET",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/updatedLogo2.png",

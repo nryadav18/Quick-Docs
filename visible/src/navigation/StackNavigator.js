@@ -8,7 +8,6 @@ import ViewFilesScreen from '../screens/ViewFilesScreen';
 import Premium from '../premium/PremiumCard';
 import PremiumHeader from '../premium/PremiumHeader';
 import PaymentSuccessScreen from '../premium/PaymentSuccess';
-import MultilingualVoiceInput from '../screens/MultiLingual';
 
 const Stack = createStackNavigator();
 
@@ -27,7 +26,6 @@ export default function StackNavigator({ alreadyLoggedIn }) {
                             }}
                         />
                         <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
-                        <Stack.Screen name="MultilingualVoiceInput" component={MultilingualVoiceInput} />
                     </>
                     :
                     <>
