@@ -516,6 +516,7 @@ const styles = StyleSheet.create({
     passwordInput: {
         flex: 1,
         height: 50,
+        color : 'black'
     },
     eyeIcon: {
         paddingHorizontal: 5,

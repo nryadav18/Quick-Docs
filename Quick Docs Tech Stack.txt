@@ -32,3 +32,18 @@ Optional Chaining Methodology (?.) and Nullish coalescing operator (??) for a Sa
 Using Vector Search (Mongodb) for efficiency
 Storing the data as embeddings (faster, quicker, special data structure) - Highly Secure
 Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficiency)
+
+
+Which other Technologies we Integrated?
+
+Full Stack Web - our Tech
+Mobile App Dev - as like Flutter
+GCP - Google Cloud Tech
+AI - Generative AI
+AES and BCRYPT Hashing - Cyber Security
+
+
+
+
+
+

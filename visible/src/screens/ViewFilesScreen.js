@@ -540,10 +540,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         width: '100%',
         paddingVertical: 26,
-        borderBottomWidth: 1,
         borderColor: '#ddd',
     },
-
+    
     previewBox: {
         width: '50%',
         justifyContent: 'center',

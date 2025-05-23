@@ -549,7 +549,7 @@ app.post('/ask', async (req, res) => {
                         {
                             role: 'user',
                             parts: [{
-                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.\n Here are the user details: The Full Name of the User is ${userfullname}, The Username entered by the user in the application is ${username}, The Gender of the User is ${gender}, The verified User email is ${email}, The Date of Birth (often called as DOB) of the User is ${dob} Is the user a premium user : ${ispremiumuser}, Total Number of files uploaded by the user is ${numberoffilesuploaded}, if the ${numberoffilesuploaded} is equal to 0, then suggest him to upload the files and tell us about the usage of appliation through application. \n Context:\n\n${systemContext}\n\nQuestion: ${lowerQuestion}`
+                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.\n\n Context:\n\n${systemContext}\n\nQuestion: ${lowerQuestion}`
                             }]
                         }
                     ]
@@ -755,35 +755,37 @@ const INDIAN_LANGUAGES = [
 // });
 
 // Mine
-// app.post("/transcribe", upload.single("audio"), async (req, res) => {
-//     try {
-//         const audioBytes = req.file.buffer.toString("base64");
+app.post("/transcribe", upload.single("audio"), async (req, res) => {
+    try {
+        const audioBytes = req.file.buffer.toString("base64");
 
-//         const audio = {
-//             content: audioBytes,
-//         };
+        const audio = {
+            content: audioBytes,
+        };
 
-//         const config = {
-//             encoding: 'AMR', // for .3gp files recorded by Android with expo-av
-//             sampleRateHertz: 8000,
-//             languageCode: 'en-US',
-//         };
+        const config = {
+            encoding: 'AMR', // for .3gp files recorded by Android with expo-av
+            sampleRateHertz: 8000,
+            languageCode: 'en-US',
+        };
 
 
-//         const request = {
-//             audio: audio,
-//             config: config,
-//         };
+        const request = {
+            audio: audio,
+            config: config,
+        };
 
-//         const [response] = await speechClient.recognize(request);
-//         const transcript = response.results.map(r => r.alternatives[0].transcript).join("\n");
+        const [response] = await speechClient.recognize(request);
+        const transcript = response.results.map(r => r.alternatives[0].transcript).join("\n");
 
-//         res.json({ transcript });
-//     } catch (err) {
-//         console.error("Error processing audio:", err);
-//         res.status(500).json({ error: "Speech recognition failed" });
-//     }
-// });
+        console.log(transcript)
+
+        res.json({ transcript });
+    } catch (err) {
+        console.error("Error processing audio:", err);
+        res.status(500).json({ error: "Speech recognition failed" });
+    }
+});
 
 
 
@@ -1372,7 +1374,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                 const detections = result.textAnnotations;
                 const extractedText = detections.length > 0 ? detections[0].description : '';
 
-                const embedding = await generateEmbedding(extractedText);
+                const combinedText = `${originalname}\n\n${extractedText}`;
+                const embedding = await generateEmbedding(combinedText);
 
                 // Encrypt sensitive file fields before saving to DB
                 const newFile = {
@@ -1399,12 +1402,12 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                     type: file.mimetype,
                     rating: parseInt(importance) || 1,
                     uploadedAt: new Date(),
-                    extractedText: encrypt(extractedText),
+                    extractedText: encrypt(combinedText),
                     embedding,
                     usernameHash: hashedUsername
                 });
 
-                console.log(extractedText)
+                console.log(combinedText)
 
                 await newFileDoc.save();
 
