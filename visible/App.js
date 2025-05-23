@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ThemeProvider } from './src/context/ThemeContext';
 import StackNavigator from './src/navigation/StackNavigator';
-import { StatusBar, Alert, Platform } from 'react-native';
+import { Alert, Platform, PermissionsAndroid } from 'react-native';
 import useUserStore from './src/store/userStore';
 import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
@@ -67,13 +67,6 @@ const AppContent = () => {
     }, []);
 
     useEffect(() => {
-        StatusBar.setBarStyle('dark-content');
-        if (Platform.OS === 'android') {
-            StatusBar.setBackgroundColor('#89f7fe'); // Your theme
-        }
-    }, []);
-
-    useEffect(() => {
         const subscriptionReceived = Notifications.addNotificationReceivedListener(() => {
             console.log('Notification Received');
         });
@@ -112,8 +105,26 @@ const AppContent = () => {
             }
         };
 
+        const requestMicrophonePermission = async () => {
+            if (Platform.OS === 'android') {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                    {
+                        title: 'Microphone Permission',
+                        message: 'This app needs access to your microphone for speech recognition.',
+                        buttonNeutral: 'Ask Me Later',
+                        buttonNegative: 'Cancel',
+                        buttonPositive: 'OK',
+                    },
+                );
+                return granted === PermissionsAndroid.RESULTS.GRANTED;
+            }
+            return true;
+        };
+
         requestNotificationPermission();
         requestDownloadPermission();
+        requestMicrophonePermission();
     }, []);
 
     if (loadingAuth) {

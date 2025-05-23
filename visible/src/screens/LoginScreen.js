@@ -6,7 +6,9 @@ import {
     TouchableOpacity,
     StyleSheet,
     ActivityIndicator,
-    Image
+    Image,
+    StatusBar,
+    Platform
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AntDesign, Feather, Entypo } from "@expo/vector-icons"
@@ -17,7 +19,6 @@ import useUserStore from "../store/userStore"
 import * as LocalAuthentication from "expo-local-authentication";
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from "react-native";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BACKEND_URL } from '@env';
 import * as SecureStore from 'expo-secure-store';
@@ -46,6 +47,13 @@ const LoginScreen = () => {
     const [biometricSuccess, setBiometricSuccess] = useState(false);
     const [expoPushToken, setExpoPushToken] = useState('');
 
+
+    useEffect(() => {
+        StatusBar.setBarStyle('dark-content');
+        if (Platform.OS === 'android') {
+            StatusBar.setBackgroundColor('#89f7fe'); // Your theme
+        }
+    }, []);
 
 
     useEffect(() => {

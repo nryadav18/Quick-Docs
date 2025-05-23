@@ -47,7 +47,8 @@
           "sound": true,
           "mode": "system"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "web": {
       "favicon": "./assets/updatedLogo1.png"

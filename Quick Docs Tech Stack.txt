@@ -10,6 +10,9 @@ GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)
  2. Google Translate API (For Auto detecting Language and Translating the services)
+ 3. Cloud Speech to Text API
+
+Voice to Voice Communication AI Assistant
 
 AI Agent: 
 *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)

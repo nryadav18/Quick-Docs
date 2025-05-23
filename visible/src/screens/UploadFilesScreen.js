@@ -153,6 +153,7 @@ const UploadFilesScreen = () => {
                     setUploadingState(false);
                     return;
                 }
+                console.log(response.file)
                 const newFile = {
                     id: generateId(),
                     name: newFileName,
@@ -167,8 +168,6 @@ const UploadFilesScreen = () => {
                     ...user,
                     myfiles: [...(user?.myfiles ?? []), newFile],
                 };
-
-                console.log(updatedUser)
 
                 setUser(updatedUser); // Update Zustand
 

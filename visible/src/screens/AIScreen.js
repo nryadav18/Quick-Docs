@@ -1,55 +1,148 @@
-import React, { useState, useContext, useRef, useEffect } from 'react';
-import { Text, View, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import AI from '../../assets/robo1.jpg'; // Ensure this path is correct
-// import Human from '../../assets/squad.jpg'; // This was in your original, but user profile image is now dynamic
-import { ThemeContext } from '../context/ThemeContext';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Use from react-native-safe-area-context
-import LottieView from 'lottie-react-native';
-// import Stars1 from '../../assets/stars1.png'; // Not used in this version
-import Stars2 from '../../assets/stars2.png'; // Ensure this path is correct
+import React, { useState, useContext, useRef, useEffect, useCallback } from 'react';
+import {
+    Text,
+    View,
+    Image,
+    ScrollView,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    KeyboardAvoidingView,
+    Platform,
+    Alert,
+    Vibration,
+    Animated
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import useUserStore from '../store/userStore';
-import { useNavigation } from "@react-navigation/native"
+import { Audio } from "expo-av";
+import axios from 'axios';
+import LottieView from 'lottie-react-native';
+import { useNavigation } from "@react-navigation/native";
+
+// Assets and Components
+import AI from '../../assets/robo1.jpg';
+import Human from '../../assets/squad.jpg';
+import Stars1 from '../../assets/stars1.png';
+import Stars2 from '../../assets/stars2.png';
 import FadeInText from '../components/FadeInText';
+
+// Context and Hooks
+import { ThemeContext } from '../context/ThemeContext';
+import useUserStore from '../store/userStore';
 import useThemedStatusBar from '../hooks/StatusBar';
+
+// Icons
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // For the microphone icon
-import * as Speech from 'expo-speech'; // Keep if you plan to use text-to-speech for AI response
-import * as SpeechRecognition from 'expo-speech-recognition';
-import { BACKEND_URL } from '@env'; // Make sure you have babel-plugin-dotenv-import or similar for @env to work
+import MicIcon from 'react-native-vector-icons/FontAwesome5';
+import StopIcon from 'react-native-vector-icons/MaterialIcons';
 
-const GOOGLE_TRANSLATE_API_ENDPOINT = `${BACKEND_URL}/translate-speech`; // Example backend endpoint
+// Environment
+import { BACKEND_URL } from '@env';
 
-const AI_Support = () => {
-    const [messages, setMessages] = useState([{ role: 'assistant', text: 'Hello! I am Agent QD, How can I assist you today?', loading: false }]);
+const ProfileScreen = () => {
+    // State Management
+    const [messages, setMessages] = useState([
+        {
+            id: '1',
+            role: 'assistant',
+            text: 'Hello! I am Agent QD, your intelligent assistant. How can I help you today?',
+            loading: false,
+            timestamp: new Date().toISOString()
+        }
+    ]);
     const [inputMessage, setInputMessage] = useState('');
     const [isWaiting, setIsWaiting] = useState(false);
     const [isStopped, setIsStopped] = useState(false);
-    const [promptLimit, setPromptLimit] = useState(false)
-    const [isListening, setIsListening] = useState(false);
+    const [promptLimit, setPromptLimit] = useState(false);
+
+    // Voice Recognition States
+    const [micOn, setMicOn] = useState(false);
+    const [recording, setRecording] = useState(null);
+    const [transcript, setTranscript] = useState("");
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisText, setAnalysisText] = useState('🎤 Processing your voice...');
+    const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+
+    // Translation State Variables
+    const [detectedLanguage, setDetectedLanguage] = useState(null);
+    const [translationInfo, setTranslationInfo] = useState(null);
+    const [showLanguageInfo, setShowLanguageInfo] = useState(false);
+
+    // Animation Values
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const micButtonScale = useRef(new Animated.Value(1)).current;
+
+    // Context and Hooks
     const { isDarkMode } = useContext(ThemeContext);
     const user = useUserStore((state) => state.user);
-    const navigation = useNavigation()
+    const navigation = useNavigation();
     const scrollRef = useRef(null);
     const abortControllerRef = useRef(null);
-    useThemedStatusBar(isDarkMode)
+
+    useThemedStatusBar(isDarkMode);
+
+    // Analysis steps for voice processing feedback
+    const analysisSteps = [
+        "🎤 Processing your voice...",
+        "🧠 Understanding context...",
+        "📝 Preparing response..."
+    ];
+
+    // Blocked keywords for content filtering
+    const blockedKeywords = [
+        "generate code", "write code", "give me code", "create an app", "build an app",
+        "weather in", "what is the weather", "current weather", "app prompt",
+        "how to code", "GPT plugin", "generate a project", "open source",
+        "location in", "my location", "hack", "illegal", "virus"
+    ];
+
+    // Effects
+    useEffect(() => {
+        checkPromptLimitations();
+    }, [user?.premiumDetails, user?.aipromptscount]);
 
     useEffect(() => {
-        // Scroll to end when messages update
-        if (scrollRef.current) {
-            setTimeout(() => {
-                scrollRef.current.scrollToEnd({ animated: true });
-            }, 100); // Small delay to allow layout to settle
+        let interval;
+        if (isAnalyzing) {
+            let stepIndex = 0;
+            interval = setInterval(() => {
+                setAnalysisText(analysisSteps[stepIndex]);
+                stepIndex = (stepIndex + 1) % analysisSteps.length;
+            }, 1000);
+
+            // Pulse animation during analysis
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.05,
+                        duration: 800,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 800,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            setAnalysisText('🎤 Processing your voice...');
+            pulseAnim.setValue(1);
         }
-    }, [messages]);
 
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [isAnalyzing]);
 
-    useEffect(() => {
+    // Helper Functions
+    const checkPromptLimitations = useCallback(() => {
         const planNames = Array.isArray(user?.premiumDetails)
             ? user.premiumDetails.map(p => p?.type || '')
             : [];
 
-        let allowedPrompts = 3; // Default for non-premium
+        let allowedPrompts = 3;
 
         if (planNames.some(name => name.includes('Ultra Pro Max'))) {
             allowedPrompts = Infinity;
@@ -59,27 +152,8 @@ const AI_Support = () => {
 
         if ((user?.aipromptscount ?? 0) >= allowedPrompts) {
             setPromptLimit(true);
-        } else {
-            setPromptLimit(false); // Reset if user becomes premium or count is less than limit
         }
     }, [user?.premiumDetails, user?.aipromptscount]);
-
-    useEffect(() => {
-        (async () => {
-            const { status } = await SpeechRecognition.requestPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Speech recognition needs microphone permission to work.');
-            }
-        })();
-
-        // Clean up listeners on unmount
-        return () => {
-            SpeechRecognition.removeListener('onSpeechResults', () => {});
-            SpeechRecognition.removeListener('onSpeechEnd', () => {});
-            SpeechRecognition.removeListener('onSpeechError', () => {});
-            SpeechRecognition.stopAsync().catch(() => {}); // Attempt to stop if active
-        };
-    }, []);
 
     const cleanBotResponse = (text) => {
         return text
@@ -90,45 +164,189 @@ const AI_Support = () => {
             .trim();
     };
 
-    const blockedKeywords = [
-        "generate code", "write code", "give me code", "create an app", "build an app",
-        "weather in", "what is the weather", "current weather", "app prompt", "how to code",
-        "GPT plugin", "generate a project", "open source", "location in", "my location",
-    ];
-
-    function isBlockedPrompt(prompt) {
+    const isBlockedPrompt = (prompt) => {
         if (typeof prompt !== 'string') return false;
         const lowerPrompt = prompt.toLowerCase();
-        return blockedKeywords.some((keyword) => lowerPrompt.includes(keyword));
-    }
+        return blockedKeywords.some(keyword => lowerPrompt.includes(keyword.toLowerCase()));
+    };
 
+    const generateMessageId = () => {
+        return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    };
+
+    // Voice Recognition Functions
+    const startRecording = async () => {
+        try {
+            const { status } = await Audio.requestPermissionsAsync();
+            if (status !== "granted") {
+                Alert.alert(
+                    "Permission Required",
+                    "Microphone access is required for voice input.",
+                    [{ text: "OK" }]
+                );
+                return;
+            }
+
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: true,
+                playsInSilentModeIOS: true,
+            });
+
+            const { recording } = await Audio.Recording.createAsync(
+                Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+            );
+
+            setRecording(recording);
+
+            // Haptic feedback
+            if (Platform.OS === 'ios') {
+                Vibration.vibrate(50);
+            }
+
+            // Animate mic button
+            Animated.spring(micButtonScale, {
+                toValue: 1.2,
+                useNativeDriver: true,
+            }).start();
+
+        } catch (err) {
+            console.error("Failed to start recording", err);
+            Alert.alert("Error", "Failed to start recording. Please try again.");
+        }
+    };
+
+    const stopRecording = async () => {
+        try {
+            if (!recording) return;
+
+            setIsProcessingVoice(true);
+
+            // Reset mic button animation
+            Animated.spring(micButtonScale, {
+                toValue: 1,
+                useNativeDriver: true,
+            }).start();
+
+            await recording.stopAndUnloadAsync();
+            const uri = recording.getURI();
+            setRecording(null);
+
+            setIsAnalyzing(true);
+
+            // Upload and transcribe audio with language detection
+            const formData = new FormData();
+            formData.append("audio", {
+                uri: uri,
+                name: "audio.3gp",
+                type: "audio/3gpp",
+            });
+
+            const response = await axios.post(
+                `${BACKEND_URL}/transcribe-audio`,
+                formData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    timeout: 30000
+                }
+            );
+
+            const { transcript, detectedLanguage: detectedLang, translationInfo: transInfo, confidence } = response.data;
+
+            // Update states with language information
+            console.log(detectedLang)
+            setDetectedLanguage(detectedLang);
+            setTranslationInfo(transInfo);
+            setTranscript(transcript);
+
+            // Show language detection info if not English
+            if (detectedLang && detectedLang !== 'en-US' && transInfo?.wasTranslated) {
+                setShowLanguageInfo(true);
+                // Auto-hide after 5 seconds
+                setTimeout(() => setShowLanguageInfo(false), 5000);
+            }
+
+            if (transcript) {
+                if (inputMessage) {
+                    setInputMessage(inputMessage + " " + transcript);
+                } else {
+                    setInputMessage(transcript);
+                }
+                setTimeout(() => setIsAnalyzing(false), 200);
+                setIsProcessingVoice(false);
+            }
+
+        } catch (err) {
+            console.error("Error stopping/uploading recording:", err);
+            Alert.alert("Error", "Failed to process voice input. Please try again.");
+            setIsAnalyzing(false);
+            setIsProcessingVoice(false);
+
+            // Reset language info on error
+            setDetectedLanguage(null);
+            setTranslationInfo(null);
+            setShowLanguageInfo(false);
+        }
+    };
+
+    // Add this helper function for language names
+    const getLanguageName = (languageCode) => {
+        const languageNames = {
+            'en-US': 'English',
+            'hi-IN': 'Hindi',
+            'te-IN': 'Telugu'
+        };
+
+        return languageNames[languageCode] || languageCode;
+    };
+
+
+    const handleMicPress = async () => {
+        if (micOn) {
+            await stopRecording();
+        } else {
+            await startRecording();
+        }
+        setMicOn(!micOn);
+    };
+
+    // Message Functions
     const sendMessage = async () => {
-        const { user: currentUser, incrementPromptCount } = useUserStore.getState();
+        const { user, incrementPromptCount } = useUserStore.getState();
 
-        if (!currentUser) {
-            Alert.alert("User Not Found", "Please log in to use Agent QD.");
+        if (!user) {
+            Alert.alert("Error", "Please log in to continue.");
             return;
         }
 
         if (!inputMessage.trim() || isWaiting) return;
 
-        const userMessage = { role: 'user', text: inputMessage };
+        const userMessage = {
+            id: generateMessageId(),
+            role: 'user',
+            text: inputMessage.trim(),
+            timestamp: new Date().toISOString()
+        };
 
+        // Check for blocked content
         if (isBlockedPrompt(inputMessage)) {
             setMessages((prev) => [...prev, userMessage]);
             setInputMessage('');
             setIsWaiting(true);
+            setIsAnalyzing(false);
 
             setTimeout(() => {
                 setMessages((prev) => [
                     ...prev,
                     {
+                        id: generateMessageId(),
                         role: "assistant",
-                        text: "Sorry, I can only respond to general questions. I cannot assist with app prompts, coding, or weather-related queries.",
+                        text: "I apologize, but I can only assist with general questions. I cannot help with app development, coding, weather queries, or potentially harmful content.",
+                        timestamp: new Date().toISOString()
                     },
                 ]);
                 setIsWaiting(false);
             }, 2000);
+
             return;
         }
 
@@ -136,74 +354,94 @@ const AI_Support = () => {
         setInputMessage('');
         setIsWaiting(true);
         setIsStopped(false);
+        setIsAnalyzing(false);
 
-        const loadingMessage = { role: 'assistant', text: '', loading: true };
+        const loadingMessage = {
+            id: generateMessageId(),
+            role: 'assistant',
+            text: '',
+            loading: true,
+            timestamp: new Date().toISOString()
+        };
         setMessages((prev) => [...prev, loadingMessage]);
 
         abortControllerRef.current = new AbortController();
 
         try {
+            // Check prompt limitations
             const promptRes = await fetch(`${BACKEND_URL}/check-prompt-limitation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: currentUser?.username }),
-                signal: abortControllerRef.current.signal, // Allow aborting this fetch too
+                body: JSON.stringify({ username: user?.username }),
             });
 
             const promptData = await promptRes.json();
+
             if (!promptRes.ok) {
                 if (promptData?.message === 'Prompt limit reached') {
-                    setPromptLimit(true)
-                    // Update only the last message if it's the loading message
-                    setMessages((prev) =>
-                        prev.map((msg, index) =>
-                            index === prev.length - 1 && msg.loading && msg.role === 'assistant'
-                                ? { role: 'assistant', text: 'Ohh God! I am Sorry Buddy, Your Limit has Reached, Explore our Budget Friendly Premiums and Purchase them to Enjoy our Valuable Services', loading: false }
-                                : msg
-                        )
-                    );
-                    return; // Stop further processing
+                    setPromptLimit(true);
+                    setTimeout(() => {
+                        setMessages((prev) =>
+                            prev.map((msg, index) =>
+                                index === prev.length - 1
+                                    ? {
+                                        ...msg,
+                                        text: '🚫 Sorry! You\'ve reached your daily limit. Upgrade to premium for unlimited access to Agent QD.',
+                                        loading: false
+                                    }
+                                    : msg
+                            )
+                        );
+                        setIsWaiting(false);
+                    }, 2000);
+                    return;
                 } else {
                     throw new Error(promptData.message || 'Prompt check failed');
                 }
             }
 
-            // Only increment if the prompt check was successful
             incrementPromptCount();
 
-            // Proceed with AI service call only if not stopped
-            if (!isStopped) {
-                const response = await generateBotResponse([...messages, userMessage], abortControllerRef.current.signal);
-                const rawResponse = response?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not understand that.';
-                const botResponse = cleanBotResponse(rawResponse);
+            // Generate AI response
+            const response = await generateBotResponse([...messages, userMessage], abortControllerRef.current.signal);
 
-                setMessages((prev) =>
-                    prev.map((msg, index) =>
-                        index === prev.length - 1 && msg.loading && msg.role === 'assistant'
-                            ? { role: 'assistant', text: botResponse, loading: false }
-                            : msg
-                    )
-                );
-            }
+            if (isStopped) return;
+
+            const rawResponse = response?.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, but I couldn\'t process your request. Please try again.';
+            const botResponse = cleanBotResponse(rawResponse);
+
+            setMessages((prev) =>
+                prev.map((msg, index) =>
+                    index === prev.length - 1
+                        ? {
+                            ...msg,
+                            text: botResponse,
+                            loading: false,
+                            timestamp: new Date().toISOString()
+                        }
+                        : msg
+                )
+            );
 
         } catch (error) {
             if (error.name === 'AbortError') {
-                // If aborted, remove the loading message and don't show an error
                 setMessages((prev) => prev.filter((msg) => !(msg.loading && msg.role === 'assistant')));
             } else {
-                console.error("Error in sendMessage:", error);
-                // Update only the last message if it's the loading message
+                console.error('Send message error:', error);
                 setMessages((prev) =>
                     prev.map((msg, index) =>
-                        index === prev.length - 1 && msg.loading && msg.role === 'assistant'
-                            ? { role: 'assistant', text: 'Oops, something went wrong. Please try again later.', loading: false }
+                        index === prev.length - 1
+                            ? {
+                                ...msg,
+                                text: '⚠️ Something went wrong. Please check your connection and try again.',
+                                loading: false
+                            }
                             : msg
                     )
                 );
             }
         } finally {
             setIsWaiting(false);
-            setIsStopped(false); // Reset stopped state
         }
     };
 
@@ -223,14 +461,15 @@ const AI_Support = () => {
                     dob: user?.dob,
                     gender: user?.gender,
                     ispremiumuser: user?.premiumuser,
-                    numberoffilesuploaded: user?.myfiles.length
+                    numberoffilesuploaded: user?.myfiles?.length || 0
                 })
             });
 
-            const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.error || 'Backend AI response failed');
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+
+            const data = await response.json();
             return {
                 candidates: [{
                     content: {
@@ -239,253 +478,214 @@ const AI_Support = () => {
                 }]
             };
         } catch (error) {
-            console.error('Error fetching AI response from backend:', error);
+            console.error('Error fetching response:', error);
             throw error;
         }
     };
 
     const stopResponse = () => {
         if (abortControllerRef.current) {
-            abortControllerRef.current.abort(); // Abort the fetch requests
+            abortControllerRef.current.abort();
         }
         setIsStopped(true);
         setIsWaiting(false);
-        // Remove the loading message immediately
-        setMessages((prev) => prev.filter((msg) => !(msg.loading && msg.role === 'assistant')));
     };
 
-    // --- Speech-to-Text and Translation Logic ---
-    const startListening = async () => {
-        const isAvailable = await SpeechRecognition.isAvailableAsync();
-        if (!isAvailable) {
-            Alert.alert('Speech Recognition Not Available', 'Your device does not support speech recognition.');
-            return;
-        }
+    const renderLanguageInfo = () => {
+        if (!showLanguageInfo || !translationInfo) return null;
 
-        const hasPermission = await SpeechRecognition.hasPermissionAsync();
-        if (!hasPermission.granted) {
-            const { status } = await SpeechRecognition.requestPermissionsAsync();
-            if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Microphone permission is required for speech-to-text.');
-                return;
-            }
-        }
+        return (
+            <Animated.View
+                style={[
+                    styles.languageInfoBanner,
+                    { backgroundColor: isDarkMode ? 'rgba(0, 121, 107, 0.9)' : 'rgba(0, 121, 107, 0.1)' }
+                ]}
+            >
+                <View style={styles.languageInfoContent}>
+                    <Text style={[styles.languageInfoIcon]}>🌐</Text>
+                    <View style={styles.languageInfoText}>
+                        <Text style={[styles.languageInfoTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
+                            Language Detected: {getLanguageName(translationInfo.originalLanguage)}
+                        </Text>
+                        {translationInfo.wasTranslated && (
+                            <Text style={[styles.languageInfoSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
+                                Automatically translated to English
+                            </Text>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        onPress={() => setShowLanguageInfo(false)}
+                        style={styles.closeButton}
+                    >
+                        <Text style={styles.closeButtonText}>×</Text>
+                    </TouchableOpacity>
+                </View>
+            </Animated.View>
+        );
+    };
 
-        try {
-            setIsListening(true);
-            setInputMessage('Listening...'); // Indicate listening state in input field
-
-            // Clear previous listeners to avoid duplicates
-            SpeechRecognition.removeAllListeners();
-
-            // Set up listeners for speech recognition events
-            SpeechRecognition.addListener('onSpeechResults', async ({ results }) => {
-                if (results && results.length > 0) {
-                    const spokenText = results[0]; // Get the most confident result
-                    console.log("Spoken Text:", spokenText);
-
-                    // Send spoken text to your backend for translation
-                    try {
-                        const translationResponse = await fetch(GOOGLE_TRANSLATE_API_ENDPOINT, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                text: spokenText,
-                                targetLanguage: 'en', // Always translate to English
-                            }),
-                        });
-
-                        const translationData = await translationResponse.json();
-                        if (translationResponse.ok && translationData.translatedText) {
-                            setInputMessage(translationData.translatedText);
-                        } else {
-                            console.error('Translation failed:', translationData.error || 'Unknown error');
-                            setInputMessage(spokenText); // Fallback to original text if translation fails
-                        }
-                    } catch (error) {
-                        console.error('Error during translation API call:', error);
-                        setInputMessage(spokenText); // Fallback to original text on network error
+    // Render Functions
+    const renderMessage = (item, index) => (
+        <View
+            key={item.id || `message-${index}`}
+            style={item.role === 'user' ? styles.HumanMessage : styles.AIMessage}
+        >
+            <View style={item.role === 'user' ? styles.HumanMsgLogoParent : styles.AIMsgLogoParent}>
+                <Image
+                    source={
+                        item.role === 'user'
+                            ? user?.profileImageUrl
+                                ? { uri: user?.profileImageUrl }
+                                : require('../../assets/updatedLogo1.png')
+                            : AI
                     }
-                }
-            });
+                    style={styles.miniLogo}
+                />
+            </View>
 
-            SpeechRecognition.addListener('onSpeechEnd', () => {
-                console.log("Speech recognition ended.");
-                setIsListening(false);
-                // If no text was captured, clear "Listening..." message
-                if (inputMessage === 'Listening...') {
-                    setInputMessage('');
-                }
-            });
+            <View style={item.role === 'user' ? styles.HumanTextParent : styles.RoboTextParent}>
+                {item.loading && item.role === 'assistant' ? (
+                    <View style={styles.loadingContainer}>
+                        <LottieView
+                            source={require('../../assets/AI_Loader.json')}
+                            autoPlay={true}
+                            loop={true}
+                            speed={1.5}
+                            style={styles.loader}
+                        />
+                    </View>
+                ) : (
+                    <View style={item.role === 'user' ? styles.HumanMessageContainer : styles.RoboMessageContainer}>
+                        {item.role === 'assistant' ? (
+                            <FadeInText style={[styles.AIText, { flexWrap: 'wrap' }]}>
+                                {item.text}
+                            </FadeInText>
+                        ) : (
+                            <Text style={styles.UserText}>{item.text}</Text>
+                        )}
+                    </View>
+                )}
+            </View>
+        </View>
+    );
 
-            SpeechRecognition.addListener('onSpeechError', (error) => {
-                console.error('Speech Recognition Error:', error);
-                setIsListening(false);
-                setInputMessage(''); // Clear input on error
-                Alert.alert('Speech Error', 'Could not process speech. Please try again.');
-            });
-
-            // Start the recognition
-            await SpeechRecognition.startAsync({
-                continuous: false, // Set to true for continuous listening
-                interimResults: false, // Set to true to get results as user speaks
-            });
-
-        } catch (error) {
-            console.error('Error starting speech recognition:', error);
-            setIsListening(false);
-            setInputMessage('');
-            Alert.alert('Speech Error', 'Failed to start speech recognition. Make sure your microphone is working and permissions are granted.');
+    const renderInputSection = () => {
+        if (!user?.premiumuser || promptLimit) {
+            return (
+                <TouchableOpacity
+                    style={[styles.premiumButton, { backgroundColor: isDarkMode ? 'rgba(255, 81, 0, 0.74)' : '#E9A319' }]}
+                    onPress={() => navigation.navigate('Premium')}
+                >
+                    <View style={styles.buttonStylings}>
+                        <CrownIcon name="crown" size={24} color="#FFD700" />
+                        <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
+                            Upgrade to Premium for Agent QD
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+            );
         }
-    };
 
-    const stopListening = async () => {
-        try {
-            await SpeechRecognition.stopAsync();
-            setIsListening(false);
-            // After stopping, if the input still says "Listening...", clear it.
-            // Actual text will be set by onSpeechResults if successful.
-            if (inputMessage === 'Listening...') {
-                setInputMessage('');
-            }
-        } catch (error) {
-            console.error('Error stopping speech recognition:', error);
-            Alert.alert('Error', 'Failed to stop speech recognition.');
-        }
-    };
+        return (
+            <View style={styles.inputRow}>
+                <Animated.View style={{ transform: [{ scale: micButtonScale }] }}>
+                    <TouchableOpacity
+                        onPress={handleMicPress}
+                        disabled={isProcessingVoice}
+                        style={[
+                            styles.micButton,
+                            {
+                                backgroundColor: isProcessingVoice ? 'red' : (micOn ? '#00796b' : '#F1EFEC'),
+                                borderWidth: (micOn ? 2 : 0),
+                                borderColor: '#00796b',
+                            }
+                        ]}
+                    >
+                        {micOn ? (
+                            <MicIcon name="microphone" size={20} color="white" />
+                        ) : (
+                            <MicIcon name="microphone-slash" size={20} color="black" />
+                        )}
+                    </TouchableOpacity>
+                </Animated.View>
 
-    // --- End Speech-to-Text and Translation Logic ---
+                <View style={styles.inputWrapper}>
+                    <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                        <TextInput
+                            style={[
+                                styles.input,
+                                isAnalyzing && styles.inputAnalyzing
+                            ]}
+                            placeholder={isAnalyzing ? analysisText : "Ask your queries to Agent QD..."}
+                            placeholderTextColor={isAnalyzing ? "#00796b" : "grey"}
+                            value={inputMessage}
+                            onChangeText={setInputMessage}
+                            editable={!isWaiting && !isAnalyzing}
+                        //  multiline={true} maxLength={500}
+                        />
+                    </Animated.View>
+                </View>
+
+                {!isWaiting ? (
+                    <TouchableOpacity
+                        style={[styles.sendButton, isAnalyzing && styles.sendButtonDisabled]}
+                        onPress={sendMessage}
+                        disabled={isAnalyzing || !inputMessage.trim()}
+                    >
+                        <Image source={Stars2} style={styles.sendIcon} />
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.stopButton} onPress={stopResponse}>
+                        <StopIcon name="stop" size={20} color="white" />
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    };
 
     return (
-        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
+        <LinearGradient
+            colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
+            style={styles.container}
+        >
             <SafeAreaView style={styles.container}>
-                <View style={styles.LogoParent}>
+                <View style={styles.header}>
                     <LottieView
                         source={require('../../assets/AI_Intro_Loader.json')}
                         autoPlay={true}
                         loop={true}
                         speed={1}
-                        style={styles.lottie}
+                        style={styles.headerLottie}
                     />
+                    <View style={styles.headerTextContainer}>
+                        <Text style={[styles.headerTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
+                            Agent QD
+                        </Text>
+                        <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
+                            Your AI Assistant
+                        </Text>
+                    </View>
                 </View>
+
+                {renderLanguageInfo()}
+
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 65} // Adjusted offset for better visibility
+                    keyboardVerticalOffset={65}
                     style={styles.keyboardAvoidingView}
                 >
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.chatContainer}
-                        ref={scrollRef}>
-                        {messages.map((item, index) => (
-                            <View
-                                key={`message-${index}`}
-                                style={item.role === 'user' ? styles.HumanMessage : styles.AIMessage}
-                            >
-                                <View style={item.role === 'user' ? styles.HumanMsgLogoParent : styles.AIMsgLogoParent}>
-                                    <Image
-                                        key={user?.profileImageUrl || 'default-image'}
-                                        source={
-                                            item.role === 'user'
-                                                ? user?.profileImageUrl
-                                                    ? { uri: user?.profileImageUrl }
-                                                    : require('../../assets/updatedLogo1.png') // Fallback user image
-                                                : AI
-                                        }
-                                        style={styles.miniLogo}
-                                        // No 'priority' prop for Image in React Native
-                                    />
-                                </View>
-                                <View
-                                    style={item.role === 'user' ? styles.HumanTextParent : styles.RoboTextParent}
-                                >
-                                    {item.loading && item.role === 'assistant' ? (
-                                        <LottieView
-                                            source={require('../../assets/AI_Loader.json')}
-                                            autoPlay={true}
-                                            loop={true}
-                                            speed={1.5}
-                                            style={styles.loader}
-                                        />
-                                    ) : (
-                                        <View style={item.role === 'user' ? styles.HumanMessageContainer : styles.RoboMessageContainer} >
-                                            {item.role === 'assistant' ? (
-                                                <FadeInText style={[styles.AIText, { flexWrap: 'wrap' }]}>
-                                                    {item.text}
-                                                </FadeInText>
-                                            ) : (
-                                                <Text style={styles.AIText}>{item.text}</Text>
-                                            )}
-                                        </View>
-                                    )}
-                                </View>
-                            </View>
-                        ))}
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.chatContainer}
+                        ref={scrollRef}
+                        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+                    >
+                        {messages.map(renderMessage)}
                     </ScrollView>
 
                     <View style={styles.inputContainer}>
-                        {
-                            (!user?.premiumuser || promptLimit) ? (
-                                <TouchableOpacity
-                                    style={{
-                                        paddingVertical: 10, width: '100%', height: '100%', borderRadius: 20,
-                                        backgroundColor: isDarkMode ? 'rgba(209, 184, 17, 0.26)' : '#E9A319',
-                                        justifyContent: 'center', // Center content
-                                        alignItems: 'center',     // Center content
-                                    }}
-                                    onPress={() => navigation.navigate('Premium')}
-                                >
-                                    <View style={styles.buttonStylings}>
-                                        <CrownIcon name="crown" size={24} color="#FFD700" />
-                                        <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
-                                            Buy Premium to use Agent QD
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            ) : (
-                                <>
-                                    <TouchableOpacity
-                                        style={[styles.microphoneButton, isListening && styles.microphoneButtonActive]}
-                                        onPress={isListening ? stopListening : startListening}
-                                        disabled={isWaiting} // Disable microphone if AI is generating a response
-                                    >
-                                        <Icon
-                                            name={isListening ? "microphone-off" : "microphone"}
-                                            size={24}
-                                            color={isListening ? "#fff" : "#555"}
-                                        />
-                                    </TouchableOpacity>
-                                    <TextInput
-                                        style={styles.input}
-                                        placeholder={isListening ? "Say something..." : "Ask your queries to our Agent QD..."}
-                                        placeholderTextColor="grey"
-                                        value={inputMessage}
-                                        onChangeText={setInputMessage}
-                                        editable={!isWaiting && !isListening} // Disable typing when listening
-                                    />
-                                    {
-                                        !isWaiting ? (
-                                            <TouchableOpacity
-                                                style={styles.sendButton}
-                                                onPress={sendMessage}
-                                                disabled={isListening || !inputMessage.trim()} // Disable send if listening or input is empty
-                                            >
-                                                <Image source={Stars2} style={{ height: 30, width: 30 }} />
-                                            </TouchableOpacity>
-                                        ) : (
-                                            <TouchableOpacity
-                                                style={[styles.sendButton, { backgroundColor: '#e74c3c', paddingVertical: 17, paddingHorizontal: 12.5 }]}
-                                                onPress={stopResponse}
-                                            >
-                                                <Text style={{ color: 'white', fontWeight: 'bold' }}>Stop</Text>
-                                            </TouchableOpacity>
-                                        )
-                                    }
-                                </>
-                            )
-                        }
+                        {renderInputSection()}
                     </View>
-
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </LinearGradient>
@@ -493,68 +693,118 @@ const AI_Support = () => {
 };
 
 
-const styles = StyleSheet.create({
-    LogoParent: {
-        justifyContent: 'space-evenly',
-        alignItems: 'center',
+const additionalStyles = StyleSheet.create({
+    languageInfoBanner: {
+        position: 'absolute',
+        top: 160, // Adjust based on your header height
+        left: 16,
+        right: 16,
+        borderRadius: 12,
+        padding: 12,
+        zIndex: 1000,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    languageInfoContent: {
         flexDirection: 'row',
-        height: 180,
-        marginBottom: 10,
+        alignItems: 'center',
     },
-    buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-    lottie: {
-        width: 180,
-        height: 180,
-        resizeMode: 'contain',
+    languageInfoIcon: {
+        fontSize: 20,
+        marginRight: 10,
     },
+    languageInfoText: {
+        flex: 1,
+    },
+    languageInfoTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    languageInfoSubtitle: {
+        fontSize: 12,
+        marginTop: 2,
+    },
+    closeButton: {
+        padding: 4,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    closeButtonText: {
+        fontSize: 18,
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        minWidth: 20,
+    },
+});
+
+const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-evenly',
+        paddingVertical: 20,
+        paddingHorizontal: 16,
+    },
+    headerLottie: {
+        width: 160,
+        height: 160,
+        marginRight: 12,
+    },
+    headerTextContainer: {
+        alignItems: 'center',
+    },
+    headerTitle: {
+        fontSize: 36,
+        fontWeight: 'bold',
+    },
+    headerSubtitle: {
+        fontSize: 16,
+        marginTop: 2,
     },
     keyboardAvoidingView: {
         flex: 1,
     },
-    buttonStylings: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 10,
-    },
-    mainTitle: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        marginTop: 20,
-        color: '#00796b'
+    chatContainer: {
+        flexGrow: 1,
+        padding: 16,
+        paddingBottom: 130,
     },
     AIMessage: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        marginVertical: 5,
+        marginVertical: 8,
         marginRight: 10,
     },
     AIMsgLogoParent: {
-        marginRight: 10,
+        marginRight: 12,
     },
     RoboTextParent: {
         maxWidth: '80%',
+        flex: 1,
     },
     RoboMessageContainer: {
         backgroundColor: '#EAF4FC',
-        padding: 12,
-        borderRadius: 16,
-        borderTopLeftRadius: 0,
+        padding: 16,
+        borderRadius: 20,
+        borderTopLeftRadius: 4,
         shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 1, height: 2 },
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 8,
+        elevation: 3,
     },
     AIText: {
         color: '#2c3e50',
         fontWeight: '500',
-        fontSize: 15,
-        lineHeight: 20,
-        flexShrink: 1,
-        flexWrap: 'wrap',
+        fontSize: 16,
+        lineHeight: 22,
     },
     HumanMessage: {
         flexDirection: 'row-reverse',
@@ -566,84 +816,169 @@ const styles = StyleSheet.create({
         maxWidth: '80%',
     },
     HumanMessageContainer: {
-        backgroundColor: '#FFF3DB',
-        padding: 12,
-        borderRadius: 16,
-        borderTopRightRadius: 0,
+        backgroundColor: '#FFE4B5',
+        padding: 16,
+        borderRadius: 20,
+        borderTopRightRadius: 4,
         shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 1, height: 2 },
-        shadowRadius: 4,
-        elevation: 2,
+        shadowOpacity: 0.1,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 8,
+        elevation: 3,
     },
-    loader: {
-        height: 40,
-        width: 40,
+    UserText: {
+        color: '#2c3e50',
+        fontWeight: '500',
+        fontSize: 16,
+        lineHeight: 22,
     },
     HumanMsgLogoParent: {
-        marginLeft: 10,
+        marginLeft: 12,
     },
     miniLogo: {
         width: 40,
         height: 40,
+        borderRadius: 22.5,
+        borderWidth: 2,
+        borderColor: '#fff',
+    },
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EAF4FC',
+        padding: 16,
         borderRadius: 20,
+        borderTopLeftRadius: 4,
+    },
+    loader: {
+        height: 40,
+        width: 40,
+        marginRight: 8,
+    },
+    loadingText: {
+        color: '#00796b',
+        fontStyle: 'italic',
+        fontSize: 14,
     },
     inputContainer: {
         position: 'absolute',
         bottom: 65,
-        left: 10,
-        right: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+        left: 16,
+        right: 16,
         backgroundColor: 'white',
         borderRadius: 30,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    premiumButton: {
+        paddingVertical: 10,
+        borderRadius: 25,
+        width: '100%',
+    },
+    buttonStylings: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 12,
+    },
+    buttonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        gap: 10
+    },
+    micButton: {
+        height: 50,
+        width: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
-        shadowRadius: 6,
-        elevation: 5,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    inputWrapper: {
+        flex: 1,
+        position: 'relative',
     },
     input: {
         flex: 1,
-        height: 40,
-        paddingHorizontal: 15,
-        backgroundColor: '#f2f2f2',
-        borderRadius: 20,
-        fontSize: 14,
+        height: 50,
+        paddingHorizontal: 16,
+        backgroundColor: '#f8f9fa',
+        borderRadius: 25,
+        fontSize: 16,
         color: '#333',
-        marginLeft: 8,
+        borderWidth: 0,
+        textAlignVertical: 'center',
     },
+    inputAnalyzing: {
+        borderColor: '#00796b',
+        borderWidth: 2,
+        backgroundColor: '#f8fffe',
+    },
+    analysisIndicator: {
+        position: 'absolute',
+        right: 0,
+        top: '50%',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#00796b',
+        marginHorizontal: 2,
+    },
+    dot1: { opacity: 1 },
+    dot2: { opacity: 0.7 },
+    dot3: { opacity: 0.4 },
     sendButton: {
-        marginLeft: 8,
         backgroundColor: '#FFB22C',
-        borderRadius: 50,
-        padding: 10,
+        borderRadius: 25,
+        padding: 12,
         justifyContent: 'center',
         alignItems: 'center',
+        minWidth: 50,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
     },
-    sendButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
+    sendButtonDisabled: {
+        opacity: 0.6,
     },
-    chatContainer: {
-        flexGrow: 1,
-        padding: 16,
-        paddingBottom: 130, // Ensure space for the input field
+    sendIcon: {
+        height: 24,
+        width: 24,
     },
-    microphoneButton: {
-        backgroundColor: '#f2f2f2',
-        borderRadius: 20,
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 5,
-    },
-    microphoneButtonActive: {
+    stopButton: {
         backgroundColor: '#e74c3c',
+        borderRadius: 30,
+        paddingVertical: 13,
+        paddingHorizontal: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    stopButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 14,
     },
 });
 
-export default AI_Support;
+export default ProfileScreen;

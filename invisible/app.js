@@ -9,12 +9,12 @@ const crypto = require('crypto');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer')
 const path = require('path')
-const { Readable } = require('stream')
 const axios = require('axios')
+const { SpeechClient } = require('@google-cloud/speech');
+const { TranslationServiceClient } = require('@google-cloud/translate');
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
-const { Translate } = require('@google-cloud/translate').v2;
 const client = new vision.ImageAnnotatorClient();
 const AES_SECRET_KEY = process.env.AES_SECRET_KEY;
 const IV_LENGTH = 16;
@@ -27,9 +27,16 @@ const storage = new Storage({
     keyFilename: path.join(__dirname, './yadavmainserver-firebase.json'),
     projectId: 'yadavmainserver',
 });
+
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
-const translate = new Translate();
+const speechClient = new SpeechClient();
+const translateClient = new TranslationServiceClient();
+
+const SUPPORTED_LANGUAGES = [
+    'en-US', 'hi-IN', 'te-IN', 'kn-IN', 'ta-IN', 'mr-IN', 'bn-IN',
+    'gu-IN', 'ml-IN', 'pa-IN', 'ur-IN', 'as-IN', 'or-IN'
+];
 
 
 // MongoDB connection
@@ -481,6 +488,7 @@ async function generateEmbedding(text) {
 app.post('/ask', async (req, res) => {
     const { question, username, userfullname, email, dob, gender, ispremiumuser, numberoffilesuploaded } = req.body;
     if (!question || !username) return res.status(400).json({ message: 'Missing fields' });
+    console.log(question)
     try {
         const lowerQuestion = question.toLowerCase();
 
@@ -517,9 +525,12 @@ app.post('/ask', async (req, res) => {
                 { $match: { usernameHash: hashedUsername } }
             ]);
 
+            console.log(results)
+
             // decrypt extractedText if stored encrypted
             topMatches = results
                 .map(doc => {
+                    console.log(decrypt(doc.extractedText))
                     return decrypt(doc.extractedText) || '';
                 })
                 .filter(Boolean)
@@ -538,7 +549,7 @@ app.post('/ask', async (req, res) => {
                         {
                             role: 'user',
                             parts: [{
-                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.\n Here are the user details: User Full Name = ${userfullname}, Username in the application : ${username}, User Gender : ${gender}, User Email : ${email}, User Date of Birth : ${dob} Is the user a premium user : ${ispremiumuser}, Total Number of files uploaded : ${numberoffilesuploaded}, if the ${numberoffilesuploaded} is equal to 0, then suggest him to upload the files and tell us about the usage of appliation through application. \n Make sure that, if the files uploaded are relevant to user then only try to give the response, otherwise tell user that, giving someones information is crossing the guidelines of the application. Context:\n\n${systemContext}\n\nQuestion: ${question}`
+                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.\n Here are the user details: The Full Name of the User is ${userfullname}, The Username entered by the user in the application is ${username}, The Gender of the User is ${gender}, The verified User email is ${email}, The Date of Birth (often called as DOB) of the User is ${dob} Is the user a premium user : ${ispremiumuser}, Total Number of files uploaded by the user is ${numberoffilesuploaded}, if the ${numberoffilesuploaded} is equal to 0, then suggest him to upload the files and tell us about the usage of appliation through application. \n Context:\n\n${systemContext}\n\nQuestion: ${lowerQuestion}`
                             }]
                         }
                     ]
@@ -549,6 +560,7 @@ app.post('/ask', async (req, res) => {
         const data = await geminiRes.json();
 
         const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No meaningful response.';
+        console.log(data)
 
         // encrypt answer before sending to DB if saving (optional)
         // but here we just send plain text back to frontend
@@ -604,31 +616,420 @@ app.post('/check-prompt-limitation', async (req, res) => {
 });
 
 
-app.post('/translate-speech', async (req, res) => {
-    const { text, targetLanguage = 'en' } = req.body;
+// Comprehensive language configuration for Indian languages
+const INDIAN_LANGUAGES = [
+    'hi-IN',    // Hindi
+    'te-IN',    // Telugu  
+    'kn-IN',    // Kannada
+    'ta-IN',    // Tamil
+    'mr-IN',    // Marathi
+    'bn-IN',    // Bengali
+    'gu-IN',    // Gujarati
+    'ml-IN',    // Malayalam
+    'pa-IN',    // Punjabi
+    'ur-IN',    // Urdu
+    'as-IN',    // Assamese
+    'or-IN',    // Odia
+    'ne-NP',    // Nepali
+    'si-LK',    // Sinhala
+];
 
-    if (!text) {
-        return res.status(400).json({ error: 'Text is required for translation.' });
-    }
 
+// Multi-language parallel recognition (more accurate but slower)
+// app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
+//     try {
+//         const audioBytes = req.file.buffer.toString("base64");
+//         const audio = { content: audioBytes };
+
+//         console.log("Starting parallel language detection...");
+
+//         // Test multiple languages in parallel
+//         const languagesToTest = ['hi-IN', 'te-IN', 'kn-IN', 'ta-IN', 'en-US', 'mr-IN'];
+
+//         const recognitionPromises = languagesToTest.map(async (langCode) => {
+//             try {
+//                 const config = {
+//                     encoding: 'AMR',
+//                     sampleRateHertz: 8000,
+//                     languageCode: langCode,
+//                     enableAutomaticPunctuation: true,
+//                     enableWordConfidence: true,
+//                     model: 'latest_long',
+//                 };
+
+//                 const [response] = await speechClient.recognize({
+//                     audio: audio,
+//                     config: config,
+//                 });
+
+//                 if (response.results && response.results.length > 0) {
+//                     const result = response.results[0];
+//                     const alternative = result.alternatives[0];
+
+//                     return {
+//                         language: langCode,
+//                         transcript: alternative.transcript,
+//                         confidence: alternative.confidence || 0,
+//                         wordCount: alternative.transcript.split(' ').length
+//                     };
+//                 }
+//                 return null;
+//             } catch (error) {
+//                 console.log(`Recognition failed for ${langCode}:`, error.message);
+//                 return null;
+//             }
+//         });
+
+//         // Wait for all recognitions to complete
+//         const results = await Promise.all(recognitionPromises);
+//         const validResults = results.filter(result => result !== null);
+
+//         if (validResults.length === 0) {
+//             return res.status(400).json({
+//                 error: "No speech detected in any language",
+//                 transcript: "",
+//                 detectedLanguage: "unknown"
+//             });
+//         }
+
+//         // Find the best result based on confidence and transcript length
+//         const bestResult = validResults.reduce((best, current) => {
+//             // Prefer results with higher confidence and reasonable length
+//             const currentScore = current.confidence * (current.wordCount > 0 ? 1 : 0.5);
+//             const bestScore = best.confidence * (best.wordCount > 0 ? 1 : 0.5);
+
+//             return currentScore > bestScore ? current : best;
+//         });
+
+//         console.log(`Best match: ${bestResult.language} with confidence ${bestResult.confidence}`);
+//         console.log(`All results:`, validResults.map(r => ({ lang: r.language, conf: r.confidence, text: r.transcript.substring(0, 50) })));
+
+//         let finalTranscript = bestResult.transcript;
+//         let translationInfo = {
+//             originalLanguage: bestResult.language,
+//             originalText: bestResult.transcript,
+//             wasTranslated: false,
+//             confidence: bestResult.confidence,
+//             allResults: validResults
+//         };
+
+//         // Translate if needed
+//         if (bestResult.language !== 'en-US' && bestResult.transcript.trim()) {
+//             try {
+//                 const langCode = bestResult.language.split('-')[0];
+
+//                 const [translation] = await translateClient.translateText({
+//                     parent: `projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}`,
+//                     contents: [bestResult.transcript],
+//                     mimeType: 'text/plain',
+//                     sourceLanguageCode: langCode,
+//                     targetLanguageCode: 'en',
+//                 });
+
+//                 if (translation.translations && translation.translations[0]) {
+//                     finalTranscript = translation.translations[0].translatedText;
+//                     translationInfo.wasTranslated = true;
+//                 }
+//             } catch (translateError) {
+//                 console.error("Translation failed:", translateError);
+//             }
+//         }
+
+//         res.json({
+//             transcript: finalTranscript,
+//             detectedLanguage: bestResult.language,
+//             confidence: bestResult.confidence,
+//             translationInfo: translationInfo,
+//             success: true
+//         });
+
+//     } catch (err) {
+//         console.error("Parallel recognition error:", err);
+//         res.status(500).json({
+//             error: "Parallel speech recognition failed",
+//             transcript: "",
+//             detectedLanguage: "unknown",
+//             details: err.message
+//         });
+//     }
+// });
+
+// Mine
+// app.post("/transcribe", upload.single("audio"), async (req, res) => {
+//     try {
+//         const audioBytes = req.file.buffer.toString("base64");
+
+//         const audio = {
+//             content: audioBytes,
+//         };
+
+//         const config = {
+//             encoding: 'AMR', // for .3gp files recorded by Android with expo-av
+//             sampleRateHertz: 8000,
+//             languageCode: 'en-US',
+//         };
+
+
+//         const request = {
+//             audio: audio,
+//             config: config,
+//         };
+
+//         const [response] = await speechClient.recognize(request);
+//         const transcript = response.results.map(r => r.alternatives[0].transcript).join("\n");
+
+//         res.json({ transcript });
+//     } catch (err) {
+//         console.error("Error processing audio:", err);
+//         res.status(500).json({ error: "Speech recognition failed" });
+//     }
+// });
+
+
+
+// Option 1: Google Translate (Free, no API key) - Using translate-google npm package
+const translateWithGoogleFree = async (text, sourceLang, targetLang = 'en') => {
     try {
-        // Automatically detect language and then translate to targetLanguage
-        let [translations] = await translate.translate(text, { to: targetLanguage });
-        translations = Array.isArray(translations) ? translations : [translations];
-        const translatedText = translations[0];
+        // Simple approach using googletrans API endpoint
+        const response = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=' +
+            sourceLang + '&tl=' + targetLang + '&dt=t&q=' + encodeURIComponent(text));
 
-        // You can also get the detected source language if needed
-        // const [detection] = await translate.detect(text);
-        // const sourceLanguage = detection.language;
-
-        res.json({ translatedText });
+        const data = await response.json();
+        if (data && data[0] && data[0][0] && data[0][0][0]) {
+            return data[0][0][0];
+        }
+        throw new Error('Google Translate parsing failed');
     } catch (error) {
-        console.error('Google Cloud Translate API Error:', error);
-        res.status(500).json({ error: 'Failed to translate speech using Google Cloud Translate API.', details: error.message });
+        console.error('Google Free Translate error:', error);
+        throw error;
+    }
+};
+
+// Option 4: Lingva Translate (Completely free, no API key needed)
+const translateWithLingva = async (text, sourceLang, targetLang = 'en') => {
+    try {
+        const response = await fetch(`https://lingva.ml/api/v1/${sourceLang}/${targetLang}/${encodeURIComponent(text)}`);
+        const data = await response.json();
+        return data.translation;
+    } catch (error) {
+        console.error('Lingva error:', error);
+        throw error;
+    }
+};
+
+// Updated transcribe-audio endpoint with free translation
+app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
+    try {
+        const audioBytes = req.file.buffer.toString("base64");
+        const audio = { content: audioBytes };
+
+        console.log("Starting parallel language detection...");
+
+        // Test multiple languages in parallel
+        const languagesToTest = ['en-US', 'hi-IN', 'te-IN'];
+
+        const recognitionPromises = languagesToTest.map(async (langCode) => {
+            try {
+                const config = {
+                    encoding: 'AMR',
+                    sampleRateHertz: 8000,
+                    languageCode: langCode,
+                    enableAutomaticPunctuation: true,
+                    enableWordConfidence: true,
+                    model: 'latest_long',
+                };
+
+                const [response] = await speechClient.recognize({
+                    audio: audio,
+                    config: config,
+                });
+
+                if (response.results && response.results.length > 0) {
+                    const result = response.results[0];
+                    const alternative = result.alternatives[0];
+
+                    return {
+                        language: langCode,
+                        transcript: alternative.transcript,
+                        confidence: alternative.confidence || 0,
+                        wordCount: alternative.transcript.split(' ').length
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.log(`Recognition failed for ${langCode}:`, error.message);
+                return null;
+            }
+        });
+
+        // Wait for all recognitions to complete
+        const results = await Promise.all(recognitionPromises);
+        const validResults = results.filter(result => result !== null);
+
+        if (validResults.length === 0) {
+            return res.status(400).json({
+                error: "No speech detected in any language",
+                transcript: "",
+                detectedLanguage: "unknown"
+            });
+        }
+
+        // Find the best result based on confidence and transcript length
+        const bestResult = validResults.reduce((best, current) => {
+            const currentScore = current.confidence * (current.wordCount > 0 ? 1 : 0.5);
+            const bestScore = best.confidence * (best.wordCount > 0 ? 1 : 0.5);
+            return currentScore > bestScore ? current : best;
+        });
+
+        console.log(`Best match: ${bestResult.language} with confidence ${bestResult.confidence}`);
+
+        let finalTranscript = bestResult.transcript;
+        let translationInfo = {
+            originalLanguage: bestResult.language,
+            originalText: bestResult.transcript,
+            wasTranslated: false,
+            confidence: bestResult.confidence,
+            allResults: validResults
+        };
+
+        // Translate if needed using free APIs
+        if (bestResult.language !== 'en-US' && bestResult.transcript.trim()) {
+            try {
+                const langCode = bestResult.language.split('-')[0];
+
+                // Map language codes for different APIs
+                const langMap = {
+                    'hi': 'hi',
+                    'te': 'te'
+                };
+
+                const sourceLang = langMap[langCode] || langCode;
+
+                // Try multiple translation services in order of preference
+                let translationResults = [];
+
+                // Try Google Free (most reliable)
+                try {
+                    const translatedText = await translateWithGoogleFree(bestResult.transcript, sourceLang, 'en');
+                    translationResults.push({
+                        service: 'Google Free',
+                        text: translatedText,
+                        score: 10 // Highest priority
+                    });
+                    console.log('Translation successful with Google Free:', translatedText);
+                } catch (googleError) {
+                    console.log('Google Free failed:', googleError.message);
+                }
+
+                // Try Lingva (good alternative)
+                try {
+                    const translatedText = await translateWithLingva(bestResult.transcript, sourceLang, 'en');
+                    translationResults.push({
+                        service: 'Lingva',
+                        text: translatedText,
+                        score: 8
+                    });
+                    console.log('Translation successful with Lingva:', translatedText);
+                } catch (lingvaError) {
+                    console.log('Lingva failed:', lingvaError.message);
+                }
+
+                // Choose the best translation based on quality heuristics
+                let bestTranslation = null;
+
+                if (translationResults.length > 0) {
+                    // Filter out obviously bad translations
+                    const validTranslations = translationResults.filter(result =>
+                        result.text &&
+                        result.text.length > 0 &&
+                        result.text !== bestResult.transcript && // Not same as original
+                        !result.text.includes('Translation Error') &&
+                        result.text.length >= bestResult.transcript.length * 0.3 // Not too short
+                    );
+
+                    if (validTranslations.length > 1) {
+                        // Compare translations and choose best one
+                        bestTranslation = validTranslations.reduce((best, current) => {
+                            let currentScore = current.score;
+                            let bestScore = best.score;
+
+                            // Bonus for longer, more detailed translations
+                            if (current.text.length > best.text.length * 1.2) {
+                                currentScore += 2;
+                            }
+
+                            // Bonus for proper capitalization and punctuation
+                            if (current.text.match(/^[A-Z]/) && current.text.match(/[.!?]$/)) {
+                                currentScore += 1;
+                            }
+
+                            // Penalty for all caps or no caps
+                            if (current.text === current.text.toUpperCase() ||
+                                current.text === current.text.toLowerCase()) {
+                                currentScore -= 2;
+                            }
+
+                            return currentScore > bestScore ? current : best;
+                        });
+
+                        console.log('Multiple translations available:');
+                        validTranslations.forEach(t => console.log(`${t.service}: "${t.text}"`));
+                        console.log(`Chose ${bestTranslation.service} as best translation`);
+
+                    } else if (validTranslations.length === 1) {
+                        bestTranslation = validTranslations[0];
+                    }
+                }
+
+                let translatedText = bestTranslation ? bestTranslation.text : null;
+
+                if (translatedText) {
+                    finalTranscript = translatedText;
+                    translationInfo.wasTranslated = true;
+                }
+
+            } catch (translateError) {
+                console.error("Translation failed:", translateError);
+            }
+        }
+
+        res.json({
+            transcript: finalTranscript,
+            detectedLanguage: bestResult.language,
+            confidence: bestResult.confidence,
+            translationInfo: translationInfo,
+            success: true
+        });
+
+    } catch (err) {
+        console.error("Parallel recognition error:", err);
+        res.status(500).json({
+            error: "Parallel speech recognition failed",
+            transcript: "",
+            detectedLanguage: "unknown",
+            details: err.message
+        });
     }
 });
 
+// Helper function to add rate limiting for free APIs
+const rateLimiter = {
+    lastCall: {},
+    minInterval: 1000, // 1 second between calls
 
+    async waitIfNeeded(apiName) {
+        const now = Date.now();
+        const lastCall = this.lastCall[apiName] || 0;
+        const timeSinceLastCall = now - lastCall;
+
+        if (timeSinceLastCall < this.minInterval) {
+            const waitTime = this.minInterval - timeSinceLastCall;
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+
+        this.lastCall[apiName] = Date.now();
+    }
+};
 
 
 // Check Username Uniqueness (case-insensitive)
@@ -1002,6 +1403,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                     embedding,
                     usernameHash: hashedUsername
                 });
+
+                console.log(extractedText)
 
                 await newFileDoc.save();
 

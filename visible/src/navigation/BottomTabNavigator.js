@@ -6,6 +6,7 @@ import ViewFilesScreen from '../screens/ViewFilesScreen';
 import UploadFilesScreen from '../screens/UploadFilesScreen';
 import AIScreen from '../screens/AIScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import VoiceToVoiceScreen from '../screens/VoiceToVoiceScreen';
 import Header from '../components/Header';
 import { ThemeContext } from '../context/ThemeContext';
 
@@ -24,6 +25,7 @@ export default function BottomTabNavigator() {
                     else if (route.name === 'Upload') iconName = 'cloud-upload-alt';
                     else if (route.name === 'Agent-QD') iconName = 'robot';
                     else if (route.name === 'Profile') iconName = 'user-alt';
+                    else if (route.name === 'V2V') iconName = 'microphone-alt';
                     return <FontAwesome5 name={iconName} size={size} color={color} />;
                 },
                 tabBarActiveTintColor: '#00796b',
@@ -37,6 +39,7 @@ export default function BottomTabNavigator() {
             <Tab.Screen name="Files" component={ViewFilesScreen} />
             <Tab.Screen name="Upload" component={UploadFilesScreen} />
             <Tab.Screen name="Agent-QD" component={AIScreen} />
+            <Tab.Screen name="V2V" component={VoiceToVoiceScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
     );
