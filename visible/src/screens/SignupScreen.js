@@ -321,7 +321,6 @@ const SignupScreen = ({ navigation }) => {
                 return;
             }
 
-
             const res = await axios.post(`${BACKEND_URL}/send-otp`, { email: trimmedEmail });
             if (res.data.success) {
                 showSuccessAlert("OTP Sent", "Please check out your Inbox for OTP")

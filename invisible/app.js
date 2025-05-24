@@ -1089,15 +1089,12 @@ app.post('/login', async (req, res) => {
 
     try {
         // Hash the username to find the user
-        const usernameHash = hashValues(username);
-        const user = await User.findOne({ usernameHash });
+        const trimmedUserName = username.trim();
+        const usernameHash = hashValues(trimmedUserName);
+        const user = await User.findOne({ usernameHash : usernameHash });
 
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
-        }
-
-        if (!user.verified) {
-            return res.status(403).json({ message: 'Email not verified' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
