@@ -709,7 +709,7 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
         console.log("Starting parallel language detection...");
 
         // Test multiple languages in parallel   
-
+        
         const languagesToTest = ['en-US', 'hi-IN', 'te-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
@@ -973,7 +973,7 @@ app.post('/login', async (req, res) => {
         // Hash the username to find the user
         const trimmedUserName = username.trim();
         const usernameHash = hashValues(trimmedUserName);
-        const user = await User.findOne({ usernameHash: usernameHash });
+        const user = await User.findOne({ usernameHash : usernameHash });
 
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
@@ -1366,7 +1366,4 @@ app.get('/', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-});
-
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
