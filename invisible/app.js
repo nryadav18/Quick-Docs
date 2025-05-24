@@ -16,7 +16,8 @@ const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
 const client = new vision.ImageAnnotatorClient();
-const AES_SECRET_KEY = process.env.AES_SECRET_KEY;
+const AES_SECRET_KEY = Buffer.from(process.env.AES_SECRET_KEY, 'base64');
+if (AES_SECRET_KEY.length !== 32) throw new Error('AES key must be 32 bytes');
 const IV_LENGTH = 16;
 
 
@@ -703,7 +704,7 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
         console.log("Starting parallel language detection...");
 
         // Test multiple languages in parallel   
-        
+
         const languagesToTest = ['en-US', 'hi-IN', 'te-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
@@ -967,7 +968,7 @@ app.post('/login', async (req, res) => {
         // Hash the username to find the user
         const trimmedUserName = username.trim();
         const usernameHash = hashValues(trimmedUserName);
-        const user = await User.findOne({ usernameHash : usernameHash });
+        const user = await User.findOne({ usernameHash: usernameHash });
 
         if (!user) {
             return res.status(400).json({ message: 'User not found' });

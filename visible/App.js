@@ -55,6 +55,7 @@ const AppContent = () => {
         };
 
         initializeAuth();
+        console.log(BACKEND_URL)
     }, []);
 
 
@@ -102,6 +103,7 @@ const AppContent = () => {
                     'Permission Required',
                     'Storage permission is required to download files.'
                 );
+                requestDownloadPermission();
             }
         };
 
@@ -115,9 +117,15 @@ const AppContent = () => {
                         buttonNeutral: 'Ask Me Later',
                         buttonNegative: 'Cancel',
                         buttonPositive: 'OK',
-                    },
+                    }
                 );
-                return granted === PermissionsAndroid.RESULTS.GRANTED;
+                if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+                    Alert.alert(
+                        'Microphone Permission Denied',
+                        'Speech features will not work without microphone access.'
+                    );
+                    return false;
+                }
             }
             return true;
         };
