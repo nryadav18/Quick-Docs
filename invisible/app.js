@@ -31,12 +31,6 @@ const storage = new Storage({
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
 const speechClient = new SpeechClient();
-const translateClient = new TranslationServiceClient();
-
-const SUPPORTED_LANGUAGES = [
-    'en-US', 'hi-IN', 'te-IN', 'kn-IN', 'ta-IN', 'mr-IN', 'bn-IN',
-    'gu-IN', 'ml-IN', 'pa-IN', 'ur-IN', 'as-IN', 'or-IN'
-];
 
 
 // MongoDB connection
