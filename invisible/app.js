@@ -708,7 +708,8 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
 
         console.log("Starting parallel language detection...");
 
-        // Test multiple languages in parallel
+        // Test multiple languages in parallel   
+        
         const languagesToTest = ['en-US', 'hi-IN', 'te-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
