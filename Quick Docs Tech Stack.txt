@@ -1,8 +1,9 @@
 Quick Docs Tech Stack:
 
 React Native Expo SDK 53 (Updated)
-Zustand (React Native friendly State Management)
+Zustand (React Native friendly Global State Management)
 + Expo-Secure-Storage (Token Based Authentication and Auto Load of User Account until logged out or deactivate)
+Zustand	- ~1.1 KB - SSR-safe - Simple, minimal, reactive
 
 Node.js, Express.js, MongoDB
 
@@ -18,9 +19,9 @@ AI Agent:
 *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
  6. Gemini 1.5 PRO LLM API (RAG) & Privacy with User Specific Information
 
-Google Cloud Run (Backend Running)
 
 JWT Tokens (Authorization, Token Generation)
+AES (Advanced Encrypted Standards)
 .env (secure data protection)
 EAS (Expo Building)
 EXPO Notifications
@@ -37,7 +38,7 @@ Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficie
 Which other Technologies we Integrated?
 
 Full Stack Web - our Tech
-Mobile App Dev - as like Flutter
+Mobile App Dev 
 GCP - Google Cloud Tech
 AI - Generative AI
 AES and BCRYPT Hashing - Cyber Security

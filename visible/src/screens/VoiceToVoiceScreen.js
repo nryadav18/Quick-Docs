@@ -160,7 +160,7 @@ const VoiceToVoiceScreen = () => {
 
             Speech.speak(answer, {
                 language: 'en',
-                pitch: 1.2,
+                pitch: 1.0,
                 rate: 1.0,
                 onDone: () => setIsSpeaking(false),
             });

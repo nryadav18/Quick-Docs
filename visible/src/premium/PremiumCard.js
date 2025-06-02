@@ -121,7 +121,7 @@ export default function Premium() {
 
             var options = {
                 description: plan.name,
-                image: 'https://storage.googleapis.com/agent-qd-data/updatedLogo1.png',
+                image: 'https://storage.googleapis.com/agent-qd-bucket/updatedLogo1.png',
                 currency: 'INR',
                 key: RAZOR_PAY_KEY,
                 amount: order.amount,

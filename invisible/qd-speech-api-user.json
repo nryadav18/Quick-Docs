@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "arched-media-348917",
+  "private_key_id": "6a9007896663be923f3652efaa6cb65065b7f91d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDLYSJJJMrtK+1f\n8Qg96ol2Toxtscrb1F9gKHhAb/+gVQ+Zpz96GsUgsKGoUTCtUFnYhTta8KEZdSOE\ndm01Cb+S41dVZHdABXgx3jnY2BTIXjRerr9EyY/5ijzdLmvmOKLltQBZs0fC1oK+\ne1LA84s7ar0khyEo7s7FdXJMVDiwkXPUijjeMD7lcHfOoAEBW1sOjLAecXo32Z6R\nTFHyw63tU/LYMusE+BthqMjwCroiqVRI0mscRtM9ynMfmH81bzeHAY9lCjd+3zRx\nIq9/myChBXiExM9b+4ck9Trv9L01kxv7Sg0RaBgR3qPQU2wyfuL0SSQaa0j6c9rE\n0S7utpkFAgMBAAECggEAA1oxRrvexWyHL+Do9h5O0D6otWksExYL0WmxW7yM3d9x\nD6MQWoqk665Fp+DYuM6dgIJnsU7MlP8XjAgosipcOEdbieqLRaiha88CLJcZNplI\n6zOdrvxUjXQwHyQz/po54yfp3tCj8uv2wT2GpmwNRDg08GxyyTowedQ/A0+TFKP1\nml3ZGIYigf4lzKwnGjf7/f9T2YZ22Jwd/kwHgdXUkl6jupUF7/f8jfMYCtjDY2zf\nddjfdD1idPZkjOByvUIBGGyCjGSvxKWPkXbRYljyglCOFfDKX/nUbK0CRBxlrCkj\ntFkRKioGuUsR175vZxuMk3woCAHXEPgOH9ClOiRKQQKBgQDrpjvmRbqHGzvrDKfP\nnoVIdXsvvrMoIxrzfYs2en/6kcm2DkaqikRdYkPFunaTbnE04HeqgX6J5PU/zFDO\n63Waq+hU4pSYp0IV39CVfEgSH1JjDuffNCZ4uXL3rE8efGkLHNzH6ntjDhI0qrcr\nyUEKnQr7bnQhMUhf4Q9yNAk5xQKBgQDc8Xjt2WXF+oNG8yeVXSDKYcaXkuqbhygZ\n09KwvcxIm+PLGm/kDuSsarZby6Ju0gReguB1GV58kkcCFm9qNj9wUfq5Qj2niBZn\nQYtAEZVTwwg+SBh24EY9KdJCDQsKW9aAm+OUmtKqZLbG/jSYrURRjJFlH2gAMh/J\nXI3E1kgWQQKBgENL6fdNGoPTBz2NE697Od0Dj/aGo2tm+x9mTwdz3HCWieBwG0ZA\nzl1M3sXtBkf8VmAfao1LBfQjataZZspw+9j8FxGG06D0wy60CEFoiLyELWcUrqtT\nnVkEvQx2LPIr3WPLDlIZaLtVHWXlCwJ6KxT43FYJqSiBhoW7JEodCjVxAoGAOlHW\n/Nl8nsSgcFLwqOF7LVCfzhSurrz/Xcnm/FYtHSFhAJSK4mT4AXbtic93oc737kaX\nnvFCWpl1+twXLq8BEdHh35LXmWg3mavYaOH7S6/YdjArnP1YLP7kDCFLP8G8HhiH\n+wre/rE0+dPR6FccCHaVTl764cpZT5qJpWJ2hsECgYBnyWQfr6SdHh0EC07Zd2VW\nkTIktIJWUG8G8WeLrKW8ZImbir3gwS5LVh/+O6LJcvZPSxbLV9MHi9K0CpDmSFvb\nhN6dMZzLcYoqC+LXn3KclcQJY+A6BV0nWC++ZgXOxE6s7ThUtd3NQ5BcA4o1Rco4\nMB6h1CiiB05aZ/Bre8ScKQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "qd-speech-api-user@arched-media-348917.iam.gserviceaccount.com",
+  "client_id": "109519092571741789366",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/qd-speech-api-user%40arched-media-348917.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

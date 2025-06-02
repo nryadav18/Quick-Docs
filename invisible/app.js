@@ -25,8 +25,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const storage = new Storage({
-    keyFilename: path.join(__dirname, './yadavmainserver-firebase.json'),
-    projectId: 'yadavmainserver',
+    keyFilename: path.join(__dirname, './qd-speech-api-user.json'),
+    projectId: 'arched-media-348917',
 });
 
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
@@ -58,10 +58,9 @@ function decrypt(encrypted) {
     return decrypted;
 }
 
-function hashValues(email) {
-    return crypto.createHash('sha256').update(email).digest('hex');
+function hashValues(text) {
+    return crypto.createHash('sha256').update(text).digest('hex');
 }
-
 
 
 const fileDataSchema = new mongoose.Schema({
@@ -1077,12 +1076,14 @@ app.post('/generate-upload-url', async (req, res) => {
             version: 'v4',
             action: 'write',
             expires: Date.now() + 60 * 60 * 1000,
-            contentType: `image/${fileType}`
+            contentType: `image/${fileType}`,
         });
 
         await deleteOldProfiles(username);
 
         const imageUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`;
+
+        console.log(imageUrl)
 
         res.json({ success: true, uploadUrl, imageUrl });
     } catch (err) {
@@ -1249,6 +1250,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                 const extractedText = detections.length > 0 ? detections[0].description : '';
 
                 const combinedText = `${originalname}\n\n${extractedText}`;
+                console.log(combinedText)
                 const embedding = await generateEmbedding(combinedText);
 
                 // Encrypt sensitive file fields before saving to DB

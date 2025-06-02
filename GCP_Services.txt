@@ -1,0 +1,12 @@
+1. Google Cloud Bucket:
+gsutil defacl set public-read gs://agent-qd-bucket
+gsutil iam ch allUsers:objectViewer gs://agent-qd-bucket
+
+Enable Cloud Storage API :
+Navigate to APIs & Services > Library
+Search for "Cloud Storage JSON API" → enable it
+
+2. Google Speech to Text API
+
+Service Account
+Roles: Google Speech Admin, Cloud Speech to Text Service Agent, Google Speech Client, Cloud API Hub Provisioning.
