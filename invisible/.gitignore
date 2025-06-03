@@ -6,3 +6,5 @@ node_modules/*
 
 images/*
 !images/git.keep
+qd-speech-api-user.json
+ngrok.exe

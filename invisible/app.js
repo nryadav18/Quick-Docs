@@ -8,10 +8,13 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer')
+const fs = require('fs')
+const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
 const path = require('path')
 const axios = require('axios')
 const { SpeechClient } = require('@google-cloud/speech');
-const { TranslationServiceClient } = require('@google-cloud/translate');
+// const { TranslationServiceClient } = require('@google-cloud/translate');
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
@@ -25,9 +28,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const storage = new Storage({
-    keyFilename: path.join(__dirname, './qd-speech-api-user.json'),
-    projectId: 'arched-media-348917',
+    keyFilename: path.join(__dirname, `${process.env.GOOGLE_APPLICATION_CREDENTIALS}`),
+    projectId: `${process.env.GOOGLE_PROJECT_ID}`,
 });
+
 
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
@@ -39,7 +43,7 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ MongoDB connected"))
     .catch((err) => console.error("MongoDB error:", err));
 
-
+// Encryption Function
 function encrypt(text) {
     if (!text) return text;
     const iv = crypto.randomBytes(IV_LENGTH);
@@ -49,6 +53,7 @@ function encrypt(text) {
     return iv.toString('base64') + ':' + encrypted;
 }
 
+// Decryption Function
 function decrypt(encrypted) {
     const [ivBase64, encryptedText] = encrypted.split(':');
     const iv = Buffer.from(ivBase64, 'base64');
@@ -58,11 +63,12 @@ function decrypt(encrypted) {
     return decrypted;
 }
 
+// Hash Values Generation
 function hashValues(text) {
     return crypto.createHash('sha256').update(text).digest('hex');
 }
 
-
+// Individual Content of File Data Schema (Extracted Text + Embeddings)
 const fileDataSchema = new mongoose.Schema({
     name: String,
     url: String,
@@ -80,7 +86,7 @@ const fileDataSchema = new mongoose.Schema({
     usernameHash: String // To associate with user
 })
 
-
+// Basic File Info Stored in User Schema
 const fileSchema = new mongoose.Schema({
     name: String,
     url: String,
@@ -91,8 +97,7 @@ const fileSchema = new mongoose.Schema({
     uploadedAt: Date,
 });
 
-
-// User Schema
+// User Data Schema
 const UserSchema = new mongoose.Schema({
     name: String,
     username: { type: String, unique: true },
@@ -121,7 +126,7 @@ const UserSchema = new mongoose.Schema({
     myfiles: { type: [fileSchema], default: [] }
 });
 
-
+// Otp Schema
 const OtpSchema = new mongoose.Schema({
     emailHash: { type: String, required: true },         // For lookup (hashed email)
     encryptedEmail: { type: String, required: false },   // For optional storage/display
@@ -129,6 +134,7 @@ const OtpSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now, expires: 300 } // Auto-expire after 5 minutes
 });
 
+// Collection Models of User, FileData, OTP
 const User = mongoose.model('User', UserSchema);
 const FileData = mongoose.model('FileData', fileDataSchema);
 const Otp = mongoose.model('Otp', OtpSchema);
@@ -157,11 +163,32 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Razorpay Integration
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// Creating a Payment Order
+app.post("/create-order", async (req, res) => {
+    try {
+        const { amount } = req.body;
+
+        const options = {
+            amount: amount * 100,
+            currency: "INR",
+            receipt: `rcptid_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        res.json({ success: true, order }); // Optional: send encrypted username back if needed
+    } catch (err) {
+        console.error("Order creation failed:", err);
+        res.status(500).json({ success: false, error: "Order creation failed" });
+    }
+});
+
+// Verifying the Payments
 app.post("/verify-payment", async (req, res) => {
     const {
         razorpay_order_id,
@@ -209,25 +236,7 @@ app.post("/verify-payment", async (req, res) => {
 });
 
 
-app.post("/create-order", async (req, res) => {
-    try {
-        const { amount } = req.body;
-
-        const options = {
-            amount: amount * 100,
-            currency: "INR",
-            receipt: `rcptid_${Date.now()}`,
-        };
-
-        const order = await razorpay.orders.create(options);
-        res.json({ success: true, order }); // Optional: send encrypted username back if needed
-    } catch (err) {
-        console.error("Order creation failed:", err);
-        res.status(500).json({ success: false, error: "Order creation failed" });
-    }
-});
-
-
+// User Token Validation for Automatic Login
 app.get('/user', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
@@ -270,7 +279,7 @@ app.get('/user', authenticateToken, async (req, res) => {
 });
 
 
-
+// Singup or Creating a new account
 app.post('/signup', async (req, res) => {
     const {
         name,
@@ -323,7 +332,7 @@ app.post('/signup', async (req, res) => {
 });
 
 
-//Send OTP
+// Sending OTP
 app.post('/send-otp', async (req, res) => {
     const { email } = req.body;
     const otp = crypto.randomInt(100000, 999999).toString();
@@ -372,7 +381,7 @@ app.post('/send-otp', async (req, res) => {
 });
 
 
-// Verify OTP
+// Verifying OTP
 app.post('/verify-otp', async (req, res) => {
     const { email, otp } = req.body;
     const emailHash = hashValues(email);
@@ -404,7 +413,7 @@ app.post('/check-user-exists', async (req, res) => {
     }
 });
 
-// Reset Password
+// Resetting the Password
 app.post('/reset-password', async (req, res) => {
     const { email, newPassword } = req.body;
     const hashedEmail = hashValues(email);
@@ -434,7 +443,7 @@ app.post('/reset-password', async (req, res) => {
 });
 
 
-// Update Expo Notification Token
+// Updating the Expo Notification Token
 app.post('/update-notification-token', async (req, res) => {
     const { expoNotificationToken, username } = req.body;
     const hashedUsername = hashValues(username);
@@ -478,7 +487,7 @@ async function generateEmbedding(text) {
 }
 
 
-//AI RESPONSE
+// AI RESPONSE
 app.post('/ask', async (req, res) => {
     const { question, username, userfullname, email, dob, gender, ispremiumuser, numberoffilesuploaded } = req.body;
     if (!question || !username) return res.status(400).json({ message: 'Missing fields' });
@@ -567,7 +576,7 @@ app.post('/ask', async (req, res) => {
 
 
 
-// Check Prompt Limitation
+// Check Prompt Limitation of User
 app.post('/check-prompt-limitation', async (req, res) => {
     const { username } = req.body;
     const hashedUsername = hashValues(username)
@@ -610,7 +619,7 @@ app.post('/check-prompt-limitation', async (req, res) => {
 });
 
 
-// Comprehensive language configuration for Indian languages
+// Comprehensive language configuration for Indian languages (if Needed)
 const INDIAN_LANGUAGES = [
     'hi-IN',    // Hindi
     'te-IN',    // Telugu  
@@ -629,7 +638,7 @@ const INDIAN_LANGUAGES = [
 ];
 
 
-// Mine
+// Basic Translation of Voice from Any Language to English
 app.post("/transcribe", upload.single("audio"), async (req, res) => {
     try {
         const audioBytes = req.file.buffer.toString("base64");
@@ -663,7 +672,6 @@ app.post("/transcribe", upload.single("audio"), async (req, res) => {
 });
 
 
-
 // Option 1: Google Translate (Free, no API key) - Using translate-google npm package
 const translateWithGoogleFree = async (text, sourceLang, targetLang = 'en') => {
     try {
@@ -682,7 +690,7 @@ const translateWithGoogleFree = async (text, sourceLang, targetLang = 'en') => {
     }
 };
 
-// Option 4: Lingva Translate (Completely free, no API key needed)
+// Option 2: Lingva Translate (Completely free, no API key needed)
 const translateWithLingva = async (text, sourceLang, targetLang = 'en') => {
     try {
         const response = await fetch(`https://lingva.ml/api/v1/${sourceLang}/${targetLang}/${encodeURIComponent(text)}`);
@@ -694,7 +702,7 @@ const translateWithLingva = async (text, sourceLang, targetLang = 'en') => {
     }
 };
 
-// Updated transcribe-audio endpoint with free translation
+// Advanced and Updated transcribe-audio endpoint with free translation
 app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
     try {
         const audioBytes = req.file.buffer.toString("base64");
@@ -955,7 +963,7 @@ app.post('/check-valid-user', async (req, res) => {
 });
 
 
-// Login
+// Login Route
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
@@ -1020,7 +1028,7 @@ app.post('/login', async (req, res) => {
 
 
 
-// Deactivate account
+// Deactivation of account
 app.delete('/deactivate', async (req, res) => {
     const { email, username } = req.body;
 
@@ -1058,7 +1066,7 @@ app.delete('/deactivate', async (req, res) => {
 
 
 
-// Generate GCS presigned URL
+// Generating GCS presigned URL for File Uploads
 app.post('/generate-upload-url', async (req, res) => {
     const { fileName, fileType, username } = req.body;
 
@@ -1092,7 +1100,7 @@ app.post('/generate-upload-url', async (req, res) => {
     }
 });
 
-// Delete old profile images
+// Delete old profile images (if any)
 async function deleteOldProfiles(username) {
     const [files] = await bucket.getFiles({ prefix: `${username}/profile-` });
     for (const file of files) {
@@ -1101,6 +1109,7 @@ async function deleteOldProfiles(username) {
 }
 
 
+// File Object-id and Details sending API
 app.post('/file-data-thrower', async (req, res) => {
     const { username, itemname } = req.body;
 
@@ -1133,8 +1142,7 @@ app.post('/file-data-thrower', async (req, res) => {
 });
 
 
-
-// DELETE /:fileId?userId=<userId>
+// DELETE /:fileId?username=<username>
 app.delete('/:fileId', async (req, res) => {
     const { fileId } = req.params;
     const { username } = req.query;
@@ -1214,19 +1222,18 @@ app.delete('/:fileId', async (req, res) => {
 });
 
 
-// Upload route
+// Uploading of File Route
 app.post('/upload', upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
         let { importance, originalname, username } = req.body;
+
         if (!file || !originalname || !username || !importance) {
             return res.status(400).json({ message: 'Missing required fields' });
         }
 
-        // Encrypt username for DB queries/storage
         const hashedUsername = hashValues(username);
 
-        // Generate unique file name and GCS key using plain username (safe for GCS path)
         const fileName = Date.now() + '-' + originalname;
         const gcsKey = `${username}/${fileName}`;
         const gcsFile = bucket.file(gcsKey);
@@ -1244,16 +1251,48 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         stream.on('finish', async () => {
             try {
-                const fileUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`;
-                const [result] = await client.textDetection(`gs://${process.env.GCS_BUCKET_NAME}/${gcsKey}`);
-                const detections = result.textAnnotations;
-                const extractedText = detections.length > 0 ? detections[0].description : '';
+                const fileUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`; 
 
-                const combinedText = `${originalname}\n\n${extractedText}`;
-                console.log(combinedText)
+                // Detect file type
+                const { fileTypeFromBuffer } = await import('file-type');
+                const detected = await fileTypeFromBuffer(file.buffer);
+                const ext = detected?.ext || originalname.split('.').pop().toLowerCase();
+
+                let extractedText = '';
+
+                if (ext === 'pdf') {
+                    try {
+                        const pdfData = await pdfParse(file.buffer);
+                        extractedText = pdfData.text || '';
+                        console.log("PDF Extracted Data" + extractedText)
+                    } catch (err) {
+                        console.error('PDF parse error:', err.message);
+                        extractedText = '[PDF text could not be extracted]';
+                    }
+                } else if (ext === 'docx') {
+                    try {
+                        const result = await mammoth.extractRawText({ buffer: file.buffer });
+                        extractedText = result.value || '';
+                        console.log("DOCX Extracted Data" + extractedText)
+                    } catch (err) {
+                        console.error('DOCX parse error:', err.message);
+                        extractedText = '[DOCX text could not be extracted]';
+                    }
+                } else {
+                    try {
+                        const [imageResult] = await client.textDetection(`gs://${process.env.GCS_BUCKET_NAME}/${gcsKey}`);
+                        const detections = imageResult?.textAnnotations || [];
+                        extractedText = detections.length > 0 ? detections[0].description : '';
+                        console.log("Image Text Data" + extractedText)
+                    } catch (err) {
+                        console.error('Vision API error:', err.message);
+                        extractedText = '[Image OCR failed]';
+                    }
+                }
+
+                const combinedText = `${originalname}\n${extractedText}`;
                 const embedding = await generateEmbedding(combinedText);
 
-                // Encrypt sensitive file fields before saving to DB
                 const newFile = {
                     name: encrypt(originalname),
                     url: encrypt(fileUrl),
@@ -1264,30 +1303,20 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                     uploadedAt: new Date(),
                 };
 
-                // Update User by encrypted username
-                const user = await User.findOneAndUpdate(
+                await User.findOneAndUpdate(
                     { usernameHash: hashedUsername },
                     { $push: { myfiles: newFile } }
                 );
 
                 const newFileDoc = new FileData({
-                    name: encrypt(originalname),
-                    url: encrypt(fileUrl),
-                    filepath: encrypt(gcsKey),
-                    filePathHash: hashValues(gcsKey),
-                    type: file.mimetype,
-                    rating: parseInt(importance) || 1,
-                    uploadedAt: new Date(),
+                    ...newFile,
                     extractedText: encrypt(combinedText),
                     embedding,
                     usernameHash: hashedUsername
                 });
 
-                console.log(combinedText)
-
                 await newFileDoc.save();
 
-                // Send decrypted data back to frontend (use original plain text)
                 res.status(200).json({
                     message: 'File uploaded and saved successfully',
                     file: {
@@ -1297,6 +1326,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                         filepath: gcsKey
                     }
                 });
+
             } catch (err) {
                 console.error('Post-upload error:', err);
                 res.status(500).json({ message: 'Failed to finalize upload', error: err.message });
@@ -1312,7 +1342,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 
-
+// Basic Slash Route
 app.get('/', (req, res) => {
     res.send(`
       <html>
@@ -1361,6 +1391,6 @@ app.get('/', (req, res) => {
 });
 
 
-// Start server
+// Starting Point of our server with local port as 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

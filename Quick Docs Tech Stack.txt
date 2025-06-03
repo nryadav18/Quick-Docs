@@ -30,6 +30,9 @@ Secure API Gateway (GET, POST, DELETE)
 RazorPay Payments (Secure Payment Gateway)
 Optional Chaining Methodology (?.) and Nullish coalescing operator (??) for a Safer way to prevent Run time errors in the frontend development, say: React, React Native
 
+PDF Text Extraction: pdf-parse (npm package)
+Docx Text Extraction: mammoth (npm package)
+
 Using Vector Search (Mongodb) for efficiency
 Storing the data as embeddings (faster, quicker, special data structure) - Highly Secure
 Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficiency)

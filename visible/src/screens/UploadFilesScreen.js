@@ -121,6 +121,7 @@ const UploadFilesScreen = () => {
         }
 
         const fileExtension = file.split('.').pop().toLowerCase();
+        console.log(fileExtension)
         if (!allowedTypes.includes(fileExtension)) {
             showErrorAlert('Invalid File Type', 'Only PDF, DOCX, JPG, JPEG, PNG, and WEBP files are allowed.');
             setUploadingState(false)

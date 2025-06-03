@@ -10,3 +10,6 @@ Search for "Cloud Storage JSON API" → enable it
 
 Service Account
 Roles: Google Speech Admin, Cloud Speech to Text Service Agent, Google Speech Client, Cloud API Hub Provisioning.
+
+Reference:
+https://chat.qwen.ai/s/7ae70aa2-1c04-4202-b4cb-21ae4683f993?fev=0.0.107
