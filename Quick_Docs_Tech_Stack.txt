@@ -1,0 +1,61 @@
+Quick Docs Tech Stack:
+
+React Native Expo SDK 53 (Updated)
+Zustand (React Native friendly Global State Management)
++ Expo-Secure-Storage (Token Based Authentication and Auto Load of User Account until logged out or deactivate)
+Zustand	- ~1.1 KB - SSR-safe - Simple, minimal, reactive
+
+Node.js, Express.js, MongoDB
+
+GCS (Google Cloud Services)
+Cloud Storage (Google)
+ 1. Vertex API (Google)
+ 2. Google Translate API (For Auto detecting Language and Translating the services)
+ 3. Cloud Speech to Text API - Tel, Hin, Eng
+ 4. Cloud Text to Speech API - Tel, Hin, Eng
+
+Voice to Voice Communication AI Assistant
+
+Do they need to buy the premium directly without experiencing the application? No! Users can upload 1 File, 3 AI Prompts to know about our Application.
+
+AI Agent: 
+*5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
+ 6. Gemini 1.5 PRO LLM API (RAG) & Privacy with User Specific Information - Chat with Local Texting Messages and also regional language messages too.
+
+
+JWT Tokens (Authorization, Token Generation)
+AES (Advanced Encrypted Standards)
+.env (secure data protection)
+EAS (Expo Building)
+EXPO Notifications
+Firebase Cloud Messaging API (V1)
+Secure API Gateway (GET, POST, DELETE)
+RazorPay Payments (Secure Payment Gateway)
+Optional Chaining Methodology (?.) and Nullish coalescing operator (??) for a Safer way to prevent Run time errors in the frontend development, say: React, React Native
+
+PDF Text Extraction: pdf-parse (npm package)
+Docx Text Extraction: mammoth (npm package)
+
+Using Vector Search (Mongodb) for efficiency
+Storing the data as embeddings (faster, quicker, special data structure) - Highly Secure
+Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficiency)
+
+--------------------------------------------
+
+Which other Technologies we Integrated?
+
+Full Stack Web - our Tech
+Mobile App Dev 
+GCP - Google Cloud Tech
+AI - Generative AI
+AES and BCRYPT Hashing - Cyber Security
+
+--------------------------------------------
+
+React Native, Zustand, Node.js, Express.js, Mongodb, JWT Tokens, Google Cloud Services, Vertex API, Cloud Vision API, Cloud Speech to Text API, Generative Language API, Google Translate API, Vector Search, Advanced Encryption Standard Algorithm, BCRYPT Hashing, Expo Application Services (EAS), Firebase Cloud Messaging API (V1), RazorPay Payments and Optional Chaining Methodology
+
+
+
+
+
+

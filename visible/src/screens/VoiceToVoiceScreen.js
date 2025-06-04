@@ -14,7 +14,6 @@ import useThemedStatusBar from '../hooks/StatusBar';
 import useUserStore from '../store/userStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PermissionAlert } from '../components/AlertBox';
-import { GOOGLE_CLOUD_API_KEY } from '@env';
 
 const { width, height } = Dimensions.get('window');
 

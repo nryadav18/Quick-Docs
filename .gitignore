@@ -35,22 +35,3 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
-
-# Main
-GCP_Services.txt
-Quick_Docs_Tech_Stack.txt
-Quick_Docs_Overview.txt
-
-# Visible
-assets/
-visible/firebaseConfig.js
-visible/eas.json
-visible/app.json
-visible/google-services.json
-visible/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
-visible/yadavmainserver-686fc016f695.json
-
-# Invisible
-invisible/qd-speech-api-user.json
-invisible/ngrok.exe
-invisible/app.js

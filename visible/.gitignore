@@ -39,10 +39,4 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-firebaseConfig.js
-/assets
-eas.json
-app.json
-google-services.json
-yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
-yadavmainserver-686fc016f695.json
+
