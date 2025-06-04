@@ -36,4 +36,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-
+GCP_Services.txt
+Quick_Docs_Tech_Stack.txt
+Quick_Docs_Overview.txt
