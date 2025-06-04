@@ -11,7 +11,9 @@ import {
     Platform,
     Alert,
     Vibration,
-    Animated
+    Animated,
+    PermissionsAndroid,
+    Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,10 +22,10 @@ import axios from 'axios';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from "@react-navigation/native";
 
+import { PermissionAlert } from '../components/AlertBox';
+
 // Assets and Components
 import AI from '../../assets/robo1.jpg';
-import Human from '../../assets/squad.jpg';
-import Stars1 from '../../assets/stars1.png';
 import Stars2 from '../../assets/stars2.png';
 import FadeInText from '../components/FadeInText';
 
@@ -40,7 +42,7 @@ import StopIcon from 'react-native-vector-icons/MaterialIcons';
 // Environment
 import { BACKEND_URL } from '@env';
 
-const ProfileScreen = () => {
+const AIScreen = () => {
     // State Management
     const [messages, setMessages] = useState([
         {
@@ -79,6 +81,17 @@ const ProfileScreen = () => {
     const navigation = useNavigation();
     const scrollRef = useRef(null);
     const abortControllerRef = useRef(null);
+
+    // Permission States
+    const [permissionVisible, setPermissionVisible] = useState(false);
+    const [permissionTitle, setPermissionTitle] = useState('');
+    const [permissionMessage, setPermissionMessage] = useState('');
+
+    const showPermissionAlert = (title, message) => {
+        setPermissionTitle(title)
+        setPermissionMessage(message)
+        setPermissionVisible(true)
+    }
 
     useThemedStatusBar(isDarkMode);
 
@@ -136,6 +149,8 @@ const ProfileScreen = () => {
         };
     }, [isAnalyzing]);
 
+    
+
     // Helper Functions
     const checkPromptLimitations = useCallback(() => {
         const planNames = Array.isArray(user?.premiumDetails)
@@ -147,6 +162,8 @@ const ProfileScreen = () => {
         if (planNames.some(name => name.includes('Ultra Pro Max'))) {
             allowedPrompts = Infinity;
         } else if (planNames.some(name => name.includes('Ultra Pro'))) {
+            allowedPrompts = 25;
+        } else if (planNames.some(name => name.includes('Pro'))){
             allowedPrompts = 10;
         }
 
@@ -179,10 +196,9 @@ const ProfileScreen = () => {
         try {
             const { status } = await Audio.requestPermissionsAsync();
             if (status !== "granted") {
-                Alert.alert(
+                showPermissionAlert(
                     "Permission Required",
                     "Microphone access is required for voice input.",
-                    [{ text: "OK" }]
                 );
                 return;
             }
@@ -299,8 +315,40 @@ const ProfileScreen = () => {
         return languageNames[languageCode] || languageCode;
     };
 
+    const requestMicrophonePermission = async () => {
+        if (Platform.OS === 'android') {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                {
+                    title: 'Microphone Permission',
+                    message: 'This app needs access to your microphone.',
+                    buttonNeutral: 'Ask Me Later',
+                    buttonNegative: 'Cancel',
+                    buttonPositive: 'OK',
+                }
+            );
+
+            if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+                showPermissionAlert('Microphone Access Needed', 'Enable microphone access in settings to use voice features.');
+                return false;
+            }
+
+            return true;
+        } else if (Platform.OS === 'ios') {
+            const { status } = await Audio.requestPermissionsAsync();
+
+            if (status !== 'granted') {
+                showPermissionAlert('Microphone Access Needed', 'Enable microphone access in settings to use voice features.');
+                return false;
+            }
+
+            return true;
+        }
+    };
+
 
     const handleMicPress = async () => {
+        requestMicrophonePermission();
         if (micOn) {
             await stopRecording();
         } else {
@@ -456,12 +504,6 @@ const ProfileScreen = () => {
                 body: JSON.stringify({
                     username: user?.username,
                     question: latestUserMessage,
-                    userfullname: user?.name,
-                    email: user?.email,
-                    dob: user?.dob,
-                    gender: user?.gender,
-                    ispremiumuser: user?.premiumuser,
-                    numberoffilesuploaded: user?.myfiles?.length || 0
                 })
             });
 
@@ -497,27 +539,36 @@ const ProfileScreen = () => {
         return (
             <Animated.View
                 style={[
-                    styles.languageInfoBanner,
-                    { backgroundColor: isDarkMode ? 'rgba(0, 121, 107, 0.9)' : 'rgba(0, 121, 107, 0.1)' }
+                    languageStylings.languageInfoBanner,
+                    { backgroundColor: isDarkMode ? 'rgba(0, 121, 107, 0.95)' : 'rgba(0, 121, 107, 0.12)' },
+                    languageStylings.elevationShadow
                 ]}
             >
-                <View style={styles.languageInfoContent}>
-                    <Text style={[styles.languageInfoIcon]}>🌐</Text>
-                    <View style={styles.languageInfoText}>
-                        <Text style={[styles.languageInfoTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
+                <View style={languageStylings.languageInfoContent}>
+                    {/* Globe Icon */}
+                    <View style={languageStylings.iconContainer}>
+                        <Text style={[languageStylings.languageInfoIcon, { color: isDarkMode ? '#A5D6A7' : '#00796b', }]}>🌐</Text>
+                    </View>
+
+                    {/* Language Info Text */}
+                    <View style={languageStylings.languageInfoText}>
+                        <Text style={[languageStylings.languageInfoTitle, { color: isDarkMode ? '#fff' : '#004D40' }]}>
                             Language Detected: {getLanguageName(translationInfo.originalLanguage)}
                         </Text>
                         {translationInfo.wasTranslated && (
-                            <Text style={[styles.languageInfoSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
+                            <Text style={[languageStylings.languageInfoSubtitle, { color: isDarkMode ? '#E0E0E0' : '#555' }]}>
                                 Automatically translated to English
                             </Text>
                         )}
                     </View>
+
+                    {/* Close Button */}
                     <TouchableOpacity
                         onPress={() => setShowLanguageInfo(false)}
-                        style={styles.closeButton}
+                        style={[languageStylings.dismissButton, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' }]}
+                        accessibilityLabel="Dismiss language info"
                     >
-                        <Text style={styles.closeButtonText}>×</Text>
+                        <Text style={[languageStylings.closeButtonText, { color: isDarkMode ? '#FFFFFFCC' : '#555', }]}>✕</Text>
                     </TouchableOpacity>
                 </View>
             </Animated.View>
@@ -570,7 +621,7 @@ const ProfileScreen = () => {
     );
 
     const renderInputSection = () => {
-        if (!user?.premiumuser || promptLimit) {
+        if (promptLimit) {
             return (
                 <TouchableOpacity
                     style={[styles.premiumButton, { backgroundColor: isDarkMode ? 'rgba(255, 81, 0, 0.74)' : '#E9A319' }]}
@@ -688,57 +739,76 @@ const ProfileScreen = () => {
                     </View>
                 </KeyboardAvoidingView>
             </SafeAreaView>
+            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
         </LinearGradient>
     );
 };
 
 
-const additionalStyles = StyleSheet.create({
+const languageStylings = StyleSheet.create({
     languageInfoBanner: {
         position: 'absolute',
-        top: 160, // Adjust based on your header height
-        left: 16,
-        right: 16,
-        borderRadius: 12,
-        padding: 12,
+        top: 110,
+        left: 20,
+        right: 20,
+        borderRadius: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
         zIndex: 1000,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 5,
     },
+
+    elevationShadow: {
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+    },
+
     languageInfoContent: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-start',
     },
+
+    iconContainer: {
+        marginRight: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
     languageInfoIcon: {
-        fontSize: 20,
-        marginRight: 10,
+        fontSize: 24,
     },
+
     languageInfoText: {
         flex: 1,
     },
+
     languageInfoTitle: {
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: '600',
+        marginBottom: 4,
     },
+
     languageInfoSubtitle: {
-        fontSize: 12,
-        marginTop: 2,
+        fontSize: 13,
+        fontWeight: '400',
     },
-    closeButton: {
-        padding: 4,
-        borderRadius: 12,
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+
+    dismissButton: {
+        marginLeft: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 30,
+        height: 30,
+        borderRadius: 15,
     },
+
     closeButtonText: {
-        fontSize: 18,
-        color: '#fff',
+        fontSize: 20,
         fontWeight: 'bold',
-        textAlign: 'center',
-        minWidth: 20,
-    },
+    }
 });
 
 const styles = StyleSheet.create({
@@ -981,4 +1051,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ProfileScreen;
+export default AIScreen;

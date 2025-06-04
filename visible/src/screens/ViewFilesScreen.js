@@ -11,7 +11,8 @@ import {
     Modal,
     ScrollView,
     StatusBar,
-    Platform
+    Platform,
+    Linking
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -23,19 +24,15 @@ import useUserStore from '../store/userStore';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import axios from 'axios';
 import * as MediaLibrary from 'expo-media-library';
-import WebView from 'react-native-webview';
 import useThemedStatusBar from '../hooks/StatusBar';
 import { BACKEND_URL } from '@env';
 
 
+
 // File Icons
 const fileIcons = {
-    pdf: require('../../assets/pdf.png'),
-    docx: require('../../assets/doc_icon.png'),
-    jpg: require('../../assets/image.png'),
-    jpeg: require('../../assets/image.png'),
-    png: require('../../assets/image.png'),
-    webp: require('../../assets/image.png'),
+    pdf: '../../assets/pdf.png',
+    docx: '../../assets/doc_icon.png',
 };
 
 
@@ -66,6 +63,7 @@ const ViewFilesScreen = () => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const [onWarningConfirm, setOnWarningConfirm] = useState(null);
+    const [docxUrl, setDocxUrl] = useState(null);
 
     useThemedStatusBar(isDarkMode)
 
@@ -110,29 +108,6 @@ const ViewFilesScreen = () => {
     }, [])
 
 
-    // View File Function
-    const handleViewFile = async (file) => {
-        if (!file.url) {
-            console.warn("File URL is missing");
-            return;
-        }
-        const fileUri = file.url;
-        if (file.type === "pdf") {
-            try {
-                const base64 = await FileSystem.readAsStringAsync(fileUri, {
-                    encoding: FileSystem.EncodingType.Base64,
-                });
-                const pdfData = `data:application/pdf;base64,${base64}`;
-                setPdfUri(pdfData);
-            } catch (error) {
-                console.error('Error reading PDF:', error);
-            }
-        } else {
-            setImagePreview(fileUri);
-        }
-    };
-
-
     const getExtensionFromMime = (mimeType) => {
         const map = {
             'image/jpeg': 'jpg',
@@ -167,13 +142,42 @@ const ViewFilesScreen = () => {
         }
     };
 
+
+    // View File Function
+    const handleViewFile = async (file) => {
+        if (!file.url) {
+            console.warn("File URL is missing");
+            return;
+        }
+        console.log("Local File Type: " + file.type)
+        const fileUri = file.url;
+        let fileType = file.type;
+
+        if (fileType.includes('jpg') || fileType.includes('jpeg') || fileType.includes('png')) {
+            console.log('It is an Image')
+            setImagePreview(fileUri)
+        }
+
+        else if (!fileUri.startsWith("http")) {
+            const response = await axios.post(`${BACKEND_URL}/file-data-thrower`, {
+                username: user?.username ?? 'unknown',
+                itemname: file?.name ?? 'unnamed-file',
+            });
+            fileUri = response.data.fileUrl;
+            fileType = response.data.fileType;
+        }
+
+        if (fileType.includes('pdf') || fileType.includes('docx')) {
+            Linking.openURL(fileUri)
+        }
+    };
+
     const handleDownloadFile = async (file) => {
         try {
             const response = await axios.post(`${BACKEND_URL}/file-data-thrower`, {
                 username: user?.username ?? 'unknown',
                 itemname: file?.name ?? 'unnamed-file',
             });
-
 
             const fileUrl = response.data.fileUrl;
             const fileType = response.data.fileType;
@@ -319,7 +323,7 @@ const ViewFilesScreen = () => {
         const fileType = file.type || '';
         const fileRating = file.rating !== undefined && file.rating !== null ? file.rating : '';
         return (
-            (selectedType === 'All' || fileType.toLowerCase() === selectedType.toLowerCase()) &&
+            (selectedType === 'All' || fileType.toLowerCase().includes(selectedType.toLowerCase())) &&
             (
                 fileName.toLowerCase().includes(searchText.toLowerCase()) ||
                 fileType.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -340,7 +344,7 @@ const ViewFilesScreen = () => {
 
             {/* Filters */}
             <View style={styles.filters}>
-                {['All', 'PDF', 'DOCX', 'JPG', 'PNG', 'WEBP'].map(type => (
+                {['All', 'PDF', 'DOCX', 'JPG', 'PNG', 'JPEG'].map(type => (
                     <TouchableOpacity
                         key={type}
                         style={[styles.filterButton, selectedType === type && styles.activeFilter]}
@@ -387,7 +391,17 @@ const ViewFilesScreen = () => {
                                     <View style={styles.previewBox}>
                                         {(
                                             <View style={styles.genericFile}>
-                                                <Image source={{ uri: item.url }} style={styles.fileIcon} />
+                                                {
+                                                    item.type.toLowerCase().includes('pdf') ?
+                                                        <View style={styles.pdfdocxParentIcon}>
+                                                            <Image source={require('../../assets/pdf.png')} style={styles.pdfdocxIcon} />
+                                                        </View> :
+                                                        (item.type.toLowerCase().includes('docx') ?
+                                                            <View style={styles.pdfdocxParentIcon}>
+                                                                <Image source={require('../../assets/doc_icon.png')} style={styles.pdfdocxIcon} />
+                                                            </View>
+                                                            : <Image source={{ uri: item.url }} style={styles.fileIcon} />)
+                                                }
                                             </View>
                                         )}
                                     </View>
@@ -438,23 +452,6 @@ const ViewFilesScreen = () => {
                 </View>
             </Modal>
 
-            {/* PDF Viewer Modal */}
-            <Modal visible={!!pdfUri} transparent={true} animationType="slide">
-                <View style={styles.modalContainer}>
-                    <TouchableOpacity onPress={() => setPdfUri(null)} style={styles.closeButton}>
-                        <MaterialIcons name="close" size={30} color="white" />
-                    </TouchableOpacity>
-                    {pdfUri && (
-                        <WebView
-                            source={{ uri: pdfUri }}
-                            style={styles.pdfViewer}
-                            originWhitelist={['*']}
-                            javaScriptEnabled={true}
-                            domStorageEnabled={true}
-                        />
-                    )}
-                </View>
-            </Modal>
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert
                 visible={warningAlertVisible}
@@ -519,6 +516,17 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: 15,
     },
+    pdfdocxParentIcon: {
+        height: 150,
+        width: 150,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    pdfdocxIcon: {
+        height: 110,
+        width: 110,
+        resizeMode: 'center',
+    },
     fileDetailsLeft: {
         width: '50%',
         textAlign: 'center',
@@ -535,6 +543,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     filePreview: { width: 60, height: 60, marginBottom: 10, resizeMode: 'contain' },
+    openInBrowserButton: {
+        backgroundColor: '#007AFF',
+        padding: 15,
+        borderRadius: 5,
+        marginTop: 20,
+    },
     fileType: { fontSize: 12, color: 'gray', marginBottom: 5 },
     previewContainer: {
         flexDirection: 'row',
@@ -542,7 +556,7 @@ const styles = StyleSheet.create({
         paddingVertical: 26,
         borderColor: '#ddd',
     },
-    
+
     previewBox: {
         width: '50%',
         justifyContent: 'center',
@@ -569,7 +583,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-
+    docxViewer: {
+        flex: 1,
+        width: '100%',
+        backgroundColor: '#fff',
+    },
     fileIcon: {
         width: 150,
         height: 150,
@@ -669,8 +687,12 @@ const styles = StyleSheet.create({
     },
     pdfViewer: {
         flex: 1,
-        width: '90%',
-        height: '80%',
+        width: '100%',
+        backgroundColor: '#fff',
+    },
+    docxViewer: {
+        flex: 1,
+        width: '100%',
         backgroundColor: '#fff',
     },
     lottieContainer: {

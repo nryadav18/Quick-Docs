@@ -9,19 +9,23 @@ import {
     ActivityIndicator,
     Dimensions,
     ScrollView,
+    Linking
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { WebView } from 'react-native-webview';
 import { ThemeContext } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ErrorAlert, WarningAlert, SuccessAlert } from '../components/AlertBox';
+import { ErrorAlert, WarningAlert, SuccessAlert, PermissionAlert } from '../components/AlertBox';
 import useUserStore from '../store/userStore';
 import { FontAwesome5 } from 'react-native-vector-icons'
 import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from "@react-navigation/native"
 import { BACKEND_URL } from '@env';
+import { AppState } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -49,8 +53,26 @@ const UploadFilesScreen = () => {
     const [successAlertVisible, setSuccessAlertVisible] = useState(false);
     const [successTitle, setSuccessTitle] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [permissionVisible, setPermissionVisible] = useState(false);
+    const [permissionTitle, setPermissionTitle] = useState('');
+    const [permissionMessage, setPermissionMessage] = useState('');
 
     useThemedStatusBar(isDarkMode)
+    useFocusEffect(
+        React.useCallback(() => {
+            const checkPermissionOnFocus = async () => {
+                if (permissionVisible) {
+                    const { status } = await ImagePicker.getCameraPermissionsAsync();
+                    if (status === 'granted') {
+                        setPermissionVisible(false);
+                    }
+                }
+            };
+
+            checkPermissionOnFocus();
+        }, [permissionVisible])
+    );
+
 
     // Custom Alert Functions
     const showErrorAlert = (title, message) => {
@@ -71,6 +93,12 @@ const UploadFilesScreen = () => {
         setSuccessAlertVisible(true);
     };
 
+    const showPermissionAlert = (title, message) => {
+        setPermissionTitle(title)
+        setPermissionMessage(message)
+        setPermissionVisible(true)
+    }
+
     // File selection (Document Picker)
     const pickFile = async () => {
         let result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
@@ -90,7 +118,7 @@ const UploadFilesScreen = () => {
     const takePhoto = async () => {
         let permissionResult = await ImagePicker.requestCameraPermissionsAsync();
         if (!permissionResult.granted) {
-            showErrorAlert('Permission required', 'Camera access is needed to take a photo.');
+            showPermissionAlert('Camera Access Needed', 'To Take a Picture, You Must Enable the Camera Permission!')
             return;
         }
         let result = await ImagePicker.launchCameraAsync();
@@ -111,7 +139,7 @@ const UploadFilesScreen = () => {
     };
 
     // Upload the file to the backend (GC bucket)
-    const allowedTypes = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'webp'];
+    const allowedTypes = ['pdf', 'docx', 'jpg', 'jpeg', 'png'];
     const uploadFile = async () => {
         setUploadingState(true)
         if (!file || !importance || !fileName) {
@@ -123,7 +151,7 @@ const UploadFilesScreen = () => {
         const fileExtension = file.split('.').pop().toLowerCase();
         console.log(fileExtension)
         if (!allowedTypes.includes(fileExtension)) {
-            showErrorAlert('Invalid File Type', 'Only PDF, DOCX, JPG, JPEG, PNG, and WEBP files are allowed.');
+            showErrorAlert('Invalid File Type', 'Only PDF, DOCX, JPG, JPEG and PNG files are allowed.');
             setUploadingState(false)
             return;
         }
@@ -322,6 +350,7 @@ const UploadFilesScreen = () => {
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
             <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
+            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
         </LinearGradient>
     );
 };

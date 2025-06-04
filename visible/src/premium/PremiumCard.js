@@ -23,8 +23,8 @@ const { width } = Dimensions.get('window');
 
 
 const plans = {
-    Pro: { name: 'Pro Plan', price: '1', type: 'Pro', features: [{ label: '10 File Uploads', available: true }, { label: '3 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: false }, { label: 'Voice to Voice AI', available: false }], color: '#E9A319' },
-    Ultra_Pro: { name: 'Ultra Pro Plan', price: '2', type: 'Ultra Pro', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '10 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: false },], color: '#D98324' },
+    Pro: { name: 'Pro Plan', price: '1', type: 'Pro', features: [{ label: '10 File Uploads', available: true }, { label: '10 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: false }, { label: 'Voice to Voice AI', available: false }], color: '#E9A319' },
+    Ultra_Pro: { name: 'Ultra Pro Plan', price: '2', type: 'Ultra Pro', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '25 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: false },], color: '#D98324' },
     Ultra_Pro_Max: { name: 'Ultra Pro Max Plan', price: '3', type: 'Ultra Pro Max', features: [{ label: 'Unlimited File Uploads', available: true }, { label: 'Unlimited AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: true },], color: '#EB8317' },
 };
 
@@ -236,7 +236,6 @@ export default function Premium() {
 }
 
 const PlanCard = ({ plan, onBuyNow, user }) => {
-    console.log(user)
     const alreadyBought = Array.isArray(user?.premiumDetails) && user.premiumDetails.length > 0
         ? user.premiumDetails.some(detail => detail?.type === plan?.name)
         : false;

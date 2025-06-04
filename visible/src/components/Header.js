@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useEffect } from 'react';
+import React, { useContext, useRef, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../context/ThemeContext';
@@ -30,7 +30,7 @@ const Header = ({ title }) => {
     });
 
     const goToPremium = () => {
-        navigation.navigate('Premium');
+        navigation.navigate('Premium')
     };
 
     return (
@@ -41,20 +41,21 @@ const Header = ({ title }) => {
 
                 <View style={styles.actions}>
                     {/* Premium Button */}
-                    {user?.premiumDetails.length < 3 && (
-                        <TouchableOpacity onPress={goToPremium} style={[styles.premiumButton,
-                        (!isDarkMode && { backgroundColor: '#E9A319' })]}>
-                            <FontAwesome5 name="crown" size={18} color="#FFD700" />
-                            <Text style={[styles.premiumText, (!isDarkMode && { color: 'black' })]}>
-                                Become {
-                                    !user?.premiumuser
-                                        ? 'Pro'
-                                        : 'Super Pro'
-                                }
-                            </Text>
+                    {user?.premiumDetails.length < 3 &&
+                        !user?.premiumDetails.map(p => p?.type).some(name => name.includes('Ultra Pro Max')) && (
+                            <TouchableOpacity onPress={goToPremium} style={[styles.premiumButton,
+                            (!isDarkMode && { backgroundColor: '#E9A319' })]}>
+                                <FontAwesome5 name="crown" size={18} color="#FFD700" />
+                                <Text style={[styles.premiumText, (!isDarkMode && { color: 'black' })]}>
+                                    Become {
+                                        !user?.premiumuser
+                                            ? 'Pro'
+                                            : 'Super Pro'
+                                    }
+                                </Text>
 
-                        </TouchableOpacity>
-                    )}
+                            </TouchableOpacity>
+                        )}
 
                     {/* Toggle Theme Button */}
                     <TouchableOpacity onPress={toggleDarkMode} style={styles.toggleButton}>

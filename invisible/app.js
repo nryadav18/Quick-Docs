@@ -473,7 +473,7 @@ app.post('/update-notification-token', async (req, res) => {
 //Embeddings Conversion
 async function generateEmbedding(text) {
     const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GOOGLE_CLOUD_API}`,
         {
             content: { parts: [{ text }] },
             taskType: 'RETRIEVAL_QUERY'
@@ -489,11 +489,23 @@ async function generateEmbedding(text) {
 
 // AI RESPONSE
 app.post('/ask', async (req, res) => {
-    const { question, username, userfullname, email, dob, gender, ispremiumuser, numberoffilesuploaded } = req.body;
+    const { question, username, detectedLanguage } = req.body;
     if (!question || !username) return res.status(400).json({ message: 'Missing fields' });
-    console.log(question)
+
+    console.log(`Question: ${question}`);
+    console.log(`Detected Language: ${detectedLanguage}`);
+
     try {
         const lowerQuestion = question.toLowerCase();
+
+        // Map detected language code to name for prompt
+        const langMap = {
+            'en-IN': 'English',
+            'hi-IN': 'Hindi',
+            'te-IN': 'Telugu',
+        };
+
+        const targetLang = langMap[detectedLanguage] || 'English';
 
         // check general prompts
         const generalPrompts = [
@@ -542,8 +554,22 @@ app.post('/ask', async (req, res) => {
 
         const systemContext = topMatches || 'No user files matched. Use only your personality and app knowledge.';
 
+        const prompt = `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.
+Follow these instructions carefully:
+- Always respond in **${targetLang}**
+- Use natural, conversational tone
+- Keep it simple and friendly
+- If you don't understand, say so politely in ${targetLang}
+- Avoid markdown formatting
+- Make sure to answer clearly and directly
+
+Context:
+${systemContext}
+
+Question: ${lowerQuestion}`;
+
         const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -552,7 +578,7 @@ app.post('/ask', async (req, res) => {
                         {
                             role: 'user',
                             parts: [{
-                                text: `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers.\n\n Context:\n\n${systemContext}\n\nQuestion: ${lowerQuestion}`
+                                text: prompt
                             }]
                         }
                     ]
@@ -563,7 +589,8 @@ app.post('/ask', async (req, res) => {
         const data = await geminiRes.json();
 
         const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No meaningful response.';
-        console.log(data)
+
+        console.log(`Answer in ${targetLang}:`, answer);
 
         // encrypt answer before sending to DB if saving (optional)
         // but here we just send plain text back to frontend
@@ -585,10 +612,6 @@ app.post('/check-prompt-limitation', async (req, res) => {
         const user = await User.findOne({ usernameHash: hashedUsername });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (!user.premiumuser) {
-            return res.status(403).json({ message: 'Not a premium user' });
-        }
-
         // Decrypt plan types before checking
         const planNames = user.premiumDetails.map(p => {
             try {
@@ -602,7 +625,8 @@ app.post('/check-prompt-limitation', async (req, res) => {
 
         let allowedPrompts = 3;
         if (planNames.some(name => name.includes('Ultra Pro Max'))) allowedPrompts = Infinity;
-        else if (planNames.some(name => name.includes('Ultra Pro'))) allowedPrompts = 10;
+        else if (planNames.some(name => name.includes('Ultra Pro'))) allowedPrompts = 25;
+        else if (planNames.some(name => name.includes('Pro'))) allowedPrompts = 10;
 
         if (user.aipromptscount >= allowedPrompts) {
             return res.status(403).json({ message: 'Prompt limit reached' });
@@ -639,37 +663,37 @@ const INDIAN_LANGUAGES = [
 
 
 // Basic Translation of Voice from Any Language to English
-app.post("/transcribe", upload.single("audio"), async (req, res) => {
-    try {
-        const audioBytes = req.file.buffer.toString("base64");
+// app.post("/transcribe", upload.single("audio"), async (req, res) => {
+//     try {
+//         const audioBytes = req.file.buffer.toString("base64");
 
-        const audio = {
-            content: audioBytes,
-        };
+//         const audio = {
+//             content: audioBytes,
+//         };
 
-        const config = {
-            encoding: 'AMR', // for .3gp files recorded by Android with expo-av
-            sampleRateHertz: 8000,
-            languageCode: 'en-US',
-        };
+//         const config = {
+//             encoding: 'AMR', // for .3gp files recorded by Android with expo-av
+//             sampleRateHertz: 8000,
+//             languageCode: 'en-IN',
+//         };
 
 
-        const request = {
-            audio: audio,
-            config: config,
-        };
+//         const request = {
+//             audio: audio,
+//             config: config,
+//         };
 
-        const [response] = await speechClient.recognize(request);
-        const transcript = response.results.map(r => r.alternatives[0].transcript).join("\n");
+//         const [response] = await speechClient.recognize(request);
+//         const transcript = response.results.map(r => r.alternatives[0].transcript).join("\n");
 
-        console.log(transcript)
+//         console.log(transcript)
 
-        res.json({ transcript });
-    } catch (err) {
-        console.error("Error processing audio:", err);
-        res.status(500).json({ error: "Speech recognition failed" });
-    }
-});
+//         res.json({ transcript });
+//     } catch (err) {
+//         console.error("Error processing audio:", err);
+//         res.status(500).json({ error: "Speech recognition failed" });
+//     }
+// });
 
 
 // Option 1: Google Translate (Free, no API key) - Using translate-google npm package
@@ -712,7 +736,7 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
 
         // Test multiple languages in parallel   
 
-        const languagesToTest = ['en-US', 'hi-IN', 'te-IN'];
+        const languagesToTest = ['en-IN', 'hi-IN', 'te-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
             try {
@@ -779,7 +803,7 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
         };
 
         // Translate if needed using free APIs
-        if (bestResult.language !== 'en-US' && bestResult.transcript.trim()) {
+        if (bestResult.language !== 'en-IN' && bestResult.transcript.trim()) {
             try {
                 const langCode = bestResult.language.split('-')[0];
 
@@ -895,6 +919,37 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
             detectedLanguage: "unknown",
             details: err.message
         });
+    }
+});
+
+
+// Route to convert Text to Speech
+app.post('/text-to-speech', async (req, res) => {
+    const { text, languageCode, name, ssmlGender, audioEncoding, speakingRate } = req.body;
+
+    try {
+        const response = await axios.post(
+            `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${process.env.GOOGLE_CLOUD_API}`,
+            {
+                input: { text },
+                voice: {
+                    languageCode: languageCode,
+                    name: name,
+                    ssmlGender: ssmlGender
+                },
+                audioConfig: {
+                    audioEncoding: audioEncoding,
+                    speakingRate: speakingRate
+                }
+            }
+        );
+
+        res.json({
+            audioContent: response.data.audioContent
+        });
+    } catch (err) {
+        console.error('TTS Error:', err.message);
+        res.status(500).json({ error: 'Failed to generate audio' });
     }
 });
 
@@ -1133,6 +1188,7 @@ app.post('/file-data-thrower', async (req, res) => {
         const fileId = file._id;
         const fileUrl = decrypt(file.url);
         const fileType = file.type; // assuming type is not sensitive
+        console.log(file)
 
         res.json({ fileId, fileUrl, fileType });
     } catch (err) {
@@ -1233,8 +1289,8 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         }
 
         const hashedUsername = hashValues(username);
-
-        const fileName = Date.now() + '-' + originalname;
+        const modifiedOriginalName = originalname.replace(/\s+/g, '_')
+        const fileName = Date.now() + '-' + modifiedOriginalName;
         const gcsKey = `${username}/${fileName}`;
         const gcsFile = bucket.file(gcsKey);
 
@@ -1251,7 +1307,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
         stream.on('finish', async () => {
             try {
-                const fileUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`; 
+                const fileUrl = `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${gcsKey}`;
 
                 // Detect file type
                 const { fileTypeFromBuffer } = await import('file-type');

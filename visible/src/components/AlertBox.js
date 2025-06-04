@@ -90,6 +90,40 @@ export const SuccessAlert = ({ visible, title, message, onOk }) => {
     )
 }
 
+// Permission Alert - For requesting system permissions like Microphone, Camera
+export const PermissionAlert = ({
+    visible,
+    title = "Permission Required",
+    message = "This feature requires permission to proceed.",
+    onAllow,
+    onCancel,
+}) => {
+    return (
+        <Modal animationType="fade" transparent={true} visible={visible} onRequestClose={onCancel}>
+            <View style={styles.centeredView}>
+                <View style={styles.modalView}>
+                    <View style={styles.iconContainer}>
+                        <AntDesign name="warning" size={40} color="#FFA500" />
+                    </View>
+                    <Text style={styles.modalTitle}>{title}</Text>
+                    <Text style={styles.modalText}>{message}</Text>
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.button, styles.warningButton]} onPress={onAllow}>
+                            <Text style={styles.buttonText}>Settings</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+};
+
+
 const styles = StyleSheet.create({
     centeredView: {
         flex: 1,

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useContext, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Dimensions, Platform, PermissionsAndroid, Linking } from 'react-native';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
 import { Audio } from 'expo-av';
@@ -13,6 +13,8 @@ import { ThemeContext } from '../context/ThemeContext';
 import useThemedStatusBar from '../hooks/StatusBar';
 import useUserStore from '../store/userStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { PermissionAlert } from '../components/AlertBox';
+import { GOOGLE_CLOUD_API_KEY } from '@env';
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,6 +28,21 @@ const VoiceToVoiceScreen = () => {
     const navigation = useNavigation();
     useThemedStatusBar(isDarkMode)
 
+    // Permission States
+    const [permissionVisible, setPermissionVisible] = useState(false);
+    const [permissionTitle, setPermissionTitle] = useState('');
+    const [permissionMessage, setPermissionMessage] = useState('');
+
+    const [currentSound, setCurrentSound] = useState('')
+
+    // Permission Functions
+    const showPermissionAlert = (title, message) => {
+        setPermissionTitle(title)
+        setPermissionMessage(message)
+        setPermissionVisible(true)
+    }
+
+    // Animation States
     const micScale = useRef(new Animated.Value(1)).current;
     const micGlow = useRef(new Animated.Value(0)).current;
     const micRotation = useRef(new Animated.Value(0)).current;
@@ -38,6 +55,7 @@ const VoiceToVoiceScreen = () => {
     const orbitAnim = useRef(new Animated.Value(0)).current;
     const breathingAnim = useRef(new Animated.Value(1)).current;
 
+
     const sound = useRef(new Audio.Recording());
     const animationRef = useRef(null);
 
@@ -48,6 +66,37 @@ const VoiceToVoiceScreen = () => {
             // cleanupRecording();
         };
     }, []);
+
+    const requestMicrophonePermission = async () => {
+        if (Platform.OS === 'android') {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                {
+                    title: 'Microphone Permission',
+                    message: 'This app needs access to your microphone.',
+                    buttonNeutral: 'Ask Me Later',
+                    buttonNegative: 'Cancel',
+                    buttonPositive: 'OK',
+                }
+            );
+
+            if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+                showPermissionAlert('Microphone Access Needed', 'Enable microphone access in settings to use voice features.');
+                return false;
+            }
+
+            return true;
+        } else if (Platform.OS === 'ios') {
+            const { status } = await Audio.requestPermissionsAsync();
+
+            if (status !== 'granted') {
+                showPermissionAlert('Microphone Access Needed', 'Enable microphone access in settings to use voice features.');
+                return false;
+            }
+
+            return true;
+        }
+    };
 
     const startRecording = async () => {
         if (!user?.premiumuser) {
@@ -61,6 +110,8 @@ const VoiceToVoiceScreen = () => {
             navigation.navigate('Premium');
             return;
         }
+
+        await requestMicrophonePermission();
 
         Animated.timing(micGlow, {
             toValue: 1,
@@ -118,6 +169,78 @@ const VoiceToVoiceScreen = () => {
             .trim();
     };
 
+
+    const playBase64Audio = async (base64Audio) => {
+        try {
+            // Unload any existing sound before starting a new one
+            if (currentSound) {
+                await currentSound.stopAsync();
+                await currentSound.unloadAsync();
+                setCurrentSound(null)
+            }
+
+            const soundObject = new Audio.Sound();
+            setCurrentSound(soundObject)
+
+            await soundObject.loadAsync({ uri: base64Audio }, {}, true);
+            setLoading(false);
+            setIsSpeaking(true);
+
+            await soundObject.playAsync();
+
+            soundObject.setOnPlaybackStatusUpdate((status) => {
+                if (status.didJustFinish) {
+                    setIsSpeaking(false);
+                    soundObject.unloadAsync();
+                    setCurrentSound(null)
+                }
+            });
+
+        } catch (error) {
+            console.error("Error playing Base64 audio:", error);
+            setIsSpeaking(false);
+            setLoading(false);
+            alert('Failed to play audio');
+        }
+    };
+
+    const getTeluguAudioFromGoogleTTS = async (text) => {
+        const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
+            text,
+            languageCode: 'te-IN',
+            name: "te-IN-Chirp3-HD-Achernar",
+            ssmlGender: 'MALE',
+            audioEncoding: 'MP3',
+            speakingRate: 1.0
+        });
+        return `data:audio/mp3;base64,${response.data.audioContent}`;
+    };
+
+
+    const getHindiAudioFromGoogleTTS = async (text) => {
+        const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
+            text,
+            languageCode: 'hi-IN',
+            name: "hi-IN-Chirp3-HD-Achernar",
+            ssmlGender: 'FEMALE',
+            audioEncoding: 'MP3',
+            speakingRate: 1.0
+        });
+        return `data:audio/mp3;base64,${response.data.audioContent}`;
+    };
+
+    const getEnglishAudioFromGoogleTTS = async (text) => {
+        const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
+            text,
+            languageCode: 'en-IN',
+            name: "en-IN-Chirp3-HD-Achernar",
+            ssmlGender: 'FEMALE',
+            audioEncoding: 'MP3',
+            speakingRate: 1.0
+        });
+        return `data:audio/mp3;base64,${response.data.audioContent}`;
+    };
+
     const handleVoiceToVoice = async (audioUri) => {
         setLoading(true);
         setIsSpeaking(false);
@@ -135,37 +258,101 @@ const VoiceToVoiceScreen = () => {
             });
 
             const question = transcribeRes.data.translation || transcribeRes.data.transcript;
-
-            let aiResponse, answer;
+            let answer = '', detectedLanguage = 'en-IN';
 
             if (!question) {
-                answer = 'Please Speak Something to Answer';
-            }
-
-            else {
-                aiResponse = await axios.post(`${BACKEND_URL}/ask`, {
+                answer = 'Please Speak Something to Answer'; // Default Telugu message
+            } else {
+                detectedLanguage = transcribeRes.data.detectedLanguage || 'en-IN';
+                const aiResponse = await axios.post(`${BACKEND_URL}/ask`, {
                     question,
                     username: user?.username ?? 'Test',
-                    userfullname: user?.name ?? 'Testing',
-                    email: user?.email ?? 'test@gmail.com',
-                    dob: user?.dob ?? '01-01-2001',
-                    gender: user?.gender ?? 'Others',
-                    ispremiumuser: user?.premiumuser ?? false,
-                    numberoffilesuploaded: user?.myfiles?.length ?? 0,
+                    detectedLanguage
                 });
                 answer = cleanTextForSpeech(aiResponse.data.answer);
             }
 
-            setIsSpeaking(true);
+            const speakInLanguage = async () => {
+                const langCode = detectedLanguage;
 
-            Speech.speak(answer, {
-                language: 'en',
-                pitch: 1.0,
-                rate: 1.0,
-                onDone: () => setIsSpeaking(false),
-            });
+                if (langCode.startsWith('te')) {
+                    // Use Google Cloud TTS for Telugu
+                    try {
+                        const audioURI = await getTeluguAudioFromGoogleTTS(answer);
+                        await playBase64Audio(audioURI);
+                    } catch (error) {
+                        setLoading(false);
+                        setIsSpeaking(false);
+                        console.error('TTS Error:', error.message);
+                        if (error.response) {
+                            // Server responded with a status other than 2xx
+                            console.error('Response Data:', error.response.data);
+                            console.error('Status Code:', error.response.status);
+                        } else if (error.request) {
+                            // No response received
+                            console.error('No response received:', error.request);
+                        } else {
+                            // Something else went wrong
+                            console.error('Unexpected error:', error);
+                        }
+                    }
+                } else if (langCode.startsWith('hi')) {
+                    // Use Google Cloud TTS for Hindi
+                    try {
+                        const audioURI = await getHindiAudioFromGoogleTTS(answer);
+                        await playBase64Audio(audioURI);
+                    } catch (error) {
+                        setLoading(false);
+                        setIsSpeaking(false);
+                        console.error('TTS Error:', error.message);
+                        if (error.response) {
+                            // Server responded with a status other than 2xx
+                            console.error('Response Data:', error.response.data);
+                            console.error('Status Code:', error.response.status);
+                        } else if (error.request) {
+                            // No response received
+                            console.error('No response received:', error.request);
+                        } else {
+                            // Something else went wrong
+                            console.error('Unexpected error:', error);
+                        }
+                    }
+                } else {
+                    // Use expo-speech for English (supports en-IN)
+                    // setLoading(false);
+                    // setIsSpeaking(true);
+                    // Speech.speak(answer, {
+                    //     language: 'en-IN',
+                    //     rate: 1.0,
+                    //     onDone: () => setIsSpeaking(false),
+                    // });
+                    try {
+                        const audioURI = await getEnglishAudioFromGoogleTTS(answer);
+                        await playBase64Audio(audioURI);
+                    } catch (error) {
+                        setLoading(false);
+                        setIsSpeaking(false);
+                        console.error('TTS Error:', error.message);
+                        if (error.response) {
+                            // Server responded with a status other than 2xx
+                            console.error('Response Data:', error.response.data);
+                            console.error('Status Code:', error.response.status);
+                        } else if (error.request) {
+                            // No response received
+                            console.error('No response received:', error.request);
+                        } else {
+                            // Something else went wrong
+                            console.error('Unexpected error:', error);
+                        }
+                    }
+                }
+            };
+
+            await speakInLanguage();
 
         } catch (err) {
+            setLoading(false);
+            setIsSpeaking(false);
             console.error(err);
             alert('Something went wrong!');
         }
@@ -173,8 +360,14 @@ const VoiceToVoiceScreen = () => {
         setLoading(false);
     };
 
-    const stopSpeaking = () => {
-        Speech.stop();
+    const stopSpeaking = async () => {
+        if (currentSound) {
+            await currentSound.stopAsync();
+            await currentSound.unloadAsync();
+            setCurrentSound(null)
+        }
+
+        Speech.stop(); // For English voice
         setIsSpeaking(false);
     };
 
@@ -327,7 +520,7 @@ const VoiceToVoiceScreen = () => {
                     , !isDarkMode && { color: '#302b63', shadowColor: '#302b63' }]}
             >
                 <LinearGradient
-                    colors={ isDarkMode ? ['#00ffcc', '#0099ff'] : [ 'black' , 'black' ]}
+                    colors={isDarkMode ? ['#00ffcc', '#0099ff'] : ['black', 'black']}
                     style={styles.particleGradient}
                 />
             </Animated.View>
@@ -391,7 +584,7 @@ const VoiceToVoiceScreen = () => {
 
                 <TouchableOpacity
                     onPress={isRecording ? stopRecording : startRecording}
-                    style={[styles.micButton, isRecording ? [styles.stopButton, !isDarkMode && {borderColor : 'black'}] : [styles.startButton, !isDarkMode && {borderColor : '#302b63'}], !isDarkMode && { backgroundColor: '#302b63', shadowColor: '#302b63'}]}
+                    style={[styles.micButton, isRecording ? [styles.stopButton, !isDarkMode && { borderColor: 'black' }] : [styles.startButton, !isDarkMode && { borderColor: '#302b63' }], !isDarkMode && { backgroundColor: '#302b63', shadowColor: '#302b63' }]}
                     disabled={loading || isSpeaking}
                 >
                     <LottieView
@@ -438,6 +631,7 @@ const VoiceToVoiceScreen = () => {
                     {isRecording ? 'Listening...' : isSpeaking ? 'Speaking...' : loading ? 'Processing...' : 'Ready'}
                 </Text>
             </Animatable.View>
+            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
         </LinearGradient>
     );
 };
