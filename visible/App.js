@@ -10,6 +10,7 @@ import * as SecureStore from 'expo-secure-store';
 import './firebaseConfig'
 import { BACKEND_URL } from '@env';
 
+
 // Setup notification handler (optional but recommended)
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -22,6 +23,20 @@ Notifications.setNotificationHandler({
 const AppContent = () => {
     const { setUser, setToken, loadToken, alreadyLoggedIn, setAlreadyLoggedIn } = useUserStore();
     const [loadingAuth, setLoadingAuth] = useState(true);
+
+    useEffect(() => {
+        const originalConsoleError = console.error;
+
+        console.error = (...args) => {
+            // Prevent red screen overlay in dev
+            originalConsoleError(...args);
+            // You could also send this to Sentry or log somewhere
+        };
+
+        return () => {
+            console.error = originalConsoleError;
+        };
+    }, []);
 
     useEffect(() => {
         const initializeAuth = async () => {
