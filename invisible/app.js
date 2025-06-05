@@ -14,7 +14,6 @@ const mammoth = require("mammoth");
 const path = require('path')
 const axios = require('axios')
 const { SpeechClient } = require('@google-cloud/speech');
-// const { TranslationServiceClient } = require('@google-cloud/translate');
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
