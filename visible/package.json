@@ -11,13 +11,12 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
-    "@google-cloud/translate": "^9.1.0",
     "@react-navigation/bottom-tabs": "^7.3.3",
     "@react-navigation/native": "^7.0.19",
     "@react-navigation/stack": "^7.2.3",
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",
-    "expo": "53.0.10",
+    "expo": "^53.0.10",
     "expo-audio": "~0.4.6",
     "expo-auth-session": "~6.2.0",
     "expo-av": "~15.1.5",
@@ -36,6 +35,7 @@
     "expo-sharing": "~13.1.5",
     "expo-speech": "~13.1.7",
     "expo-speech-recognition": "^2.0.0",
+    "expo-system-ui": "~5.0.8",
     "expo-web-browser": "~14.1.6",
     "firebase": "^11.7.1",
     "lottie-react-native": "7.2.2",
@@ -46,7 +46,6 @@
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-gifted-chat": "^2.8.1",
-    "react-native-image-picker": "^8.2.0",
     "react-native-paper": "^5.13.1",
     "react-native-paper-dates": "^0.22.38",
     "react-native-particles": "^0.0.8",
@@ -56,8 +55,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-vector-icons": "^10.2.0",
     "react-native-webview": "13.13.5",
-    "zustand": "^5.0.3",
-    "expo-system-ui": "~5.0.8"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
