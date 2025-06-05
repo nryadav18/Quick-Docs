@@ -12,7 +12,8 @@ import {
     ScrollView,
     StatusBar,
     Platform,
-    Linking
+    Linking,
+    Appearance
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -385,7 +386,7 @@ const ViewFilesScreen = () => {
                                         zIndex: 10,
                                     }}
                                 >
-                                    <MaterialIcons name="share" size={30} color="#FF3B30" />
+                                    <MaterialIcons name="share" size={30} color="violet" />
                                 </TouchableOpacity>
                                 <View style={styles.previewContainer}>
                                     <View style={styles.previewBox}>
@@ -485,7 +486,6 @@ const styles = StyleSheet.create({
     scrollViewContent: {
         paddingBottom: 20,
     },
-
     noDataFound: {
         width: 220,
         height: 220
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         marginHorizontal: 8,
-        marginBottom: 16,
+        marginBottom: 26,
         alignItems: 'center',
         elevation: 3,
     },
@@ -630,6 +630,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%',
+        gap : 10
     },
     viewButton: {
         backgroundColor: '#007AFF',
@@ -640,7 +641,6 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
         flex: 1,
-        marginRight: 5,
     },
     downloadButton: {
         backgroundColor: '#00796b',
@@ -651,7 +651,6 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
         flex: 1,
-        marginLeft: 5,
     },
     deleteButton: {
         backgroundColor: '#DC3545',
@@ -661,7 +660,6 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
         flex: 1,
-        marginLeft: 5,
     },
     buttonText: {
         fontSize: 16,

@@ -13,7 +13,7 @@ const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 const path = require('path')
 const axios = require('axios')
-const { SpeechClient } = require('@google-cloud/speech');
+const { SpeechClient } = require('@google-cloud/speech').v1p1beta1;
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
@@ -735,7 +735,7 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
 
         // Test multiple languages in parallel   
 
-        const languagesToTest = ['en-IN', 'hi-IN', 'te-IN'];
+        const languagesToTest = ['en-US', 'en-IN', 'hi-IN', 'te-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
             try {

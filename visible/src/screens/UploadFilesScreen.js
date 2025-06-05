@@ -293,9 +293,10 @@ const UploadFilesScreen = () => {
                 >
                     {file ? (
                         fileType && fileType.includes('pdf') ? (
-                            <WebView
-                                source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(file)}` }}
-                                style={{ width: '100%', height: '100%' }}
+                            <Image
+                                source={require('../../assets/pdf.png')}
+                                style={{ width: '60%', height: '60%' }}
+                                resizeMode="contain"
                             />
                         ) : (
                             <Image source={{ uri: file }} style={{ width: '100%', height: '100%', resizeMode: 'contain' }} />
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     darkPreviewContainer: { backgroundColor: '#121212' },
-    noFileText: { fontSize: 16, color: '#888' },
+    noFileText: { fontSize: 18,  color: '#888', textAlign : 'center' },
 });
 
 export default UploadFilesScreen;

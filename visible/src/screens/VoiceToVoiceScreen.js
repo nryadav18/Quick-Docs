@@ -317,33 +317,32 @@ const VoiceToVoiceScreen = () => {
                         }
                     }
                 } else {
-                    // Use expo-speech for English (supports en-IN)
-                    // setLoading(false);
-                    // setIsSpeaking(true);
-                    // Speech.speak(answer, {
-                    //     language: 'en-IN',
-                    //     rate: 1.0,
-                    //     onDone: () => setIsSpeaking(false),
-                    // });
-                    try {
-                        const audioURI = await getEnglishAudioFromGoogleTTS(answer);
-                        await playBase64Audio(audioURI);
-                    } catch (error) {
-                        setLoading(false);
-                        setIsSpeaking(false);
-                        console.error('TTS Error:', error.message);
-                        if (error.response) {
-                            // Server responded with a status other than 2xx
-                            console.error('Response Data:', error.response.data);
-                            console.error('Status Code:', error.response.status);
-                        } else if (error.request) {
-                            // No response received
-                            console.error('No response received:', error.request);
-                        } else {
-                            // Something else went wrong
-                            console.error('Unexpected error:', error);
-                        }
-                    }
+                    setLoading(false);
+                    setIsSpeaking(true);
+                    Speech.speak(answer, {
+                        language: 'en-IN',
+                        rate: 1.0,
+                        onDone: () => setIsSpeaking(false),
+                    });
+                    // try {
+                    //     const audioURI = await getEnglishAudioFromGoogleTTS(answer);
+                    //     await playBase64Audio(audioURI);
+                    // } catch (error) {
+                    //     setLoading(false);
+                    //     setIsSpeaking(false);
+                    //     console.error('TTS Error:', error.message);
+                    //     if (error.response) {
+                    //         // Server responded with a status other than 2xx
+                    //         console.error('Response Data:', error.response.data);
+                    //         console.error('Status Code:', error.response.status);
+                    //     } else if (error.request) {
+                    //         // No response received
+                    //         console.error('No response received:', error.request);
+                    //     } else {
+                    //         // Something else went wrong
+                    //         console.error('Unexpected error:', error);
+                    //     }
+                    // }
                 }
             };
 
