@@ -165,7 +165,7 @@ const LoginScreen = () => {
         }
     };
 
-    //My Custom Alert Functions
+    // My Custom Alert Functions
     const showErrorAlert = (title, message) => {
         setErrorTitle(title)
         setErrorMessage(message)
