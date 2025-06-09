@@ -362,7 +362,7 @@ app.post('/send-otp', async (req, res) => {
                 <hr style="border: none; border-top: 1px solid #e2e2e2; margin: 30px 0;" />
                 <div style="text-align: center;">
                     <p style="font-size: 13px; color: #999;">If you didn't request this OTP, you can safely ignore this email.</p>
-                    <p style="font-size: 13px; color: #999;">Need help? Contact us at <a href="mailto:support@quickdocs.com" style="color: #2e6ddf;">support@quickdocs.com</a></p>
+                    <p style="font-size: 13px; color: #999;">Need help? Contact us at <a href="mailto:quickdocss@gmail.com" style="color: #2e6ddf;">quickdocss@gmail.com</a></p>
                 </div>
                 <div style="text-align: center; font-size: 12px; color: #bbb; margin-top: 30px;">
                     <p>© ${new Date().getFullYear()} QuickDocs Inc. All rights reserved.</p>
