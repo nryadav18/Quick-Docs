@@ -21,6 +21,7 @@ const client = new vision.ImageAnnotatorClient();
 const AES_SECRET_KEY = Buffer.from(process.env.AES_SECRET_KEY, 'base64');
 if (AES_SECRET_KEY.length !== 32) throw new Error('AES key must be 32 bytes');
 const IV_LENGTH = 16;
+const langs = require('langs');
 
 
 app.use(cors());
@@ -61,6 +62,27 @@ function decrypt(encrypted) {
     decrypted += decipher.final('utf8');
     return decrypted;
 }
+
+function decryptSafe(encrypted) {
+    if (!encrypted || typeof encrypted !== 'string' || !encrypted.includes(':')) {
+        console.warn('Invalid encrypted format:', encrypted);
+        return encrypted; // return as-is or null
+    }
+
+    const [ivBase64, encryptedText] = encrypted.split(':');
+    const iv = Buffer.from(ivBase64, 'base64');
+
+    if (iv.length !== 16) {
+        console.warn('Invalid IV length for:', encrypted);
+        return encrypted;
+    }
+
+    const decipher = crypto.createDecipheriv('aes-256-cbc', AES_SECRET_KEY, iv);
+    let decrypted = decipher.update(encryptedText, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
 
 // Hash Values Generation
 function hashValues(text) {
@@ -500,7 +522,6 @@ app.post('/ask', async (req, res) => {
         // Map detected language code to name for prompt
         const langMap = {
             'en-IN': 'English',
-            'hi-IN': 'Hindi',
             'te-IN': 'Telugu',
         };
 
@@ -724,6 +745,7 @@ const translateWithLingva = async (text, sourceLang, targetLang = 'en') => {
         throw error;
     }
 };
+
 
 // Advanced and Updated transcribe-audio endpoint with free translation
 app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
@@ -1020,6 +1042,7 @@ app.post('/check-valid-user', async (req, res) => {
 // Login Route
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
+    console.log(username, password)
 
     if (!username || !password) {
         return res.status(400).json({ message: 'Username and password are required' });
@@ -1036,35 +1059,37 @@ app.post('/login', async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
+        console.log(isMatch)
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         // Decrypt user fields
         const decryptedUser = {
-            name: decrypt(user.name),
-            username: decrypt(user.username),
-            email: decrypt(user.email),
+            name: decryptSafe(user.name),
+            username: decryptSafe(user.username),
+            email: decryptSafe(user.email),
             dob: user.dob,
-            gender: decrypt(user.gender),
+            gender: decryptSafe(user.gender),
             verified: user.verified,
             premiumuser: user.premiumuser,
-            profileImageUrl: decrypt(user.profileImageUrl),
-            expoNotificationToken: decrypt(user.expoNotificationToken),
+            profileImageUrl: decryptSafe(user.profileImageUrl),
+            expoNotificationToken: decryptSafe(user.expoNotificationToken),
             aipromptscount: user.aipromptscount,
             myfiles: user.myfiles.map(file => ({
-                name: decrypt(file.name),
-                url: decrypt(file.url),
-                filepath: decrypt(file.filepath),
+                name: decryptSafe(file.name),
+                url: decryptSafe(file.url),
+                filepath: decryptSafe(file.filepath),
                 type: file.type,
                 rating: file.rating,
                 uploadedAt: file.uploadedAt
             })),
             premiumDetails: user.premiumDetails.map(prem => ({
-                type: decrypt(prem.type),
+                type: decryptSafe(prem.type),
                 timestamp: prem.timestamp
             }))
         };
+
 
 
         const token = jwt.sign(
@@ -1076,7 +1101,7 @@ app.post('/login', async (req, res) => {
         res.status(200).json({ message: 'Login successful', token, user: decryptedUser });
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error Bro' });
     }
 });
 

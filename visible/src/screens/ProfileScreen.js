@@ -16,6 +16,7 @@ import useThemedStatusBar from '../hooks/StatusBar';
 import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 import { BACKEND_URL } from '@env';
 const { setAlreadyLoggedIn } = useUserStore.getState();
+import { scaleFont } from "../components/ScaleFont"
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
@@ -26,6 +27,7 @@ const ProfileScreen = () => {
     const [showBirthdayModal, setShowBirthdayModal] = useState(false);
     const [hasShownBirthdayModal, setHasShownBirthdayModal] = useState(false);
     const user = useUserStore((state) => state.user);
+    const deviceExpoNotificationToken = useUserStore((state) => state.getDeviceExpoNotificationToken()); // ✅ CORRECT
     useThemedStatusBar(isDarkMode)
 
     useEffect(() => {
@@ -229,10 +231,9 @@ const ProfileScreen = () => {
                     });
 
                     if (response.ok) {
-                        const token = user?.expoNotificationToken ?? ''
-                        if (token) {
+                        if (deviceExpoNotificationToken) {
                             sendPushNotification(
-                                token,
+                                deviceExpoNotificationToken,
                                 'Your account has been deactivated 😢💔',
                                 'If you change your mind, we will be here for you!'
                             );
@@ -307,7 +308,7 @@ const ProfileScreen = () => {
                         {user?.premiumuser && (
                             <CrownIcon
                                 name="crown"
-                                size={24}
+                                size={18}
                                 color="#FFD700"
                                 style={styles.crownContainer}
                             />
@@ -349,9 +350,9 @@ const ProfileScreen = () => {
                             <View style={[styles.statRow, { marginTop: 10 }]}>
                                 <View style={[styles.statItem, { gap: 10 }]}>
                                     {countdown === '🎉 Happy Birthday!' ? <BirthdayIcon name="birthday-cake" size={30} color="#DC8BE0" />
-                                        : <Ionicons name="time-outline" size={30} color="#6a1b9a" />}
+                                        : <Ionicons name="time-outline" size={30} color="#DC8BE0" />}
                                     <Text style={[styles.statNumber, isDarkMode && styles.darkText,
-                                    countdown === '🎉 Happy Birthday!' ? { fontSize: 24 } : { fontSize: 20 }]}>
+                                    countdown === '🎉 Happy Birthday!' ? { fontSize: scaleFont(22) } : { fontSize: scaleFont(18) }]}>
                                         {countdown === '🎉 Happy Birthday!' ? '🎉 Happy Birthday!' : countdown}
                                     </Text>
                                     <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
@@ -366,10 +367,9 @@ const ProfileScreen = () => {
                 <TouchableOpacity
                     style={styles.logoutButton}
                     onPress={async () => {
-                        const token = user?.expoNotificationToken ?? ''
-                        if (token) {
+                        if (deviceExpoNotificationToken) {
                             sendPushNotification(
-                                token,
+                                deviceExpoNotificationToken,
                                 'You have logged out safely👋😌',
                                 `See you soon! Take care!`
                             );
@@ -386,7 +386,7 @@ const ProfileScreen = () => {
                 </TouchableOpacity>
 
 
-                <TouchableOpacity style={[styles.logoutButton, { backgroundColor: '#FF3B30', marginTop: 15, paddingHorizontal: 35, paddingVertical: 15, }]} onPress={handleDeactivateAccount}>
+                <TouchableOpacity style={[styles.logoutButton, { backgroundColor: '#FF3B30', marginTop: 15, paddingHorizontal: 32, paddingVertical: 13, }]} onPress={handleDeactivateAccount}>
                     <Text style={styles.buttonText}>Deactivate Account</Text>
                 </TouchableOpacity>
                 <Modal
@@ -445,7 +445,7 @@ const ProfileScreen = () => {
 
                             <Text
                                 style={{
-                                    fontSize: 26,
+                                    fontSize: scaleFont(24),
                                     fontWeight: 'bold',
                                     color: isDarkMode ? '#fff' : '#333',
                                     textAlign: 'center',
@@ -457,7 +457,7 @@ const ProfileScreen = () => {
 
                             <Text style={{
                                 marginTop: 12,
-                                fontSize: 16,
+                                fontSize: scaleFont(14),
                                 color: isDarkMode ? '#ccc' : '#666',
                                 textAlign: 'center',
                                 paddingHorizontal: 10,
@@ -480,7 +480,7 @@ const ProfileScreen = () => {
                                     elevation: 5,
                                 }}
                             >
-                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Close</Text>
+                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: scaleFont(14) }}>Close</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -535,8 +535,8 @@ const styles = StyleSheet.create({
         padding: 5,
     },
 
-    name: { fontSize: 22, fontWeight: 'bold', color: 'black', marginBottom: 6 },
-    username: { fontSize: 16, fontWeight: 'bold', fontStyle: 'italic', color: 'black', marginTop: 2 },
+    name: { fontSize: scaleFont(20), fontWeight: 'bold', color: 'black', marginBottom: 6 },
+    username: { fontSize: scaleFont(14), fontWeight: 'bold', fontStyle: 'italic', color: 'black', marginTop: 2 },
 
     crownContainer: {
         backgroundColor: 'transparent',
@@ -575,19 +575,18 @@ const styles = StyleSheet.create({
     emailRow: { justifyContent: 'center' },
 
     statItem: { alignItems: 'center', flex: 1 },
-    statNumber: { fontSize: 18, fontWeight: 'bold', marginTop: 5 },
-    statLabel: { fontSize: 14, color: '#777' },
+    statNumber: { fontSize: scaleFont(16), fontWeight: 'bold', marginTop: 5 },
+    statLabel: { fontSize: scaleFont(12), color: '#777' },
 
     logoutButton: {
         backgroundColor: '#00796b',
-        paddingVertical: 14,
-        paddingHorizontal: 32,
+        paddingVertical: 12,
+        paddingHorizontal: 30,
         borderRadius: 25,
         marginTop: 30,
         elevation: 5
     },
-    buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18, textAlign: 'center' },
-
+    buttonText: { color: 'white', fontWeight: 'bold', fontSize: scaleFont(14), textAlign: 'center' },
     darkText: { color: '#FFF' },
     darkSubText: { color: '#BBB' }
 });

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ErrorAlert, WarningAlert, SuccessAlert } from "../components/AlertBox"
 import { Ionicons } from '@expo/vector-icons'; // add this to your imports
 import { BACKEND_URL } from '@env';
+import { scaleFont } from "../components/ScaleFont"
 
 
 
@@ -227,7 +228,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', padding: 20 },
-    title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+    title: { fontSize: scaleFont(24), fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
     input: { height: 50, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, marginBottom: 10 },
     button: { backgroundColor: '#00796b', padding: 15, borderRadius: 10, alignItems: 'center' },
     buttonText: { color: 'white', fontWeight: 'bold' },

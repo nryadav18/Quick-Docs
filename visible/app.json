@@ -49,14 +49,20 @@
           "mode": "system"
         }
       ],
-      "expo-audio"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ],
+      "expo-web-browser"
     ],
     "web": {
       "favicon": "./assets/updatedLogo1.png"
     },
     "extra": {
       "eas": {
-        "projectId": "2a51c77f-776d-42d3-a4b1-b5a84e5e57fc"
+        "projectId": "3b9b1df2-320a-435d-9b9c-e5c03637dbcf"
       }
     }
   }

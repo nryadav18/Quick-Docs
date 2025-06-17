@@ -8,7 +8,9 @@ import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
 import * as SecureStore from 'expo-secure-store';
 import './firebaseConfig'
+import LoadingScreen from './src/screens/LoadingScreen';
 import { BACKEND_URL } from '@env';
+import { Text, TextInput } from 'react-native';
 
 
 // Setup notification handler (optional but recommended)
@@ -21,8 +23,21 @@ Notifications.setNotificationHandler({
 });
 
 const AppContent = () => {
-    const { setUser, setToken, loadToken, alreadyLoggedIn, setAlreadyLoggedIn } = useUserStore();
+    const { setUser, setToken, loadToken, alreadyLoggedIn, setAlreadyLoggedIn, setDeviceExpoNotificationToken } = useUserStore();
     const [loadingAuth, setLoadingAuth] = useState(true);
+    const [progress, setProgress] = useState(0);
+
+    const updateProgress = (value) => {
+        setProgress(prev => (value > prev ? value : prev));
+    };
+
+    // Force disable scaling
+    if (Text.defaultProps == null) Text.defaultProps = {};
+    Text.defaultProps.allowFontScaling = false;
+
+    if (TextInput.defaultProps == null) TextInput.defaultProps = {};
+    TextInput.defaultProps.allowFontScaling = false;
+
 
     useEffect(() => {
         const originalConsoleError = console.error;
@@ -41,8 +56,11 @@ const AppContent = () => {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
+                updateProgress(10);
                 const storedToken = await SecureStore.getItemAsync('user_token');
+                updateProgress(30);
                 if (storedToken) {
+                    updateProgress(50);
                     // Fetch user from your API using the stored token
                     const response = await fetch(`${BACKEND_URL}/user`, {
                         method: 'GET',
@@ -51,21 +69,32 @@ const AppContent = () => {
                             'Content-Type': 'application/json',
                         },
                     });
+                    updateProgress(70);
 
                     if (response.ok) {
                         const userData = await response.json();
                         setUser(userData);
                         setToken(storedToken);
-                        setAlreadyLoggedIn(true)
+                        setAlreadyLoggedIn(true);
+                        updateProgress(85);
+                        let token;
+                        try {
+                            token = (await Notifications.getExpoPushTokenAsync()).data;
+                            setDeviceExpoNotificationToken(token)
+                        } catch (error) {
+                            console.error("Error fetching push token:", error);
+                        }
                     } else {
                         console.warn('Token invalid or expired');
                         await SecureStore.deleteItemAsync('user_token');
                     }
                 }
+                updateProgress(95);
             } catch (error) {
                 console.error('Failed to auto-load user session:', error);
             } finally {
-                setLoadingAuth(false);  // done loading no matter what
+                updateProgress(100);
+                setTimeout(() => setLoadingAuth(false), 500); // delay to show 100% progress
             }
         };
 
@@ -151,8 +180,11 @@ const AppContent = () => {
     }, []);
 
     if (loadingAuth) {
-        return null;
+        return (
+            <LoadingScreen progress={progress} />
+        );
     }
+
 
     return (
         <NavigationContainer>

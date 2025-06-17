@@ -21,7 +21,7 @@ import { Audio } from "expo-av";
 import axios from 'axios';
 import LottieView from 'lottie-react-native';
 import { useNavigation } from "@react-navigation/native";
-
+import { scaleFont } from "../components/ScaleFont"
 import { PermissionAlert } from '../components/AlertBox';
 
 // Assets and Components
@@ -308,7 +308,6 @@ const AIScreen = () => {
     const getLanguageName = (languageCode) => {
         const languageNames = {
             'en-US': 'English',
-            'hi-IN': 'Hindi',
             'te-IN': 'Telugu'
         };
 
@@ -670,8 +669,9 @@ const AIScreen = () => {
                             placeholder={isAnalyzing ? analysisText : "Ask your queries to Agent QD..."}
                             placeholderTextColor={isAnalyzing ? "#00796b" : "grey"}
                             value={inputMessage}
-                            onChangeText={setInputMessage}
+                            onChangeText={(text) => setInputMessage(text)}
                             editable={!isWaiting && !isAnalyzing}
+                            blurOnSubmit={false} // prevent keyboard from dismissing on submit
                         //  multiline={true} maxLength={500}
                         />
                     </Animated.View>
@@ -713,7 +713,7 @@ const AIScreen = () => {
                             Agent QD
                         </Text>
                         <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
-                            Your AI Assistant
+                            AI Assistant
                         </Text>
                     </View>
                 </View>
@@ -778,7 +778,7 @@ const languageStylings = StyleSheet.create({
     },
 
     languageInfoIcon: {
-        fontSize: 24,
+        fontSize: scaleFont(22),
     },
 
     languageInfoText: {
@@ -786,13 +786,13 @@ const languageStylings = StyleSheet.create({
     },
 
     languageInfoTitle: {
-        fontSize: 16,
+        fontSize: scaleFont(14),
         fontWeight: '600',
         marginBottom: 4,
     },
 
     languageInfoSubtitle: {
-        fontSize: 13,
+        fontSize: scaleFont(11),
         fontWeight: '400',
     },
 
@@ -806,7 +806,7 @@ const languageStylings = StyleSheet.create({
     },
 
     closeButtonText: {
-        fontSize: 20,
+        fontSize: scaleFont(18),
         fontWeight: 'bold',
     }
 });
@@ -831,11 +831,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerTitle: {
-        fontSize: 36,
+        fontSize: scaleFont(32),
         fontWeight: 'bold',
     },
     headerSubtitle: {
-        fontSize: 16,
+        fontSize: scaleFont(14),
         marginTop: 2,
     },
     keyboardAvoidingView: {
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     },
     AIMessage: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'centflex-start',
         marginVertical: 8,
         marginRight: 10,
     },
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
     },
     RoboMessageContainer: {
         backgroundColor: '#EAF4FC',
-        padding: 16,
+        padding: 15,
         borderRadius: 20,
         borderTopLeftRadius: 4,
         shadowColor: '#000',
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     AIText: {
         color: '#2c3e50',
         fontWeight: '500',
-        fontSize: 16,
+        fontSize: scaleFont(14),
         lineHeight: 22,
     },
     HumanMessage: {
@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     UserText: {
         color: '#2c3e50',
         fontWeight: '500',
-        fontSize: 16,
+        fontSize: scaleFont(14),
         lineHeight: 22,
     },
     HumanMsgLogoParent: {
@@ -928,7 +928,7 @@ const styles = StyleSheet.create({
     loadingText: {
         color: '#00796b',
         fontStyle: 'italic',
-        fontSize: 14,
+        fontSize: scaleFont(12),
     },
     inputContainer: {
         position: 'absolute',
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
     buttonText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: scaleFont(14),
     },
     inputRow: {
         flexDirection: 'row',
@@ -988,7 +988,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         backgroundColor: '#f8f9fa',
         borderRadius: 25,
-        fontSize: 16,
+        fontSize: scaleFont(14),
         color: '#333',
         borderWidth: 0,
         textAlignVertical: 'center',
@@ -1047,7 +1047,7 @@ const styles = StyleSheet.create({
     stopButtonText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 14,
+        fontSize: scaleFont(12),
     },
 });
 

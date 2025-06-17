@@ -39,6 +39,12 @@ const Header = ({ title }) => {
                 {/* Title */}
                 <Text style={[styles.title, isDarkMode && styles.darkTitle]}>{title}</Text>
 
+                {
+                    user?.premiumuser && user?.premiumDetails.map(p => p?.type).some(name => name.includes('Ultra Pro Max')) && (
+                        <Text style={{ color : isDarkMode ? 'gold' : '#E9A319', fontSize : 26, fontWeight : 900 }} >Welcome, {user?.gender == 'male' ? 'King' : 'Queen'} 👑</Text>
+                    )
+                }
+
                 <View style={styles.actions}>
                     {/* Premium Button */}
                     {user?.premiumDetails.length < 3 &&

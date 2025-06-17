@@ -25,6 +25,7 @@ import { useNavigation } from "@react-navigation/native"
 import { BACKEND_URL } from '@env';
 import { AppState } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { scaleFont } from "../components/ScaleFont"
 
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -360,14 +361,14 @@ const UploadFilesScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'start', padding: 20, backgroundColor: '#F5F5F5' },
     darkContainer: { backgroundColor: '#121212' },
-    title: { fontSize: 28, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+    title: { fontSize: scaleFont(26), fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
     darkTitle: { color: '#fff' },
     input: {
         backgroundColor: 'white',
         padding: 15,
         borderRadius: 10,
         marginBottom: 15,
-        fontSize: 16,
+        fontSize: scaleFont(14),
         borderWidth: 1,
         borderColor: '#ddd',
     },
@@ -397,7 +398,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10,
     },
-    buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
+    buttonText: { color: 'white', fontWeight: 'bold', fontSize: scaleFont(16) },
     previewContainer: {
         backgroundColor: '#fff',
         borderRadius: 10,
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     darkPreviewContainer: { backgroundColor: '#121212' },
-    noFileText: { fontSize: 18,  color: '#888', textAlign : 'center' },
+    noFileText: { fontSize: scaleFont(14),  color: '#888', textAlign : 'center' },
 });
 
 export default UploadFilesScreen;

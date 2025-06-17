@@ -14,6 +14,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from "react-native"
 import { BACKEND_URL } from '@env';
+import { scaleFont } from "../components/ScaleFont"
 
 
 const SignupScreen = ({ navigation }) => {
@@ -69,9 +70,7 @@ const SignupScreen = ({ navigation }) => {
                 }
                 let token;
                 try {
-                    token = (await Notifications.getExpoPushTokenAsync({
-                        projectId: '2a51c77f-776d-42d3-a4b1-b5a84e5e57fc'
-                    })).data;
+                    token = (await Notifications.getExpoPushTokenAsync()).data;
                 } catch (error) {
                     console.error("Error fetching push token:", error);
                 }
@@ -493,7 +492,7 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1 },
     scrollContainer: { flexGrow: 1, justifyContent: 'center' },
     container: { flex: 1, justifyContent: 'center', padding: 10 },
-    title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#333' },
+    title: { fontSize: scaleFont(28), fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#333' },
     input: { height: 50, borderWidth: 1, borderRadius: 10, paddingHorizontal: 15, marginBottom: 10, borderColor: '#ddd', backgroundColor: '#f9f9f9' },
     inputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderRadius: 10, borderColor: '#ddd', backgroundColor: '#f9f9f9' },
     inputField: { flex: 1, paddingHorizontal: 15, height: 50 },
@@ -524,7 +523,7 @@ const styles = StyleSheet.create({
     button: { backgroundColor: '#00796b', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
     buttonText: { color: 'white', fontWeight: 'bold' },
     datePickerButton: { marginBottom: 10, padding: 10, borderColor: '#ddd' },
-    genderLabel: { fontSize: 16, fontWeight: 'bold', marginVertical: 10 },
+    genderLabel: { fontSize: scaleFont(14), fontWeight: 'bold', marginVertical: 10 },
     genderRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -534,7 +533,7 @@ const styles = StyleSheet.create({
     },
     radioGroup: { flexDirection: 'row', alignItems: 'center' },
     radioOption: { flexDirection: 'row', alignItems: 'center', marginRight: 20 },
-    radioLabel: { fontSize: 16 },
+    radioLabel: { fontSize: scaleFont(14) , fontWeight : '700'},
     imagePicker: { alignItems: 'center', marginBottom: 20, height: 150, width: 150, borderRadius: 75, borderWidth: 1, borderColor: '#00796b', justifyContent: 'center' },
     profileImage: { width: 143, height: 143, borderRadius: 80 },
     imageUploadContainer: { width: '100%', justifyContent: 'center', alignItems: 'center' },
@@ -546,7 +545,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
-    buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: 16 },
+    buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: scaleFont(12) },
     separator: {
         flexDirection: "row",
         alignItems: "center",

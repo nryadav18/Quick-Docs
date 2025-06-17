@@ -22,7 +22,7 @@ AI Agent:
 *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
  6. Gemini 1.5 PRO LLM API (RAG) & Privacy with User Specific Information - Chat with Local Texting Messages and also regional language messages too.
 
-
+Animated Progress Bar for Auto Logging in
 JWT Tokens (Authorization, Token Generation)
 AES (Advanced Encrypted Standards)
 .env (secure data protection)

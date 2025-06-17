@@ -7,6 +7,8 @@ const TOKEN_KEY = 'user_token';
 const useUserStore = create((set, get) => ({
     user: null,
     token: null,
+    deviceExpoNotificationToken: null,
+    devicePin : null,
 
     setUser: (userData) => {
         console.log('Setting New User Data');
@@ -21,6 +23,24 @@ const useUserStore = create((set, get) => ({
 
     setAlreadyLoggedIn: (status) => set({ alreadyLoggedIn: status }),
 
+    setDeviceExpoNotificationToken: (token) => { 
+        set ({deviceExpoNotificationToken: token}),
+        console.log('Setting New Device Expo Token')
+    },
+
+    getDeviceExpoNotificationToken: () => {
+        return get().deviceExpoNotificationToken;
+    },
+
+    setDevicePin : (devicePin) =>{
+        set ({devicePin : devicePin})
+        console.log('Setting New Device Pin')
+    },
+
+    getDevicePin : () => {
+        return get().devicePin;
+    },
+
     loadToken: async () => {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
         if (token) {
@@ -32,7 +52,7 @@ const useUserStore = create((set, get) => ({
     clearUser: async () => {
         console.log('Clearing user data...');
         await SecureStore.deleteItemAsync(TOKEN_KEY);
-        set({ user: null, token: null });
+        set({ user: null, token: null, deviceExpoNotificationToken : null });
     },
 
     incrementPromptCount: () =>

@@ -14,7 +14,7 @@ import useThemedStatusBar from '../hooks/StatusBar';
 import useUserStore from '../store/userStore';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { PermissionAlert } from '../components/AlertBox';
-
+import { scaleFont } from "../components/ScaleFont"
 const { width, height } = Dimensions.get('window');
 
 const VoiceToVoiceScreen = () => {
@@ -215,19 +215,6 @@ const VoiceToVoiceScreen = () => {
         return `data:audio/mp3;base64,${response.data.audioContent}`;
     };
 
-
-    const getHindiAudioFromGoogleTTS = async (text) => {
-        const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
-            text,
-            languageCode: 'hi-IN',
-            name: "hi-IN-Chirp3-HD-Achernar",
-            ssmlGender: 'FEMALE',
-            audioEncoding: 'MP3',
-            speakingRate: 1.0
-        });
-        return `data:audio/mp3;base64,${response.data.audioContent}`;
-    };
-
     const getEnglishAudioFromGoogleTTS = async (text) => {
         const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
             text,
@@ -278,27 +265,6 @@ const VoiceToVoiceScreen = () => {
                     // Use Google Cloud TTS for Telugu
                     try {
                         const audioURI = await getTeluguAudioFromGoogleTTS(answer);
-                        await playBase64Audio(audioURI);
-                    } catch (error) {
-                        setLoading(false);
-                        setIsSpeaking(false);
-                        console.error('TTS Error:', error.message);
-                        if (error.response) {
-                            // Server responded with a status other than 2xx
-                            console.error('Response Data:', error.response.data);
-                            console.error('Status Code:', error.response.status);
-                        } else if (error.request) {
-                            // No response received
-                            console.error('No response received:', error.request);
-                        } else {
-                            // Something else went wrong
-                            console.error('Unexpected error:', error);
-                        }
-                    }
-                } else if (langCode.startsWith('hi')) {
-                    // Use Google Cloud TTS for Hindi
-                    try {
-                        const audioURI = await getHindiAudioFromGoogleTTS(answer);
                         await playBase64Audio(audioURI);
                     } catch (error) {
                         setLoading(false);
@@ -639,7 +605,7 @@ export default VoiceToVoiceScreen;
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F7FA', justifyContent: 'start', alignItems: 'center', padding: 20, gap: 30 },
     title: {
-        fontSize: 26,
+        fontSize: scaleFont(24),
         color: '#f0f6fc',
         fontWeight: 'bold',
         marginBottom: 20,
@@ -699,7 +665,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#00ffcc',
         marginTop: 10,
-        fontSize: 16,
+        fontSize: scaleFont(14),
     },
     orbitContainer: {
         position: 'absolute',
@@ -768,7 +734,7 @@ const styles = StyleSheet.create({
     },
     statusText: {
         color: '#ffffff',
-        fontSize: 16,
+        fontSize: scaleFont(14),
         fontWeight: '500',
     },
     speakingContainer: {
@@ -778,7 +744,7 @@ const styles = StyleSheet.create({
     },
     speakingText: {
         color: '#e6f1ff',
-        fontSize: 26,
+        fontSize: scaleFont(24),
         fontWeight: 600,
         marginBottom: 10,
     },
@@ -797,7 +763,7 @@ const styles = StyleSheet.create({
     },
     voiceText: {
         color: '#fff',
-        fontSize: 14,
+        fontSize: scaleFont(12),
     },
     voiceSelected: {
         backgroundColor: '#00ffcc',

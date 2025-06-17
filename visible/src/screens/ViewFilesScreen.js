@@ -27,7 +27,7 @@ import axios from 'axios';
 import * as MediaLibrary from 'expo-media-library';
 import useThemedStatusBar from '../hooks/StatusBar';
 import { BACKEND_URL } from '@env';
-
+import { scaleFont } from "../components/ScaleFont"
 
 
 // File Icons
@@ -40,6 +40,7 @@ const fileIcons = {
 // Main Component  
 const ViewFilesScreen = () => {
     const user = useUserStore((state) => state.user);
+    const deviceExpoNotificationToken = useUserStore((state) => state.getDeviceExpoNotificationToken());
     const { isDarkMode } = useContext(ThemeContext);
     const [searchText, setSearchText] = useState('');
     const [selectedType, setSelectedType] = useState('All');
@@ -143,9 +144,9 @@ const ViewFilesScreen = () => {
         }
     };
 
-
     // View File Function
     const handleViewFile = async (file) => {
+        console.log("File URI: ",file.uri)
         if (!file.url) {
             console.warn("File URL is missing");
             return;
@@ -204,12 +205,12 @@ const ViewFilesScreen = () => {
             }
 
             const asset = await MediaLibrary.createAssetAsync(uri);
-            await MediaLibrary.createAlbumAsync("Download", asset, false);
+            await MediaLibrary.createAlbumAsync("Quick-Docs-Download", asset, false);
 
             // ✅ Send push notification 
-            if (user?.expoNotificationToken) {
+            if (deviceExpoNotificationToken) {
                 await sendPushNotification(
-                    user?.expoNotificationToken,
+                    deviceExpoNotificationToken,
                     'Download Completed 📥👍',
                     `${fileName} has been saved to your device.`
                 );
@@ -296,9 +297,9 @@ const ViewFilesScreen = () => {
                     useUserStore.getState().setUser(data.updatedUser);
 
                     //Sending Push Notification
-                    if (user?.expoNotificationToken) {
+                    if (deviceExpoNotificationToken) {
                         await sendPushNotification(
-                            user?.expoNotificationToken,
+                            deviceExpoNotificationToken,
                             'File Deleted 🗑️😔',
                             `Feeling Sad, Rest in Peace to ${item.name}`
                         );
@@ -387,7 +388,7 @@ const ViewFilesScreen = () => {
                                     }}
                                 >
                                     <MaterialIcons name="share" size={30} color="violet" />
-                                </TouchableOpacity>
+                                </TouchableOpacity >
                                 <View style={styles.previewContainer}>
                                     <View style={styles.previewBox}>
                                         {(
@@ -449,7 +450,8 @@ const ViewFilesScreen = () => {
                     <TouchableOpacity onPress={() => setImagePreview(null)} style={styles.closeButton}>
                         <MaterialIcons name="close" size={30} color="white" />
                     </TouchableOpacity>
-                    {imagePreview && <Image source={{ uri: imagePreview }} style={styles.fullImage} />}
+                    {imagePreview &&
+                        <Image source={{ uri: imagePreview }} style={styles.fullImage} />}
                 </View>
             </Modal>
 
@@ -481,7 +483,7 @@ const styles = StyleSheet.create({
     filters: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 25 },
     filterButton: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, backgroundColor: 'lightgray' },
     activeFilter: { backgroundColor: '#007AFF' },
-    filterText: { fontSize: 14, fontWeight: 'bold' },
+    filterText: { fontSize: scaleFont(12), fontWeight: 'bold' },
     activeFilterText: { color: 'white' },
     scrollViewContent: {
         paddingBottom: 20,
@@ -495,7 +497,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         marginHorizontal: 8,
-        marginBottom: 26,
+        marginBottom: 20,
         alignItems: 'center',
         elevation: 3,
     },
@@ -533,7 +535,7 @@ const styles = StyleSheet.create({
         alignContent: 'center',
         justifyContent: 'center',
         alignItems: 'center',
-        fontSize: 30
+        fontSize: scaleFont(26)
     },
     fileDetailsRight: {
         width: '50%',
@@ -549,7 +551,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginTop: 20,
     },
-    fileType: { fontSize: 12, color: 'gray', marginBottom: 5 },
+    fileType: { fontSize: scaleFont(12), color: 'gray', marginBottom: 5 },
     previewContainer: {
         flexDirection: 'row',
         width: '100%',
@@ -571,7 +573,7 @@ const styles = StyleSheet.create({
     },
 
     textPreview: {
-        fontSize: 14,
+        fontSize: scaleFont(14),
         color: '#333',
         textAlign: 'left',
         width: '100%',
@@ -596,7 +598,7 @@ const styles = StyleSheet.create({
 
     fileTypeLabel: {
         marginTop: 5,
-        fontSize: 12,
+        fontSize: scaleFont(12),
         fontWeight: '600',
         color: '#666',
     },
@@ -614,7 +616,7 @@ const styles = StyleSheet.create({
 
     fileName: {
         fontWeight: 'bold',
-        fontSize: 20,
+        fontSize: scaleFont(18),
         color: '#333',
         marginBottom: 5,
     },
@@ -624,13 +626,13 @@ const styles = StyleSheet.create({
     rating: {
         fontWeight: 'bold',
         color: '#00796b',
-        fontSize: 20,
+        fontSize: scaleFont(18),
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         width: '100%',
-        gap : 10
+        gap: 6
     },
     viewButton: {
         backgroundColor: '#007AFF',
@@ -662,7 +664,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     buttonText: {
-        fontSize: 16,
+        fontSize: scaleFont(14),
         fontWeight: '600',
         color: 'white',
         marginLeft: 5,
@@ -709,7 +711,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     emptyText: {
-        fontSize: 20,
+        fontSize: scaleFont(20),
         fontWeight: 600,
         color: 'black',
     },

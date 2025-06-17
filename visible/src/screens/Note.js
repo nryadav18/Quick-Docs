@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Dimensions } from 'react-native'; 
-
+import { scaleFont } from "../components/ScaleFont"
 const {width, height} = Dimensions.get('screen')
 
 const Note = () => {
@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
         justifyContent : 'center',
     },
     text: {
-        fontSize: 16,
+        fontSize: scaleFont(16),
         color: '#333',
         fontWeight : 600
     },

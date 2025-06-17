@@ -17,6 +17,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import axios from 'axios';
 import useUserStore from '../store/userStore';
 import { BACKEND_URL, RAZOR_PAY_KEY } from '@env';
+import { scaleFont } from "../components/ScaleFont"
 
 
 const { width } = Dimensions.get('window');
@@ -33,6 +34,7 @@ export default function Premium() {
     const [selected, setSelected] = useState(planKeys[0]);
     const slideAnim = useRef(new Animated.Value(0)).current;
     const user = useUserStore((state) => state.user);
+    const deviceExpoNotificationToken = useUserStore((state) => state.getDeviceExpoNotificationToken())
     const navigation = useNavigation()
     const [premiumTime, setPremiumTime] = useState('');
 
@@ -167,10 +169,10 @@ export default function Premium() {
                             console.log('✅ Payment Verified Successfully');
 
                             makePremiumUser(plan);
-                            if (user?.expoNotificationToken) {
-                                console.log(user?.expoNotificationToken)
+                            if (deviceExpoNotificationToken) {
+                                console.log(deviceExpoNotificationToken)
                                 await sendPushNotification(
-                                    user?.expoNotificationToken,
+                                    deviceExpoNotificationToken,
                                     'Payment Successfull 💳🎉',
                                     `Thanks for the Trust, Welcome to PRO Club!`
                                 );
@@ -248,7 +250,7 @@ const PlanCard = ({ plan, onBuyNow, user }) => {
                 {plan.name}
             </Text>
             <Text style={styles.price}>
-                <Text style={{ fontSize: 50 }}>₹{plan.price}</Text>
+                <Text style={{ fontSize: scaleFont(48) }}>₹{plan.price}</Text>
                 <Text style={styles.perMonth}> / Month</Text>
             </Text>
 
@@ -265,7 +267,7 @@ const PlanCard = ({ plan, onBuyNow, user }) => {
                             style={{
                                 color: f.available ? '#000' : '#999',
                                 fontWeight: f.available ? 'bold' : 'normal',
-                                fontSize: 18,
+                                fontSize: scaleFont(16),
                             }}
                         >
                             {f.label}
@@ -318,7 +320,7 @@ const styles = StyleSheet.create({
     },
     topButtonText: {
         fontWeight: '700',
-        fontSize: 16,
+        fontSize: scaleFont(14),
     },
     card: {
         width: width * 0.8,
@@ -340,17 +342,17 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 10,
         fontWeight: '700',
-        fontSize: 14,
+        fontSize: scaleFont(13),
         marginBottom: 12,
     },
     price: {
         fontWeight: 'bold',
-        fontSize: 24,
+        fontSize: scaleFont(22),
         color: '#111827',
         textAlign: 'center',
     },
     perMonth: {
-        fontSize: 20,
+        fontSize: scaleFont(18),
         color: '#6B7280',
     },
     features: {
@@ -369,6 +371,6 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontWeight: '600',
-        fontSize: 16,
+        fontSize: scaleFont(16),
     },
 });

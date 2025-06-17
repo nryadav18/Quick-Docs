@@ -8,7 +8,10 @@ import {
     ActivityIndicator,
     Image,
     StatusBar,
-    Platform
+    Platform,
+    Button,
+    Modal,
+    KeyboardAvoidingView
 } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { AntDesign, Feather, Entypo } from "@expo/vector-icons"
@@ -22,8 +25,10 @@ import * as Device from 'expo-device';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { BACKEND_URL } from '@env';
 import * as SecureStore from 'expo-secure-store';
+import { scaleFont } from "../components/ScaleFont"
+import { SetPinModal, GetPinModal } from "../components/Pin"
 
-const { setUser, setToken, loadToken, setAlreadyLoggedIn } = useUserStore.getState();
+const { setUser, setToken, loadToken, setAlreadyLoggedIn, setDevicePin, getDevicePin } = useUserStore.getState();
 
 const LoginScreen = () => {
     const navigation = useNavigation()
@@ -45,8 +50,14 @@ const LoginScreen = () => {
     const [successAlertVisible, setSuccessAlertVisible] = useState(false)
 
     const [biometricSuccess, setBiometricSuccess] = useState(false);
+    const [showCustomAuth, setShowCustomAuth] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [expoPushToken, setExpoPushToken] = useState('');
 
+    const [setPinModal, showSetPinModal] = useState(false)
+    const [getPinModal, showGetPinModal] = useState(false)
+    const [settingPin, setSettingPin] = useState(0)
+    const [gettingPin, setGettingPin] = useState(0)
 
     useEffect(() => {
         StatusBar.setBarStyle('dark-content');
@@ -55,14 +66,19 @@ const LoginScreen = () => {
         }
     }, []);
 
-
     useEffect(() => {
         const checkBiometricSupportAndAuthenticate = async () => {
             const compatible = await LocalAuthentication.hasHardwareAsync();
             const enrolled = await LocalAuthentication.isEnrolledAsync();
 
             if (!compatible || !enrolled) {
-                showWarningAlert("Biometric Unavailable", "Your device does not support biometric authentication or no fingerprints are enrolled.");
+                if (useUserStore.getDevicePin()) {
+                    showGetPinModal(true)
+                }
+                else {
+                    showSetPinModal(true)
+                    showGetPinModal(true)
+                }
                 return;
             }
 
@@ -78,13 +94,12 @@ const LoginScreen = () => {
                 setBiometricSuccess(false); // explicitly mark it as false
             }
         };
-
         checkBiometricSupportAndAuthenticate();
     }, []);
 
     useEffect(() => {
+        
         const registerForPushNotificationsAsync = async () => {
-
             if (Device.isDevice) {
                 const { status: existingStatus } = await Notifications.getPermissionsAsync();
                 let finalStatus = existingStatus;
@@ -124,23 +139,31 @@ const LoginScreen = () => {
         registerForPushNotificationsAsync();
     }, []);
 
+
     const reEnableFingerprint = async () => {
         const compatible = await LocalAuthentication.hasHardwareAsync();
         const enrolled = await LocalAuthentication.isEnrolledAsync();
 
         if (!compatible || !enrolled) {
-            showWarningAlert("Biometric Unavailable", "Your device does not support biometric authentication or no fingerprints are enrolled.");
+            if (useUserStore.getDevicePin()) {
+                showGetPinModal(true)
+            }
+            else {
+                showSetPinModal(true)
+                showGetPinModal(true)
+            }
             return;
         }
 
         const result = await LocalAuthentication.authenticateAsync({
             promptMessage: "Re-authenticate with fingerprint",
-            fallbackLabel: "Use Passcode",
+            fallbackLabel: "Use App PIN",
             cancelLabel: "Cancel",
         });
 
         if (result.success) {
             setBiometricSuccess(true);
+            setIsAuthenticated(true);
         }
     };
 
@@ -202,8 +225,8 @@ const LoginScreen = () => {
     }
 
     const handleLogin = async () => {
-        const isValid = await validateInputs(); // await the validation
-        if (!isValid) return; // stop here if invalid
+        const isValid = await validateInputs();
+        if (!isValid) return;
         setLoading(true);
 
         try {
@@ -249,13 +272,12 @@ const LoginScreen = () => {
                     console.log('Error Occured while Updating the Token', error)
                 }
 
-
-                // ✅ Zustand store usage
-                const { setUser, setToken } = useUserStore.getState();
-
+                const { setUser, setToken, setDeviceExpoNotificationToken } = useUserStore.getState();
                 setUser(user);
                 setToken(token);
+                setDeviceExpoNotificationToken(expoPushToken)
                 await SecureStore.setItemAsync('user_token', token);
+
                 showSuccessAlert();
                 setValidUser(true)
             } else {
@@ -273,9 +295,19 @@ const LoginScreen = () => {
                 showErrorAlert("Login Failed", "Username and Password doesn't match!");
             }
         }
-
     };
 
+    const handleSetPin = () => {
+        setDevicePin(settingPin)
+        showSetPinModal(false)
+    }
+
+    const handleGetPin = () => {
+        const myDevicePin = getDevicePin();
+        if (gettingPin == myDevicePin) {
+            showGetPinModal(false)
+        }
+    }
 
     return (
         <LinearGradient colors={["#89f7fe", "#fad0c4"]} style={styles.container}>
@@ -305,16 +337,15 @@ const LoginScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}
-                disabled={!biometricSuccess}>
-                <Text style={[styles.forgotPassword, (!biometricSuccess) && { color: '#a8adaa' }]}>Forgot Password?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
+                <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.loginButton, (!biometricSuccess) && styles.disabledButton]}
+            <TouchableOpacity style={styles.loginButton}
                 onPress={handleLogin}
-                disabled={loading || !biometricSuccess}>
+                disabled={loading}>
                 {loading ? <ActivityIndicator color="white" style={{ paddingVertical: 3 }} /> :
-                    <View style={styles.buttonStylings}><AntDesign name="login" size={24} color="white" /><Text style={styles.buttonText}>Login</Text></View>}
+                    <View style={styles.buttonStylings}><AntDesign name="login" size={24} color="white" /><Text style={styles.buttonText} allowFontScaling={false}>Login</Text></View>}
             </TouchableOpacity>
 
             <View style={styles.separator}>
@@ -323,9 +354,8 @@ const LoginScreen = () => {
                 <View style={styles.line} />
             </View>
 
-            <TouchableOpacity style={[styles.googleButton, (!biometricSuccess) && styles.disabledButton]}
-                onPress={() => navigation.navigate("Signup")}
-                disabled={!biometricSuccess}>
+            <TouchableOpacity style={styles.googleButton}
+                onPress={() => navigation.navigate("Signup")}>
                 <Entypo name="new-message" size={24} color="white" />
                 <Text style={styles.buttonText}>Signup/ Register</Text>
             </TouchableOpacity>
@@ -341,13 +371,18 @@ const LoginScreen = () => {
                         backgroundColor: '#00796b',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        opacity: biometricSuccess ? 0 : 1,
+                        opacity: biometricSuccess ? 0.3 : 1,
                     }}
                 >
                     <MaterialCommunityIcons name="fingerprint" size={40} color="white" />
                 </TouchableOpacity>
+                <Text style={styles.fingerprintText}>
+                    {biometricSuccess ? 'Biometric Authenticated' : 'Tap to re-authenticate'}
+                </Text>
             </View>
 
+            <GetPinModal visible={getPinModal} handleGetPin={handleGetPin} onOk={() => { showGetPinModal(false) }} onChangeText={(pinValue) => setGettingPin(pinValue)} />
+            <SetPinModal visible={setPinModal} handleSetPin={handleSetPin} onOk={() => { showSetPinModal(false) }} onChangeText={(pinValue) => setSettingPin(pinValue)} />
             <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
             <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
             <SuccessAlert
@@ -386,7 +421,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: "center", padding: 20 },
     logo: { width: 100, height: 100, resizeMode: "contain", alignSelf: "center", marginBottom: 10 },
-    title: { fontSize: 26, fontWeight: "700", textAlign: "center", color: "#333", marginBottom: 20 },
+    title: { fontSize: scaleFont(26), fontWeight: "700", textAlign: "center", color: "#333", marginBottom: 20 },
     input: {
         height: 50,
         borderWidth: 1,
@@ -439,8 +474,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         marginBottom: 50
     },
-    buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: 16 },
-    signupText: { textAlign: "center", marginTop: 20, fontWeight: "500", color: "#333" },
+    buttonText: { color: "white", fontWeight: "bold", marginLeft: 10, fontSize: scaleFont(12) },
     separator: {
         flexDirection: "row",
         alignItems: "center",
@@ -455,6 +489,69 @@ const styles = StyleSheet.create({
         marginHorizontal: 10,
         fontWeight: "600",
         color: "#666",
+    },
+    fingerprintText: {
+        marginTop: 10,
+        textAlign: 'center',
+        fontSize: scaleFont(12),
+        color: '#666',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: scaleFont(16),
+        color: '#333',
+    },
+    pinOverlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    pinContainer: {
+        width: '100%',
+        padding: 70,
+        backgroundColor: 'rgb(118, 114, 114)',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 15,
+        gap: 30,
+    },
+    pinTitle: {
+        fontSize: 24,
+        fontWeight: '600',
+        marginBottom: 20,
+        color: 'white',
+    },
+    pinInput: {
+        width: '80%',
+        fontSize: 24,
+        paddingVertical: 10,
+        textAlign: 'center',
+        borderBottomWidth: 1,
+        borderColor: '#ccc',
+        marginBottom: 25,
+        color: 'white',
+    },
+    pinButton: {
+        backgroundColor: '#00796b',
+        paddingVertical: 12,
+        paddingHorizontal: 50,
+        borderRadius: 30,
+    },
+    pinButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
 })
 

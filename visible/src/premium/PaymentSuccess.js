@@ -14,6 +14,7 @@ import Animated, {
     useAnimatedStyle,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { scaleFont } from "../components/ScaleFont"
 
 const PaymentSuccessScreen = ({ navigation }) => {
     const badgeRef = useRef(null);
@@ -110,14 +111,14 @@ const styles = StyleSheet.create({
         zIndex: 2,
     },
     title: {
-        fontSize: 24,
+        fontSize: scaleFont(22),
         fontWeight: 'bold',
         color: '#333',
         textAlign: 'center',
         zIndex: 1,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: scaleFont(14),
         color: '#666',
         textAlign: 'center',
         marginBottom: 30,
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: scaleFont(14),
         fontWeight: '600',
     },
 });
