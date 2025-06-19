@@ -73,7 +73,7 @@ const useUserStore = create((set, get) => ({
 
     // ✅ Set entire dashboard data (call after fetching from API)
     setDashboardData: (data) => {
-        console.log('Setting dashboard data');
+        console.log('Setting Dashboard Data');
         set({ dashboardData: data });
     },
 

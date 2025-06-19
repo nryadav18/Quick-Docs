@@ -6,6 +6,7 @@ import { ThemeContext } from '../context/ThemeContext';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import useUserStore from '../store/userStore';
+import LottieView from 'lottie-react-native';
 
 const Header = ({ title }) => {
     const { isDarkMode, toggleTheme } = useContext(ThemeContext);
@@ -40,15 +41,22 @@ const Header = ({ title }) => {
                 {/* Title */}
                 <Text style={[styles.title, isDarkMode && styles.darkTitle]}>{title}</Text>
 
-                {/* {
+                {
                     user?.premiumuser && user?.premiumDetails.map(p => p?.type).some(name => name.includes('Ultra Pro Max')) && (
-                        <Text style={{ color: isDarkMode ? 'gold' : '#E9A319', fontSize: 26, fontWeight: 900 }} >Welcome, {user?.gender == 'male' ? 'King' : 'Queen'} 👑</Text>
+                        <TouchableOpacity style={{
+                            height: 46, width: 46, backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                            borderRadius: 24, justifyContent: 'center', alignItems: 'center'
+                        }} onPress={() => navigation.navigate('Dashboard')}>
+                            <LottieView
+                                source={isDarkMode ? require('../../assets/DashboardLottie2.json') : require('../../assets/DashboardLottie.json')}
+                                autoPlay
+                                loop
+                                speed={.8}
+                                style={{ height: 60, width: 60, resizeMode: 'contain', }}
+                            />
+                        </TouchableOpacity>
                     )
-                } */}
-
-                <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
-                    <Image style={{ height: 34, width: 34 }} source={require('../../assets/analytics.svg')} />
-                </TouchableOpacity>
+                }
 
                 <View style={styles.actions}>
                     {/* Premium Button */}
@@ -74,7 +82,7 @@ const Header = ({ title }) => {
                         <Animated.View style={{ transform: [{ rotate: rotateIcon }] }}>
                             <Ionicons
                                 name={isDarkMode ? "sunny" : "moon"}
-                                size={24}
+                                size={26}
                                 color={isDarkMode ? "#FFD700" : "black"}
                             />
                         </Animated.View>
@@ -94,7 +102,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#0f0c29',
     },
     header: {
-        padding: 15,
+        padding: 12,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -103,6 +111,7 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         color: 'black',
+        width: 100,
     },
     darkTitle: {
         color: '#F5F5F5',

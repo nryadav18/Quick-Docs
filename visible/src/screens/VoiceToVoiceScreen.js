@@ -135,6 +135,7 @@ const VoiceToVoiceScreen = () => {
     };
 
     const stopRecording = async () => {
+        setLoading(true)
         setIsRecording(false);
         await recording.stopAndUnloadAsync();
         const uri = recording.getURI();
@@ -197,8 +198,8 @@ const VoiceToVoiceScreen = () => {
 
         } catch (error) {
             console.error("Error playing Base64 audio:", error);
-            setIsSpeaking(false);
             setLoading(false);
+            setIsSpeaking(false);
             alert('Failed to play audio');
         }
     };
@@ -217,8 +218,8 @@ const VoiceToVoiceScreen = () => {
 
     const handleVoiceToVoice = async (audioUri) => {
         const { updateDashboardEntry } = useUserStore.getState();
-        setLoading(true);
         setIsSpeaking(false);
+        setLoading(true);
 
         try {
             const formData = new FormData();
@@ -489,7 +490,7 @@ const VoiceToVoiceScreen = () => {
 
             {renderFloatingParticles()}
             <Animatable.Text animation="fadeInDown" style={[styles.title, !isDarkMode && { color: 'black' }]}>
-                🤖 AI Voice Assistant
+                🤖 Tap on Robo to Activate Assistant
             </Animatable.Text>
             {renderOrbitingElements()}
 
@@ -545,21 +546,22 @@ const VoiceToVoiceScreen = () => {
                     disabled={loading || isSpeaking}
                 >
                     <LottieView
-                        source={require('../../assets/MicAnimation.json')} // Lottie file for AI analyzing animation
+                        source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
                         autoPlay
                         loop
-                        style={{ height: 150, width: 150 }}
+                        style={{ height: 110, width: 110 }}
                     />
                 </TouchableOpacity>
             </Animated.View>
 
             {loading && (
-                <View style={{ marginTop: 30, width: 200, height: 200, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ marginTop: 30, width: '100%', height: 200, justifyContent: 'center', alignItems: 'center' }}>
                     <LottieView
-                        source={require('../../assets/loading-full.json')} // Lottie file for AI analyzing animation
+                        source={require('../../assets/VoiceLoader.json')} // Lottie file for AI analyzing animation
                         autoPlay
                         loop
-                        style={{ height: 300, width: 300 }}
+                        speed={.3}
+                        style={{ height: 240, width: '110%' }}
                     />
                 </View>
             )}
@@ -583,7 +585,7 @@ const VoiceToVoiceScreen = () => {
             )}
             {/* Status indicator */}
             <Animatable.View animation="fadeInUp" delay={1000} style={styles.statusContainer}>
-                <View style={[styles.statusDot, { backgroundColor: isRecording ? '#ff4c4c' : isSpeaking ? '#00ffcc' : '#666' }]} />
+                <View style={[styles.statusDot, { backgroundColor: isRecording ? '#ff4c4c' : loading ? 'yellow' : isSpeaking ? '#00ffcc' : '#666' }]} />
                 <Text style={styles.statusText}>
                     {isRecording ? 'Listening...' : isSpeaking ? 'Speaking...' : loading ? 'Processing...' : 'Ready'}
                 </Text>
@@ -598,12 +600,11 @@ export default VoiceToVoiceScreen;
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F7FA', justifyContent: 'start', alignItems: 'center', padding: 20, gap: 30 },
     title: {
-        fontSize: scaleFont(24),
+        fontSize: scaleFont(20),
         color: '#f0f6fc',
         fontWeight: 'bold',
         marginBottom: 20,
-        marginTop: 50,
-    },
+    },  
     micButton: {
         borderRadius: 100,
         backgroundColor: '#22272e',
@@ -611,6 +612,7 @@ const styles = StyleSheet.create({
         shadowColor: '#00ffcc',
         shadowOpacity: 0.6,
         shadowRadius: 10,
+        padding : 20
     },
     micImage: {
         width: 100,
@@ -662,7 +664,7 @@ const styles = StyleSheet.create({
     },
     orbitContainer: {
         position: 'absolute',
-        top: 117,
+        top: 65,
         width: 300,
         height: 300,
         alignItems: 'center',

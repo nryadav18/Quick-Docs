@@ -244,14 +244,14 @@ export const AnalyticsDashboard = () => {
                     <StatCard
                         title="Chatbot Queries"
                         value={totalChatbot.toLocaleString()}
-                        subtitle={`${((totalChatbot / totalQuestions) * 100) || 0}%`}
+                        subtitle={`${parseInt((totalChatbot / totalQuestions) * 100) || 0}%`}
                         color="#45B7D1"
                         delay={200}
                     />
                     <StatCard
                         title="Voice Commands"
                         value={totalVoice.toLocaleString()}
-                        subtitle={`${((totalVoice / totalQuestions) * 100) || 0}%`}
+                        subtitle={`${parseInt((totalVoice / totalQuestions) * 100) || 0}%`}
                         color="#F39C12"
                         delay={300}
                     />

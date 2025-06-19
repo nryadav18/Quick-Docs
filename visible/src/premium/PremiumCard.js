@@ -24,9 +24,9 @@ const { width } = Dimensions.get('window');
 
 
 const plans = {
-    Pro: { name: 'Pro Plan', price: '1', type: 'Pro', features: [{ label: '10 File Uploads', available: true }, { label: '10 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: false }, { label: 'Voice to Voice AI', available: false }], color: '#E9A319' },
-    Ultra_Pro: { name: 'Ultra Pro Plan', price: '2', type: 'Ultra Pro', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '25 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: false },], color: '#D98324' },
-    Ultra_Pro_Max: { name: 'Ultra Pro Max Plan', price: '3', type: 'Ultra Pro Max', features: [{ label: 'Unlimited File Uploads', available: true }, { label: 'Unlimited AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: true },], color: '#EB8317' },
+    Pro: { name: 'Pro Plan', price: '1', type: 'Pro', features: [{ label: '10 File Uploads', available: true }, { label: '10 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: false }, { label: 'Voice to Voice AI', available: false }, { label: 'AI Analyzed Dashboard', available: false }], color: '#E9A319' },
+    Ultra_Pro: { name: 'Ultra Pro Plan', price: '2', type: 'Ultra Pro', features: [{ label: 'Unlimited File Uploads', available: true }, { label: '25 AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: false }, { label: 'AI Analyzed Dashboard', available: false }], color: '#D98324' },
+    Ultra_Pro_Max: { name: 'Ultra Pro Max Plan', price: '3', type: 'Ultra Pro Max', features: [{ label: 'Unlimited File Uploads', available: true }, { label: 'Unlimited AI Prompts', available: true }, { label: 'Special Birthday Gift', available: true }, { label: 'Voice to Voice AI', available: true }, { label: 'AI Analyzed Dashboard', available: true }], color: '#EB8317' },
 };
 
 export default function Premium() {
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     buttonRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginBottom: 20,
+        marginBottom: 40,
         width: '100%',
     },
     topButton: {
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         elevation: 4,
-        marginBottom: 80
+        marginBottom: 70
     },
     planName: {
         color: '#fff',

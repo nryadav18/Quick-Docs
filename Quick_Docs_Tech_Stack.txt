@@ -9,6 +9,8 @@ Node.js, Express.js, MongoDB
 
 FingerPrint Authenticaton/ PIN Authentication
 
+AI Analysing Dashboard Screen using User Data
+
 GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)
