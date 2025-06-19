@@ -215,19 +215,8 @@ const VoiceToVoiceScreen = () => {
         return `data:audio/mp3;base64,${response.data.audioContent}`;
     };
 
-    const getEnglishAudioFromGoogleTTS = async (text) => {
-        const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
-            text,
-            languageCode: 'en-IN',
-            name: "en-IN-Chirp3-HD-Achernar",
-            ssmlGender: 'FEMALE',
-            audioEncoding: 'MP3',
-            speakingRate: 1.0
-        });
-        return `data:audio/mp3;base64,${response.data.audioContent}`;
-    };
-
     const handleVoiceToVoice = async (audioUri) => {
+        const { updateDashboardEntry } = useUserStore.getState();
         setLoading(true);
         setIsSpeaking(false);
 
@@ -246,6 +235,8 @@ const VoiceToVoiceScreen = () => {
             const question = transcribeRes.data.translation || transcribeRes.data.transcript;
             let answer = '', detectedLanguage = 'en-IN';
 
+            console.log('Handling Voice Here')
+
             if (!question) {
                 answer = 'Please Speak Something to Answer'; // Default Telugu message
             } else {
@@ -257,6 +248,27 @@ const VoiceToVoiceScreen = () => {
                 });
                 answer = cleanTextForSpeech(aiResponse.data.answer);
             }
+
+            updateDashboardEntry('voice', 1);
+
+            try {
+                const payload = {
+                    username: user?.username ?? 'Test',
+                    voice: 1  // increment by 1
+                };
+
+                await fetch(`${BACKEND_URL}/update-dashboard`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+            } catch (error) {
+                console.error('Failed to increment analytics:', error);
+            }
+
 
             const speakInLanguage = async () => {
                 const langCode = detectedLanguage;
@@ -290,25 +302,6 @@ const VoiceToVoiceScreen = () => {
                         rate: 1.0,
                         onDone: () => setIsSpeaking(false),
                     });
-                    // try {
-                    //     const audioURI = await getEnglishAudioFromGoogleTTS(answer);
-                    //     await playBase64Audio(audioURI);
-                    // } catch (error) {
-                    //     setLoading(false);
-                    //     setIsSpeaking(false);
-                    //     console.error('TTS Error:', error.message);
-                    //     if (error.response) {
-                    //         // Server responded with a status other than 2xx
-                    //         console.error('Response Data:', error.response.data);
-                    //         console.error('Status Code:', error.response.status);
-                    //     } else if (error.request) {
-                    //         // No response received
-                    //         console.error('No response received:', error.request);
-                    //     } else {
-                    //         // Something else went wrong
-                    //         console.error('Unexpected error:', error);
-                    //     }
-                    // }
                 }
             };
 

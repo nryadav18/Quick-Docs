@@ -257,7 +257,7 @@ const LoginScreen = () => {
             setLoading(false);
 
             if (response.status === 200) {
-                const { token, user } = response.data;
+                const { token, user, dashboard } = response.data;
 
                 console.log(user)
 
@@ -272,10 +272,11 @@ const LoginScreen = () => {
                     console.log('Error Occured while Updating the Token', error)
                 }
 
-                const { setUser, setToken, setDeviceExpoNotificationToken } = useUserStore.getState();
+                const { setUser, setToken, setDeviceExpoNotificationToken, setDashboardData } = useUserStore.getState();
                 setUser(user);
                 setToken(token);
                 setDeviceExpoNotificationToken(expoPushToken)
+                setDashboardData(dashboard)
                 await SecureStore.setItemAsync('user_token', token);
 
                 showSuccessAlert();

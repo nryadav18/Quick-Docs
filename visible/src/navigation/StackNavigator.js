@@ -8,6 +8,7 @@ import ViewFilesScreen from '../screens/ViewFilesScreen';
 import Premium from '../premium/PremiumCard';
 import PremiumHeader from '../premium/PremiumHeader';
 import PaymentSuccessScreen from '../premium/PaymentSuccess';
+import { AnalyticsDashboard } from '../screens/DashboardScreen';
 
 
 const Stack = createStackNavigator();
@@ -20,6 +21,7 @@ export default function StackNavigator({ alreadyLoggedIn }) {
                     <>
                         <Stack.Screen name="Home" component={BottomTabNavigator} />
                         <Stack.Screen name="Files" component={ViewFilesScreen} />
+                        <Stack.Screen name="Dashboard" component={AnalyticsDashboard} />
                         <Stack.Screen name="Premium" component={Premium}
                             options={{
                                 headerShown: true,

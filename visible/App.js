@@ -23,7 +23,7 @@ Notifications.setNotificationHandler({
 });
 
 const AppContent = () => {
-    const { setUser, setToken, loadToken, alreadyLoggedIn, setAlreadyLoggedIn, setDeviceExpoNotificationToken } = useUserStore();
+    const { setUser, setToken, loadToken, alreadyLoggedIn, setAlreadyLoggedIn, setDeviceExpoNotificationToken, setDashboardData } = useUserStore();
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [progress, setProgress] = useState(0);
 
@@ -58,29 +58,32 @@ const AppContent = () => {
             try {
                 updateProgress(10);
                 const storedToken = await SecureStore.getItemAsync('user_token');
-                updateProgress(30);
                 if (storedToken) {
-                    updateProgress(50);
+                    updateProgress(30);
                     // Fetch user from your API using the stored token
-                    const response = await fetch(`${BACKEND_URL}/user`, {
+                    const response = await fetch(`${BACKEND_URL}/validate-user`, {
                         method: 'GET',
                         headers: {
                             Authorization: `Bearer ${storedToken}`,
                             'Content-Type': 'application/json',
                         },
                     });
-                    updateProgress(70);
+                    updateProgress(50);
 
                     if (response.ok) {
-                        const userData = await response.json();
+                        const result = await response.json();
+                        const userData = result.decryptedUser;
+                        const dashboardData = result.dashboard;
                         setUser(userData);
                         setToken(storedToken);
                         setAlreadyLoggedIn(true);
-                        updateProgress(85);
+                        setDashboardData(dashboardData);
+                        updateProgress(70);
                         let token;
                         try {
                             token = (await Notifications.getExpoPushTokenAsync()).data;
                             setDeviceExpoNotificationToken(token)
+                            updateProgress(85)
                         } catch (error) {
                             console.error("Error fetching push token:", error);
                         }

@@ -89,6 +89,63 @@ function hashValues(text) {
     return crypto.createHash('sha256').update(text).digest('hex');
 }
 
+function formatAnalyticsData(entries) {
+    const groupedData = {
+        daily: [],
+        weekly: [],
+        monthly: [],
+    };
+
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthsOfYear = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+
+    entries.forEach((entry) => {
+        // DAILY
+        entry.daily.forEach(d => {
+            const dateObj = new Date(d.date);
+            const dayName = daysOfWeek[dateObj.getDay()];
+
+            groupedData.daily.push({
+                day: dayName,
+                date: d.date,
+                chatbot: d.chatbot,
+                voice: d.voice
+            });
+        });
+
+        // WEEKLY
+        entry.weekly.forEach(w => {
+            const weekStartDate = new Date(w.weekStart);
+            const weekDay = weekStartDate.getDate();
+            const weekNumber = Math.ceil(weekDay / 7);
+            const label = `Week-${weekNumber}`;
+
+            groupedData.weekly.push({
+                week: label,
+                date: w.weekStart.split('T')[0],
+                chatbot: w.chatbot,
+                voice: w.voice
+            });
+        });
+
+        // MONTHLY
+        entry.monthly.forEach(m => {
+            const monthStartDate = new Date(m.monthStart);
+            const monthLabel = monthsOfYear[monthStartDate.getMonth()];
+
+            groupedData.monthly.push({
+                month: monthLabel,
+                date: m.monthStart.slice(0, 7),
+                chatbot: m.chatbot,
+                voice: m.voice
+            });
+        });
+    });
+
+    return groupedData;
+}
+
 // Individual Content of File Data Schema (Extracted Text + Embeddings)
 const fileDataSchema = new mongoose.Schema({
     name: String,
@@ -147,6 +204,29 @@ const UserSchema = new mongoose.Schema({
     myfiles: { type: [fileSchema], default: [] }
 });
 
+const Analytics = new mongoose.Schema(
+    {
+        username: { type: String, required: true, unique: true },
+        usernameHash: { type: String, unique: true },
+        daily: [{
+            date: String, // YYYY-MM-DD
+            chatbot: { type: Number, default: 0 },
+            voice: { type: Number, default: 0 }
+        }],
+        weekly: [{
+            weekStart: String, // YYYY-MM-DD
+            chatbot: { type: Number, default: 0 },
+            voice: { type: Number, default: 0 }
+        }],
+        monthly: [{
+            monthStart: String, // YYYY-MM-DD
+            chatbot: { type: Number, default: 0 },
+            voice: { type: Number, default: 0 }
+        }]
+    }
+);
+
+
 // Otp Schema
 const OtpSchema = new mongoose.Schema({
     emailHash: { type: String, required: true },         // For lookup (hashed email)
@@ -158,6 +238,7 @@ const OtpSchema = new mongoose.Schema({
 // Collection Models of User, FileData, OTP
 const User = mongoose.model('User', UserSchema);
 const FileData = mongoose.model('FileData', fileDataSchema);
+const AnalyticsDashboard = mongoose.model('Analytics', Analytics);
 const Otp = mongoose.model('Otp', OtpSchema);
 
 // Nodemailer
@@ -258,7 +339,7 @@ app.post("/verify-payment", async (req, res) => {
 
 
 // User Token Validation for Automatic Login
-app.get('/user', authenticateToken, async (req, res) => {
+app.get('/validate-user', authenticateToken, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -292,12 +373,150 @@ app.get('/user', authenticateToken, async (req, res) => {
                 : []
         };
 
-        res.status(200).json(decryptedUser);
+        const dashboardDoc = await AnalyticsDashboard.findOne({ usernameHash: hashValues(decrypt(user.username)) });
+        const dashboard = dashboardDoc ? formatAnalyticsData([dashboardDoc]) : {
+            daily: [],
+            weekly: [],
+            monthly: []
+        };
+
+        res.status(200).json({ decryptedUser, dashboard });
     } catch (error) {
         console.error('Error fetching user data:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+// Get the Statistics of the Dashboard
+app.get('/stats/:username', async (req, res) => {
+    try {
+        const { username } = req.params;
+
+        if (!username) {
+            return res.status(400).json({ message: 'Username is required.' });
+        }
+
+        const hashedUsername = hashValues(username);
+        const userStats = await AnalyticsDashboard.find({ usernameHash: hashedUsername });
+
+        // Initialize groupedData
+        const groupedData = {
+            daily: [],
+            weekly: [],
+            monthly: [],
+        };
+
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const monthsOfYear = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+
+        userStats.forEach((entry) => {
+            // DAILY
+            entry.daily.forEach(d => {
+                const dateObj = new Date(d.date);
+                const dayName = daysOfWeek[dateObj.getDay()];
+
+                groupedData.daily.push({
+                    day: dayName,
+                    date: d.date,
+                    chatbot: d.chatbot,
+                    voice: d.voice
+                });
+            });
+
+            // WEEKLY
+            entry.weekly.forEach(w => {
+                const weekStartDate = new Date(w.weekStart);
+                const weekDay = weekStartDate.getDate(); // e.g. 10
+                const weekNumber = Math.ceil(weekDay / 7); // 1–5
+                const weekLabel = `Week-${weekNumber}`;
+                const label = `${weekLabel}`;
+
+                groupedData.weekly.push({
+                    week: label, // "Week-2
+                    date: w.weekStart.split('T')[0],
+                    chatbot: w.chatbot,
+                    voice: w.voice
+                });
+            });
+
+            // MONTHLY
+            entry.monthly.forEach(m => {
+                const monthStartDate = new Date(m.monthStart);
+                const monthLabel = monthsOfYear[monthStartDate.getMonth()]; // e.g. "April"
+
+                groupedData.monthly.push({
+                    month: monthLabel, // "April"
+                    date: m.monthStart.slice(0, 7), // e.g., "2025-04"
+                    chatbot: m.chatbot,
+                    voice: m.voice
+                });
+            });
+        });
+
+
+        return res.json(groupedData);
+    } catch (error) {
+        console.error('Error in /stats/:username', error);
+        res.status(500).json({ message: 'Error fetching analytics', error });
+    }
+});
+
+
+
+// Updates the Dashboard
+app.patch('/update-dashboard', async (req, res) => {
+    try {
+        const { username, chatbot = 0, voice = 0 } = req.body;
+        if (!username) return res.status(400).json({ error: 'Username is required' });
+
+        const hashedUsername = hashValues(username);
+
+        const today = new Date();
+        const dateStr = today.toISOString().split('T')[0];
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        const weekStr = weekStart.toISOString().split('T')[0];
+        const monthStr = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+
+        // Step 1: Find or create the main doc
+        let doc = await AnalyticsDashboard.findOne({ usernameHash: hashedUsername });
+        if (!doc) {
+            doc = await AnalyticsDashboard.create({
+                username: encrypt(username),
+                usernameHash: hashedUsername,
+                daily: [{ date: dateStr, chatbot, voice }],
+                weekly: [{ weekStart: weekStr, chatbot, voice }],
+                monthly: [{ monthStart: monthStr, chatbot, voice }]
+            });
+            return res.json({ message: 'Stats created' });
+        }
+
+        // Step 2: Helper to increment or insert
+        const incrementOrInsert = (arr, key, matchKey, chatbot, voice) => {
+            const index = arr.findIndex(item => item[matchKey] === key);
+            if (index >= 0) {
+                arr[index].chatbot += chatbot;
+                arr[index].voice += voice;
+            } else {
+                const newItem = { [matchKey]: key, chatbot, voice };
+                arr.push(newItem);
+            }
+        };
+
+        incrementOrInsert(doc.daily, dateStr, 'date', chatbot, voice);
+        incrementOrInsert(doc.weekly, weekStr, 'weekStart', chatbot, voice);
+        incrementOrInsert(doc.monthly, monthStr, 'monthStart', chatbot, voice);
+
+        await doc.save();
+        res.json({ message: 'Stats updated' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 
 
 // Singup or Creating a new account
@@ -589,7 +808,7 @@ ${systemContext}
 Question: ${lowerQuestion}`;
 
         const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -682,40 +901,6 @@ const INDIAN_LANGUAGES = [
 ];
 
 
-// Basic Translation of Voice from Any Language to English
-// app.post("/transcribe", upload.single("audio"), async (req, res) => {
-//     try {
-//         const audioBytes = req.file.buffer.toString("base64");
-
-//         const audio = {
-//             content: audioBytes,
-//         };
-
-//         const config = {
-//             encoding: 'AMR', // for .3gp files recorded by Android with expo-av
-//             sampleRateHertz: 8000,
-//             languageCode: 'en-IN',
-//         };
-
-
-//         const request = {
-//             audio: audio,
-//             config: config,
-//         };
-
-//         const [response] = await speechClient.recognize(request);
-//         const transcript = response.results.map(r => r.alternatives[0].transcript).join("\n");
-
-//         console.log(transcript)
-
-//         res.json({ transcript });
-//     } catch (err) {
-//         console.error("Error processing audio:", err);
-//         res.status(500).json({ error: "Speech recognition failed" });
-//     }
-// });
-
-
 // Option 1: Google Translate (Free, no API key) - Using translate-google npm package
 const translateWithGoogleFree = async (text, sourceLang, targetLang = 'en') => {
     try {
@@ -757,7 +942,7 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
 
         // Test multiple languages in parallel   
 
-        const languagesToTest = ['en-US', 'en-IN', 'hi-IN', 'te-IN'];
+        const languagesToTest = ['en-US', 'en-IN', 'te-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
             try {
@@ -1090,7 +1275,13 @@ app.post('/login', async (req, res) => {
             }))
         };
 
-
+        // 🔍 Get dashboard data
+        const dashboardDoc = await AnalyticsDashboard.findOne({ usernameHash: usernameHash });
+        const dashboard = dashboardDoc ? formatAnalyticsData([dashboardDoc]) : {
+            daily: [],
+            weekly: [],
+            monthly: []
+        };
 
         const token = jwt.sign(
             { id: user._id, email: decryptedUser.email },
@@ -1098,7 +1289,7 @@ app.post('/login', async (req, res) => {
             { expiresIn: '24h' }
         );
 
-        res.status(200).json({ message: 'Login successful', token, user: decryptedUser });
+        res.status(200).json({ message: 'Login successful', token, user: decryptedUser, dashboard });
     } catch (err) {
         console.error('Login error:', err);
         res.status(500).json({ message: 'Server error Bro' });

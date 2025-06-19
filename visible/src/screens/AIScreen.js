@@ -149,7 +149,7 @@ const AIScreen = () => {
         };
     }, [isAnalyzing]);
 
-    
+
 
     // Helper Functions
     const checkPromptLimitations = useCallback(() => {
@@ -163,7 +163,7 @@ const AIScreen = () => {
             allowedPrompts = Infinity;
         } else if (planNames.some(name => name.includes('Ultra Pro'))) {
             allowedPrompts = 25;
-        } else if (planNames.some(name => name.includes('Pro'))){
+        } else if (planNames.some(name => name.includes('Pro'))) {
             allowedPrompts = 10;
         }
 
@@ -358,7 +358,7 @@ const AIScreen = () => {
 
     // Message Functions
     const sendMessage = async () => {
-        const { user, incrementPromptCount } = useUserStore.getState();
+        const { user, incrementPromptCount, updateDashboardEntry } = useUserStore.getState();
 
         if (!user) {
             Alert.alert("Error", "Please log in to continue.");
@@ -373,6 +373,7 @@ const AIScreen = () => {
             text: inputMessage.trim(),
             timestamp: new Date().toISOString()
         };
+
 
         // Check for blocked content
         if (isBlockedPrompt(inputMessage)) {
@@ -448,6 +449,27 @@ const AIScreen = () => {
             }
 
             incrementPromptCount();
+            updateDashboardEntry('chatbot', 1);
+
+            try {
+                const payload = {
+                    username: user?.username ?? 'Test',
+                    chatbot: 1  // increment by 1
+                };
+
+                await fetch(`${BACKEND_URL}/update-dashboard`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                console.log('Dashboard is Updated')
+
+            } catch (error) {
+                console.error('Failed to increment analytics:', error);
+            }
 
             // Generate AI response
             const response = await generateBotResponse([...messages, userMessage], abortControllerRef.current.signal);

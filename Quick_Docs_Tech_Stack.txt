@@ -7,6 +7,8 @@ Zustand	- Light weighted ~1.1 KB - SSR-safe - Simple, minimal, reactive
 
 Node.js, Express.js, MongoDB
 
+FingerPrint Authenticaton/ PIN Authentication
+
 GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)

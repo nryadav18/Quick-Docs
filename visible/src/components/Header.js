@@ -1,5 +1,6 @@
 import React, { useContext, useRef, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../context/ThemeContext';
 import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
@@ -39,11 +40,15 @@ const Header = ({ title }) => {
                 {/* Title */}
                 <Text style={[styles.title, isDarkMode && styles.darkTitle]}>{title}</Text>
 
-                {
+                {/* {
                     user?.premiumuser && user?.premiumDetails.map(p => p?.type).some(name => name.includes('Ultra Pro Max')) && (
-                        <Text style={{ color : isDarkMode ? 'gold' : '#E9A319', fontSize : 26, fontWeight : 900 }} >Welcome, {user?.gender == 'male' ? 'King' : 'Queen'} 👑</Text>
+                        <Text style={{ color: isDarkMode ? 'gold' : '#E9A319', fontSize: 26, fontWeight: 900 }} >Welcome, {user?.gender == 'male' ? 'King' : 'Queen'} 👑</Text>
                     )
-                }
+                } */}
+
+                <TouchableOpacity onPress={() => navigation.navigate('Dashboard')}>
+                    <Image style={{ height: 34, width: 34 }} source={require('../../assets/analytics.svg')} />
+                </TouchableOpacity>
 
                 <View style={styles.actions}>
                     {/* Premium Button */}
@@ -62,6 +67,7 @@ const Header = ({ title }) => {
 
                             </TouchableOpacity>
                         )}
+
 
                     {/* Toggle Theme Button */}
                     <TouchableOpacity onPress={toggleDarkMode} style={styles.toggleButton}>
