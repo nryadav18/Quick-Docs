@@ -933,7 +933,7 @@ const translateWithLingva = async (text, sourceLang, targetLang = 'en') => {
 
 
 // Advanced and Updated transcribe-audio endpoint with free translation
-app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
+app.post("/transcribe-audio-app", upload.single("audio"), async (req, res) => {
     try {
         const audioBytes = req.file.buffer.toString("base64");
         const audio = { content: audioBytes };
@@ -1127,6 +1127,204 @@ app.post("/transcribe-audio", upload.single("audio"), async (req, res) => {
         });
     }
 });
+
+
+// Advanced and Updated transcribe-audio endpoint with free translation
+app.post("/transcribe-audio-web", upload.single("audio"), async (req, res) => {
+    try {
+        const audioBytes = req.file.buffer.toString("base64");
+        const audio = { content: audioBytes };
+
+        console.log("Starting parallel language detection...");
+
+        // Test multiple languages in parallel   
+
+        const languagesToTest = ['en-US', 'en-IN', 'te-IN'];
+
+        const recognitionPromises = languagesToTest.map(async (langCode) => {
+            try {
+                const config = {
+                    encoding: 'WEBM_OPUS',
+                    sampleRateHertz: 48000,
+                    languageCode: langCode,
+                    enableAutomaticPunctuation: true,
+                    enableWordConfidence: true,
+                    model: 'latest_long',
+                };
+
+                const [response] = await speechClient.recognize({
+                    audio: audio,
+                    config: config,
+                });
+
+                if (response.results && response.results.length > 0) {
+                    const result = response.results[0];
+                    const alternative = result.alternatives[0];
+
+                    return {
+                        language: langCode,
+                        transcript: alternative.transcript,
+                        confidence: alternative.confidence || 0,
+                        wordCount: alternative.transcript.split(' ').length
+                    };
+                }
+                return null;
+            } catch (error) {
+                console.log(`Recognition failed for ${langCode}:`, error.message);
+                return null;
+            }
+        });
+
+        // Wait for all recognitions to complete
+        const results = await Promise.all(recognitionPromises);
+        const validResults = results.filter(result => result !== null);
+
+        if (validResults.length === 0) {
+            return res.status(400).json({
+                error: "No speech detected in any language",
+                transcript: "",
+                detectedLanguage: "unknown"
+            });
+        }
+
+        // Find the best result based on confidence and transcript length
+        const bestResult = validResults.reduce((best, current) => {
+            const currentScore = current.confidence * (current.wordCount > 0 ? 1 : 0.5);
+            const bestScore = best.confidence * (best.wordCount > 0 ? 1 : 0.5);
+            return currentScore > bestScore ? current : best;
+        });
+
+        console.log(`Best match: ${bestResult.language} with confidence ${bestResult.confidence}`);
+
+        let finalTranscript = bestResult.transcript;
+        let translationInfo = {
+            originalLanguage: bestResult.language,
+            originalText: bestResult.transcript,
+            wasTranslated: false,
+            confidence: bestResult.confidence,
+            allResults: validResults
+        };
+
+        // Translate if needed using free APIs
+        if (bestResult.language !== 'en-IN' && bestResult.transcript.trim()) {
+            try {
+                const langCode = bestResult.language.split('-')[0];
+
+                // Map language codes for different APIs
+                const langMap = {
+                    'hi': 'hi',
+                    'te': 'te'
+                };
+
+                const sourceLang = langMap[langCode] || langCode;
+
+                // Try multiple translation services in order of preference
+                let translationResults = [];
+
+                // Try Google Free (most reliable)
+                try {
+                    const translatedText = await translateWithGoogleFree(bestResult.transcript, sourceLang, 'en');
+                    translationResults.push({
+                        service: 'Google Free',
+                        text: translatedText,
+                        score: 10 // Highest priority
+                    });
+                    console.log('Translation successful with Google Free:', translatedText);
+                } catch (googleError) {
+                    console.log('Google Free failed:', googleError.message);
+                }
+
+                // Try Lingva (good alternative)
+                try {
+                    const translatedText = await translateWithLingva(bestResult.transcript, sourceLang, 'en');
+                    translationResults.push({
+                        service: 'Lingva',
+                        text: translatedText,
+                        score: 8
+                    });
+                    console.log('Translation successful with Lingva:', translatedText);
+                } catch (lingvaError) {
+                    console.log('Lingva failed:', lingvaError.message);
+                }
+
+                // Choose the best translation based on quality heuristics
+                let bestTranslation = null;
+
+                if (translationResults.length > 0) {
+                    // Filter out obviously bad translations
+                    const validTranslations = translationResults.filter(result =>
+                        result.text &&
+                        result.text.length > 0 &&
+                        result.text !== bestResult.transcript && // Not same as original
+                        !result.text.includes('Translation Error') &&
+                        result.text.length >= bestResult.transcript.length * 0.3 // Not too short
+                    );
+
+                    if (validTranslations.length > 1) {
+                        // Compare translations and choose best one
+                        bestTranslation = validTranslations.reduce((best, current) => {
+                            let currentScore = current.score;
+                            let bestScore = best.score;
+
+                            // Bonus for longer, more detailed translations
+                            if (current.text.length > best.text.length * 1.2) {
+                                currentScore += 2;
+                            }
+
+                            // Bonus for proper capitalization and punctuation
+                            if (current.text.match(/^[A-Z]/) && current.text.match(/[.!?]$/)) {
+                                currentScore += 1;
+                            }
+
+                            // Penalty for all caps or no caps
+                            if (current.text === current.text.toUpperCase() ||
+                                current.text === current.text.toLowerCase()) {
+                                currentScore -= 2;
+                            }
+
+                            return currentScore > bestScore ? current : best;
+                        });
+
+                        console.log('Multiple translations available:');
+                        validTranslations.forEach(t => console.log(`${t.service}: "${t.text}"`));
+                        console.log(`Chose ${bestTranslation.service} as best translation`);
+
+                    } else if (validTranslations.length === 1) {
+                        bestTranslation = validTranslations[0];
+                    }
+                }
+
+                let translatedText = bestTranslation ? bestTranslation.text : null;
+
+                if (translatedText) {
+                    finalTranscript = translatedText;
+                    translationInfo.wasTranslated = true;
+                }
+
+            } catch (translateError) {
+                console.error("Translation failed:", translateError);
+            }
+        }
+
+        res.json({
+            transcript: finalTranscript,
+            detectedLanguage: bestResult.language,
+            confidence: bestResult.confidence,
+            translationInfo: translationInfo,
+            success: true
+        });
+
+    } catch (err) {
+        console.error("Parallel recognition error:", err);
+        res.status(500).json({
+            error: "Parallel speech recognition failed",
+            transcript: "",
+            detectedLanguage: "unknown",
+            details: err.message
+        });
+    }
+});
+
 
 
 // Route to convert Text to Speech
