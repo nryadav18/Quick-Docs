@@ -258,7 +258,7 @@ const AIScreen = () => {
             });
 
             const response = await axios.post(
-                `${BACKEND_URL}/transcribe-audio`,
+                `${BACKEND_URL}/transcribe-audio-app`,
                 formData,
                 {
                     headers: { "Content-Type": "multipart/form-data" },

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useContext, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Dimensions, Platform, PermissionsAndroid, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Animated, Dimensions, Platform, PermissionsAndroid, Linking, ScrollView } from 'react-native';
 import * as Speech from 'expo-speech';
 import * as FileSystem from 'expo-file-system';
 import { Audio } from 'expo-av';
@@ -22,6 +22,10 @@ const VoiceToVoiceScreen = () => {
     const [isRecording, setIsRecording] = useState(false);
     const [loading, setLoading] = useState(false);
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const [humanQuestion, setHumanQuestion] = useState('')
+    const [aiAnswer, setAiAnswer] = useState('')
+    const [showLanguageInfo, setShowLanguageInfo] = useState(false);
+    const [translationInfo, setTranslationInfo] = useState(null);
     const { isDarkMode } = useContext(ThemeContext);
     const user = useUserStore((state) => state.user);
     const navigation = useNavigation();
@@ -136,6 +140,7 @@ const VoiceToVoiceScreen = () => {
 
     const stopRecording = async () => {
         setLoading(true)
+        setHumanQuestion('')
         setIsRecording(false);
         await recording.stopAndUnloadAsync();
         const uri = recording.getURI();
@@ -229,9 +234,14 @@ const VoiceToVoiceScreen = () => {
                 type: "audio/3gpp",
             });
 
-            const transcribeRes = await axios.post(`${BACKEND_URL}/transcribe-audio`, formData, {
+            const transcribeRes = await axios.post(`${BACKEND_URL}/transcribe-audio-app`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
+
+            const { translationInfo: transInfo, originalText } = transcribeRes.data;
+            setTranslationInfo(transInfo)
+            setShowLanguageInfo(true)
+            setHumanQuestion(originalText)
 
             const question = transcribeRes.data.translation || transcribeRes.data.transcript;
             let answer = '', detectedLanguage = 'en-IN';
@@ -249,7 +259,7 @@ const VoiceToVoiceScreen = () => {
                 });
                 answer = cleanTextForSpeech(aiResponse.data.answer);
             }
-
+            setAiAnswer(answer)
             updateDashboardEntry('voice', 1);
 
             try {
@@ -273,6 +283,7 @@ const VoiceToVoiceScreen = () => {
 
             const speakInLanguage = async () => {
                 const langCode = detectedLanguage;
+                setShowLanguageInfo(false)
 
                 if (langCode.startsWith('te')) {
                     // Use Google Cloud TTS for Telugu
@@ -323,6 +334,7 @@ const VoiceToVoiceScreen = () => {
             await currentSound.stopAsync();
             await currentSound.unloadAsync();
             setCurrentSound(null)
+            setShowLanguageInfo(false)
         }
 
         Speech.stop(); // For English voice
@@ -485,8 +497,61 @@ const VoiceToVoiceScreen = () => {
         ));
     };
 
+    const getLanguageName = (languageCode) => {
+        const languageNames = {
+            'en-IN': 'English',
+            'en-US': 'English',
+            'te-IN': 'Telugu'
+        };
+
+        return languageNames[languageCode] || languageCode;
+    };
+
+    const renderLanguageInfo = () => {
+        if (!showLanguageInfo || !translationInfo) return null;
+
+        return (
+            <Animated.View
+                style={[
+                    languageStylings.languageInfoBanner,
+                    { backgroundColor: isDarkMode ? 'rgba(0, 121, 107, 0.95)' : 'rgba(0, 121, 107, 0.12)' },
+                    languageStylings.elevationShadow
+                ]}
+            >
+                <View style={languageStylings.languageInfoContent}>
+                    {/* Globe Icon */}
+                    <View style={languageStylings.iconContainer}>
+                        <Text style={[languageStylings.languageInfoIcon, { color: isDarkMode ? '#A5D6A7' : '#00796b', }]}>🌐</Text>
+                    </View>
+
+                    {/* Language Info Text */}
+                    <View style={languageStylings.languageInfoText}>
+                        <Text style={[languageStylings.languageInfoTitle, { color: isDarkMode ? '#fff' : '#004D40' }]}>
+                            Language Detected: {getLanguageName(translationInfo.originalLanguage)}
+                        </Text>
+                        {translationInfo.wasTranslated && (
+                            <Text style={[languageStylings.languageInfoSubtitle, { color: isDarkMode ? '#E0E0E0' : '#555' }]}>
+                                Automatically translated to English
+                            </Text>
+                        )}
+                    </View>
+
+                    {/* Close Button */}
+                    <TouchableOpacity
+                        onPress={() => setShowLanguageInfo(false)}
+                        style={[languageStylings.dismissButton, { backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' }]}
+                        accessibilityLabel="Dismiss language info"
+                    >
+                        <Text style={[languageStylings.closeButtonText, { color: isDarkMode ? '#FFFFFFCC' : '#555', }]}>✕</Text>
+                    </TouchableOpacity>
+                </View>
+            </Animated.View>
+        );
+    };
+
     return (
         <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
+            {renderLanguageInfo()}
 
             {renderFloatingParticles()}
             <Animatable.Text animation="fadeInDown" style={[styles.title, !isDarkMode && { color: 'black' }]}>
@@ -545,14 +610,36 @@ const VoiceToVoiceScreen = () => {
                     style={[styles.micButton, isRecording ? [styles.stopButton, !isDarkMode && { borderColor: 'black' }] : [styles.startButton, !isDarkMode && { borderColor: '#302b63' }], !isDarkMode && { backgroundColor: '#302b63', shadowColor: '#302b63' }]}
                     disabled={loading || isSpeaking}
                 >
-                    <LottieView
-                        source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
-                        autoPlay
-                        loop
-                        style={{ height: 110, width: 110 }}
-                    />
+                    {
+                        loading || isRecording ?
+                            (
+                                <LottieView
+                                    source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
+                                    autoPlay
+                                    loop
+                                    style={{ height: 110, width: 110 }}
+                                />
+                            ) : (
+                                <LottieView
+                                    source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
+                                    autoPlay={false}
+                                    loop={false}
+                                    style={{ height: 110, width: 110 }}
+                                />
+                            )
+                    }
                 </TouchableOpacity>
             </Animated.View>
+
+            {
+                humanQuestion && (
+                    <Animatable.View animation="fadeIn" delay={500} style={styles.humanQuestionView}>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.humanQuestionText, { color: isDarkMode ? 'yellow' : 'black' }]}>{humanQuestion}</Text>
+                        </ScrollView>
+                    </Animatable.View>
+                )
+            }
 
             {loading && (
                 <View style={{ marginTop: 30, width: '100%', height: 200, justifyContent: 'center', alignItems: 'center' }}>
@@ -566,6 +653,16 @@ const VoiceToVoiceScreen = () => {
                 </View>
             )}
 
+            {
+                !loading && aiAnswer && (
+                    <Animatable.View animation="fadeIn" delay={500} style={styles.aiAnswerView}>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.aiAnswerText, { color: isDarkMode ? '#00ffcc' : 'black' }]}>{aiAnswer}</Text>
+                        </ScrollView>
+                    </Animatable.View>
+                )
+            }
+
             {isSpeaking && (
                 <View style={styles.speakingContainer}>
                     <Animatable.View animation="bounceIn" delay={300}>
@@ -577,12 +674,14 @@ const VoiceToVoiceScreen = () => {
                                 colors={['#ff4c4c', '#ff6b6b']}
                                 style={styles.stopButtonGradient}
                             >
-                                <MaterialCommunityIcons name="stop-circle" size={60} color="white" />
+                                <MaterialCommunityIcons name="stop-circle" size={50} color="white" />
                             </LinearGradient>
                         </TouchableOpacity>
                     </Animatable.View>
                 </View>
             )}
+
+
             {/* Status indicator */}
             <Animatable.View animation="fadeInUp" delay={1000} style={styles.statusContainer}>
                 <View style={[styles.statusDot, { backgroundColor: isRecording ? '#ff4c4c' : loading ? 'yellow' : isSpeaking ? '#00ffcc' : '#666' }]} />
@@ -597,6 +696,72 @@ const VoiceToVoiceScreen = () => {
 
 export default VoiceToVoiceScreen;
 
+const languageStylings = StyleSheet.create({
+    languageInfoBanner: {
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        right: 20,
+        borderRadius: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        zIndex: 1000,
+    },
+
+    elevationShadow: {
+        elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 6,
+    },
+
+    languageInfoContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
+
+    iconContainer: {
+        marginRight: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+
+    languageInfoIcon: {
+        fontSize: scaleFont(22),
+    },
+
+    languageInfoText: {
+        flex: 1,
+    },
+
+    languageInfoTitle: {
+        fontSize: scaleFont(14),
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+
+    languageInfoSubtitle: {
+        fontSize: scaleFont(11),
+        fontWeight: '400',
+    },
+
+    dismissButton: {
+        marginLeft: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+    },
+
+    closeButtonText: {
+        fontSize: scaleFont(18),
+        fontWeight: 'bold',
+    }
+});
+
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F5F7FA', justifyContent: 'start', alignItems: 'center', padding: 20, gap: 30 },
     title: {
@@ -604,7 +769,7 @@ const styles = StyleSheet.create({
         color: '#f0f6fc',
         fontWeight: 'bold',
         marginBottom: 20,
-    },  
+    },
     micButton: {
         borderRadius: 100,
         backgroundColor: '#22272e',
@@ -612,7 +777,37 @@ const styles = StyleSheet.create({
         shadowColor: '#00ffcc',
         shadowOpacity: 0.6,
         shadowRadius: 10,
-        padding : 20
+        padding: 20
+    },
+    humanQuestionView: {
+        width: (.85 * width),
+        borderWidth: 1,
+        maxHeight: 80,
+        borderColor: 'skyblue',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        padding: 10,
+        backgroundColor: 'rgba(255,255,255,.1)',
+    },
+    humanQuestionText: {
+        fontSize: 18,
+        fontWeight: 800,
+    },
+    aiAnswerView: {
+        width: (.85 * width),
+        maxHeight: 140,
+        borderWidth: 1,
+        borderColor: 'skyblue',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
+        padding: 10,
+        backgroundColor: 'rgba(255,255,255,.1)',
+    },
+    aiAnswerText: {
+        fontSize: 18,
+        fontWeight: 800,
     },
     micImage: {
         width: 100,
@@ -635,7 +830,8 @@ const styles = StyleSheet.create({
     micContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: 40,
+        marginTop : 30,
+        marginBottom : 40,
     },
     micImage: {
         height: 100,
@@ -664,7 +860,7 @@ const styles = StyleSheet.create({
     },
     orbitContainer: {
         position: 'absolute',
-        top: 65,
+        top: 50,
         width: 300,
         height: 300,
         alignItems: 'center',
@@ -680,8 +876,8 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
     },
     stopButtonGradient: {
-        width: 80,
-        height: 80,
+        width: 70,
+        height: 70,
         borderRadius: 50,
         alignItems: 'center',
         justifyContent: 'center',
@@ -711,7 +907,7 @@ const styles = StyleSheet.create({
     },
     statusContainer: {
         position: 'absolute',
-        bottom: 100,
+        bottom: 80,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
@@ -733,9 +929,9 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     speakingContainer: {
-        marginTop: 20,
-        gap: 15,
+        gap: 40,
         alignItems: 'center',
+        marginBottom: 10
     },
     speakingText: {
         color: '#e6f1ff',

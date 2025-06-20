@@ -1008,6 +1008,8 @@ app.post("/transcribe-audio-app", upload.single("audio"), async (req, res) => {
             allResults: validResults
         };
 
+        console.log("Original Text: ", bestResult.transcript)
+
         // Translate if needed using free APIs
         if (bestResult.language !== 'en-IN' && bestResult.transcript.trim()) {
             try {
@@ -1114,7 +1116,8 @@ app.post("/transcribe-audio-app", upload.single("audio"), async (req, res) => {
             detectedLanguage: bestResult.language,
             confidence: bestResult.confidence,
             translationInfo: translationInfo,
-            success: true
+            success: true,
+            originalText : bestResult.transcript
         });
 
     } catch (err) {
