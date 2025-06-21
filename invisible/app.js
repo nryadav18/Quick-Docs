@@ -54,15 +54,6 @@ function encrypt(text) {
 }
 
 // Decryption Function
-function decrypt(encrypted) {
-    const [ivBase64, encryptedText] = encrypted.split(':');
-    const iv = Buffer.from(ivBase64, 'base64');
-    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(AES_SECRET_KEY), iv);
-    let decrypted = decipher.update(encryptedText, 'base64', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-}
-
 function decryptSafe(encrypted) {
     if (!encrypted || typeof encrypted !== 'string' || !encrypted.includes(':')) {
         console.warn('Invalid encrypted format:', encrypted);
@@ -345,21 +336,21 @@ app.get('/validate-user', authenticateToken, async (req, res) => {
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         const decryptedUser = {
-            name: decrypt(user.name),
-            username: decrypt(user.username),
-            email: decrypt(user.email),
+            name: decryptSafe(user.name),
+            username: decryptSafe(user.username),
+            email: decryptSafe(user.email),
             dob: user.dob,
-            gender: decrypt(user.gender),
+            gender: decryptSafe(user.gender),
             verified: user.verified,
             premiumuser: user.premiumuser,
-            profileImageUrl: decrypt(user.profileImageUrl),
-            expoNotificationToken: decrypt(user.expoNotificationToken),
+            profileImageUrl: decryptSafe(user.profileImageUrl),
+            expoNotificationToken: decryptSafe(user.expoNotificationToken),
             aipromptscount: user.aipromptscount,
             myfiles: Array.isArray(user.myfiles)
                 ? user.myfiles.map(file => ({
-                    name: decrypt(file.name),
-                    url: decrypt(file.url),
-                    filepath: decrypt(file.filepath),
+                    name: decryptSafe(file.name),
+                    url: decryptSafe(file.url),
+                    filepath: decryptSafe(file.filepath),
                     type: file.type,
                     rating: file.rating,
                     uploadedAt: file.uploadedAt
@@ -367,13 +358,13 @@ app.get('/validate-user', authenticateToken, async (req, res) => {
                 : [],
             premiumDetails: Array.isArray(user.premiumDetails)
                 ? user.premiumDetails.map(prem => ({
-                    type: decrypt(prem.type),
+                    type: decryptSafe(prem.type),
                     timestamp: prem.timestamp
                 }))
                 : []
         };
 
-        const dashboardDoc = await AnalyticsDashboard.findOne({ usernameHash: hashValues(decrypt(user.username)) });
+        const dashboardDoc = await AnalyticsDashboard.findOne({ usernameHash: hashValues(decryptSafe(user.username)) });
         const dashboard = dashboardDoc ? formatAnalyticsData([dashboardDoc]) : {
             daily: [],
             weekly: [],
@@ -784,8 +775,8 @@ app.post('/ask', async (req, res) => {
             // decrypt extractedText if stored encrypted
             topMatches = results
                 .map(doc => {
-                    console.log(decrypt(doc.extractedText))
-                    return decrypt(doc.extractedText) || '';
+                    console.log(decryptSafe(doc.extractedText))
+                    return decryptSafe(doc.extractedText) || '';
                 })
                 .filter(Boolean)
                 .join('\n---\n');
@@ -854,7 +845,7 @@ app.post('/check-prompt-limitation', async (req, res) => {
         // Decrypt plan types before checking
         const planNames = user.premiumDetails.map(p => {
             try {
-                return decrypt(p.type || '');
+                return decryptSafe(p.type || '');
             } catch (e) {
                 console.error('Error decrypting plan type:', e);
                 return ''; // fallback
@@ -1595,14 +1586,14 @@ app.post('/file-data-thrower', async (req, res) => {
         }
 
         // Find file by decrypting each file name and matching with itemname from frontend (plain text)
-        const file = user.myfiles.find(f => decrypt(f.name) === itemname);
+        const file = user.myfiles.find(f => decryptSafe(f.name) === itemname);
         if (!file) {
             return res.status(404).json({ message: 'File not found.' });
         }
 
         // Decrypt file fields before sending
         const fileId = file._id;
-        const fileUrl = decrypt(file.url);
+        const fileUrl = decryptSafe(file.url);
         const fileType = file.type; // assuming type is not sensitive
         console.log(file)
 
@@ -1638,7 +1629,7 @@ app.delete('/:fileId', async (req, res) => {
         }
 
         // Decrypt filepath before deleting from GCS
-        const gcsFilePath = decrypt(file.filepath);
+        const gcsFilePath = decryptSafe(file.filepath);
 
         try {
             await bucket.file(gcsFilePath).delete();
@@ -1655,33 +1646,33 @@ app.delete('/:fileId', async (req, res) => {
         // Delete corresponding FileData document (assuming filepath is stored encrypted there too)
 
         try {
-            const fileDataDeleteResult = await FileData.deleteOne({ filePathHash: hashValues(decrypt(file.filepath)) });
+            const fileDataDeleteResult = await FileData.deleteOne({ filePathHash: hashValues(decryptSafe(file.filepath)) });
             console.log('FileData deletion:', fileDataDeleteResult);
         } catch (err) {
             console.error('FileData deletion error:', err);
         }
 
         const decryptedUser = {
-            name: decrypt(user.name),
-            username: decrypt(user.username),
-            email: decrypt(user.email),
+            name: decryptSafe(user.name),
+            username: decryptSafe(user.username),
+            email: decryptSafe(user.email),
             dob: user.dob,
-            gender: decrypt(user.gender),
+            gender: decryptSafe(user.gender),
             verified: user.verified,
             premiumuser: user.premiumuser,
-            profileImageUrl: decrypt(user.profileImageUrl),
-            expoNotificationToken: decrypt(user.expoNotificationToken),
+            profileImageUrl: decryptSafe(user.profileImageUrl),
+            expoNotificationToken: decryptSafe(user.expoNotificationToken),
             aipromptscount: user.aipromptscount,
             myfiles: user.myfiles.map(file => ({
-                name: decrypt(file.name),
-                url: decrypt(file.url),
-                filepath: decrypt(file.filepath),
+                name: decryptSafe(file.name),
+                url: decryptSafe(file.url),
+                filepath: decryptSafe(file.filepath),
                 type: file.type,
                 rating: file.rating,
                 uploadedAt: file.uploadedAt
             })),
             premiumDetails: user.premiumDetails.map(prem => ({
-                type: decrypt(prem.type),
+                type: decryptSafe(prem.type),
                 timestamp: prem.timestamp
             }))
         };

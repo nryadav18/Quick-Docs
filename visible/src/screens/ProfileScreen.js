@@ -234,7 +234,7 @@ const ProfileScreen = () => {
                         if (deviceExpoNotificationToken) {
                             sendPushNotification(
                                 deviceExpoNotificationToken,
-                                'Your account has been deactivated 😢💔',
+                                'Your account has been deactivated 🥺💔',
                                 'If you change your mind, we will be here for you!'
                             );
                         }

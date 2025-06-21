@@ -146,33 +146,55 @@ const ViewFilesScreen = () => {
 
     // View File Function
     const handleViewFile = async (file) => {
-        console.log("File URI: ",file.uri)
+        console.log("File URI: ", file.uri);
+
         if (!file.url) {
             console.warn("File URL is missing");
             return;
         }
-        console.log("Local File Type: " + file.type)
-        const fileUri = file.url;
+
+        console.log("Local File Type: " + file.type);
+
+        let fileUri = file.url;
         let fileType = file.type;
 
         if (fileType.includes('jpg') || fileType.includes('jpeg') || fileType.includes('png')) {
-            console.log('It is an Image')
-            setImagePreview(fileUri)
+            console.log('It is an Image');
+            setImagePreview(fileUri);
+            return; // Exit early after showing image
         }
 
-        else if (!fileUri.startsWith("http")) {
-            const response = await axios.post(`${BACKEND_URL}/file-data-thrower`, {
-                username: user?.username ?? 'unknown',
-                itemname: file?.name ?? 'unnamed-file',
-            });
-            fileUri = response.data.fileUrl;
-            fileType = response.data.fileType;
+        // If file URI doesn't start with http, fetch from backend
+        if (!fileUri.startsWith("http")) {
+            try {
+                const response = await axios.post(`${BACKEND_URL}/file-data-thrower`, {
+                    username: user?.username ?? 'unknown',
+                    itemname: file?.name ?? 'unnamed-file',
+                });
+
+                if (response.data?.fileUrl) {
+                    fileUri = response.data.fileUrl;
+                    fileType = response.data.fileType;
+                } else {
+                    console.warn("File URL not returned from backend");
+                    return;
+                }
+            } catch (error) {
+                console.error("Error fetching file URL from backend:", error);
+                return;
+            }
         }
 
-        if (fileType.includes('pdf') || fileType.includes('docx')) {
-            Linking.openURL(fileUri)
+        if (fileType.includes('pdf') || fileType.includes('doc')) {
+            try {
+                await Linking.openURL(fileUri);
+            } catch (error) {
+                console.error("Error opening file URL:", error);
+            }
         }
     };
+
+
 
     const handleDownloadFile = async (file) => {
         try {
@@ -184,44 +206,68 @@ const ViewFilesScreen = () => {
             const fileUrl = response.data.fileUrl;
             const fileType = response.data.fileType;
             const extension = getExtensionFromMime(fileType);
-
-            if (!extension) {
-                throw new Error(`Unsupported file type: ${fileType}`);
-            }
+            if (!extension) throw new Error(`Unsupported file type: ${fileType}`);
 
             const fileName = `${file.name}.${extension}`;
-            const fileUri = FileSystem.documentDirectory + fileName;
-            console.log('Saving to:', fileUri);
+            const localUri = FileSystem.documentDirectory + fileName;
 
-            const { uri, status } = await FileSystem.downloadAsync(fileUrl, fileUri);
-            if (status !== 200) {
-                throw new Error(`Download failed with status ${status}`);
-            }
 
-            const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
-            if (mediaStatus !== 'granted') {
-                showWarningAlert("Permission Denied", "Media Library permission is required.");
-                return;
-            }
+            // Step 1: Download to app storage
+            const { uri: downloadedUri, status } = await FileSystem.downloadAsync(fileUrl, localUri);
+            if (status !== 200) throw new Error(`Download failed with status ${status}`);
 
-            const asset = await MediaLibrary.createAssetAsync(uri);
-            await MediaLibrary.createAlbumAsync("Quick-Docs-Download", asset, false);
+            if (Platform.OS === 'android') {
+                // Step 2: Ask SAF access
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!permissions.granted) {
+                    showWarningAlert("Permission Denied", "Please allow access to save the file.");
+                    return;
+                }
 
-            // ✅ Send push notification 
-            if (deviceExpoNotificationToken) {
-                await sendPushNotification(
-                    deviceExpoNotificationToken,
-                    'Download Completed 📥👍',
-                    `${fileName} has been saved to your device.`
+                const baseDir = permissions.directoryUri;
+
+                // Step 3: Create/Get "Quick Docs" folder inside selected directory
+                let quickDocsUri;
+                try {
+                    quickDocsUri = await FileSystem.StorageAccessFramework.createDirectoryAsync(baseDir, "Quick Docs");
+                } catch (e) {
+                    // Directory may already exist — try to get its URI by appending folder name
+                    quickDocsUri = `${baseDir}/document/primary:Quick-Docs`;
+                }
+
+                // Step 4: Create file handle inside "Quick Docs"
+                const safUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                    quickDocsUri,
+                    fileName,
+                    fileType
                 );
+
+                // Step 5: Read downloaded file
+                const fileContent = await FileSystem.readAsStringAsync(downloadedUri, {
+                    encoding: FileSystem.EncodingType.Base64,
+                });
+
+                // Step 6: Write into SAF file
+                await FileSystem.writeAsStringAsync(safUri, fileContent, {
+                    encoding: FileSystem.EncodingType.Base64,
+                });
+
+                showSuccessAlert("Download Completed", 'Successfully Saved to Quick Docs folder');
+
+                if (deviceExpoNotificationToken) {
+                    await sendPushNotification(
+                        deviceExpoNotificationToken,
+                        'Download Completed 📥',
+                        `${fileName} saved in "Quick Docs" folder.`
+                    );
+                }
             }
 
         } catch (error) {
-            console.error('Error downloading file:', error);
+            console.error('Download Error:', error);
             showErrorAlert("Download Failed", error.message || "Could not download the file.");
         }
     };
-
 
     // Share File
     const handleShareFile = async (file) => {
@@ -301,7 +347,7 @@ const ViewFilesScreen = () => {
                         await sendPushNotification(
                             deviceExpoNotificationToken,
                             'File Deleted 🗑️😔',
-                            `Feeling Sad, Rest in Peace to ${item.name}`
+                            `Feeling Sad, Rest in Peace ${item.name}`
                         );
                     }
                     console.log('Deleted Successfully')
