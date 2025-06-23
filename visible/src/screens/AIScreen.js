@@ -258,7 +258,7 @@ const AIScreen = () => {
             });
 
             const response = await axios.post(
-                `${BACKEND_URL}/transcribe-audio-app`,
+                `${BACKEND_URL}/speech-to-text-app`,
                 formData,
                 {
                     headers: { "Content-Type": "multipart/form-data" },
@@ -280,8 +280,10 @@ const AIScreen = () => {
                 // Auto-hide after 5 seconds
                 setTimeout(() => setShowLanguageInfo(false), 5000);
             }
+            console.log("Transcript: ", transcript)
 
             if (transcript) {
+                console.log("Transcript is not Empty")
                 if (inputMessage) {
                     setInputMessage(inputMessage + " " + transcript);
                 } else {
@@ -289,6 +291,16 @@ const AIScreen = () => {
                 }
                 setTimeout(() => setIsAnalyzing(false), 200);
                 setIsProcessingVoice(false);
+            }
+            else {
+                console.log("Transcript is Empty")
+                setInputMessage('')
+                setAnalysisText('')
+                setIsAnalyzing(false)
+                setIsProcessingVoice(false)
+                setDetectedLanguage(null);
+                setTranslationInfo(null);
+                setShowLanguageInfo(false);
             }
 
         } catch (err) {

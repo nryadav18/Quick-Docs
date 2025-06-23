@@ -234,7 +234,7 @@ const VoiceToVoiceScreen = () => {
                 type: "audio/3gpp",
             });
 
-            const transcribeRes = await axios.post(`${BACKEND_URL}/transcribe-audio-app`, formData, {
+            const transcribeRes = await axios.post(`${BACKEND_URL}/speech-to-text-app`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 

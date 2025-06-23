@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, StatusBar, Platform } from 'react-native';
+import React, { useEffect, useRef, useContext } from 'react';
+import { View, Text, StyleSheet, Animated, Dimensions, StatusBar, Platform, } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scaleFont } from "../components/ScaleFont"
+import { ThemeContext } from '../context/ThemeContext';
 const { width, height } = Dimensions.get('window');
 
 const LoadingScreen = ({ progress }) => {
@@ -23,12 +24,15 @@ const LoadingScreen = ({ progress }) => {
     const barFillAnimation = useRef(new Animated.Value(0)).current;
     const glowAnimation = useRef(new Animated.Value(0)).current;
 
+    // const { isDarkMode } = useContext(ThemeContext);
+    const isDarkMode = true;
     useEffect(() => {
-        StatusBar.setBarStyle('dark-content');
+        StatusBar.setBarStyle(isDarkMode ? 'light-content' : 'dark-content');
+
         if (Platform.OS === 'android') {
-            StatusBar.setBackgroundColor('#89f7fe'); // Your theme
+            StatusBar.setBackgroundColor(isDarkMode ? '#0f0c29' : '#89f7fe');
         }
-    }, []);
+    }, [])
 
     // Initialize animations on mount
     useEffect(() => {
@@ -207,7 +211,7 @@ const LoadingScreen = ({ progress }) => {
 
     return (
         <Animated.View style={styles.container}>
-            <LinearGradient colors={["#89f7fe", "#fad0c4"]} style={styles.gradient}>
+            <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.gradient}>
                 {/* Sparkle effects */}
                 <Animated.View style={[
                     styles.sparkle,
@@ -308,6 +312,7 @@ const LoadingScreen = ({ progress }) => {
                             key={index}
                             style={[
                                 styles.dot,
+                                isDarkMode && { backgroundColor: 'white' },
                                 {
                                     opacity: shimmer,
                                     transform: [{
