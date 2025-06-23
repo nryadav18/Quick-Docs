@@ -923,8 +923,8 @@ const translateWithLingva = async (text, sourceLang, targetLang = 'en') => {
 };
 
 
-// Advanced and Updated transcribe-audio endpoint with free translation
-app.post("/transcribe-audio-app", upload.single("audio"), async (req, res) => {
+// Advanced and Updated speech-to-text endpoint with free translation
+app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
     try {
         const audioBytes = req.file.buffer.toString("base64");
         const audio = { content: audioBytes };
@@ -1123,8 +1123,8 @@ app.post("/transcribe-audio-app", upload.single("audio"), async (req, res) => {
 });
 
 
-// Advanced and Updated transcribe-audio endpoint with free translation
-app.post("/transcribe-audio-web", upload.single("audio"), async (req, res) => {
+// Advanced and Updated speech-to-text endpoint with free translation
+app.post("/speech-to-text-web", upload.single("audio"), async (req, res) => {
     try {
         const audioBytes = req.file.buffer.toString("base64");
         const audio = { content: audioBytes };
