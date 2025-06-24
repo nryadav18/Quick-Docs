@@ -68,6 +68,7 @@ const AppContent = () => {
                             'Content-Type': 'application/json',
                         },
                     });
+                    
                     updateProgress(50);
 
                     if (response.ok) {
