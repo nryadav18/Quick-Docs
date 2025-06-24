@@ -1431,10 +1431,7 @@ app.post('/login', async (req, res) => {
         const trimmedUserName = username.trim();
         const usernameHash = hashValues(trimmedUserName);
         const userNameCheck = await User.findOne({ usernameHash: usernameHash });
-        let userEmailCheck;
-        if (!userNameCheck){
-            userEmailCheck = await User.findOne({ emailHash: usernameHash });
-        }
+        const userEmailCheck = await User.findOne({ emailHash: usernameHash });
 
         if (!userNameCheck && !userEmailCheck) {
             return res.status(400).json({ message: 'User not found' });
