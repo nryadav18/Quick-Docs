@@ -98,7 +98,7 @@ const LoginScreen = () => {
     }, []);
 
     useEffect(() => {
-        
+
         const registerForPushNotificationsAsync = async () => {
             if (Device.isDevice) {
                 const { status: existingStatus } = await Notifications.getPermissionsAsync();

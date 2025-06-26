@@ -13,7 +13,7 @@ const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 const path = require('path')
 const axios = require('axios')
-const { SpeechClient } = require('@google-cloud/speech').v1p1beta1;
+const { SpeechClient } = require('@google-cloud/speech').v1;
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
@@ -786,6 +786,7 @@ app.post('/ask', async (req, res) => {
 
         const prompt = `You are a helpful assistant named Agent QD created by N R Yadav that gives responses based on the files uploaded by the user. You are integrated in a Mobile Application called Quick Docs. Quick Docs App is an Intelligent File Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization and answers. Always answer the questions that you are answering to them, Make sure you are always Agent QD not the user.
 Follow these instructions carefully:
+- College id Card number is same as the Roll Number
 - Don't give data in table, but always give data in Text format
 - Always respond in **${targetLang}**
 - Use natural, conversational tone
@@ -800,7 +801,7 @@ ${systemContext}
 Question: ${lowerQuestion}`;
 
         const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -818,6 +819,9 @@ Question: ${lowerQuestion}`;
         );
 
         const data = await geminiRes.json();
+
+        console.log(data)
+        console.log(process.env.GOOGLE_CLOUD_API)
 
         const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No meaningful response.';
 
@@ -1109,7 +1113,7 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
             confidence: bestResult.confidence,
             translationInfo: translationInfo,
             success: true,
-            originalText : bestResult.transcript
+            originalText: bestResult.transcript
         });
 
     } catch (err) {

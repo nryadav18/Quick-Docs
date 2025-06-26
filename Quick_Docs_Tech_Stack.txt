@@ -15,8 +15,8 @@ GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)
  2. Google Translate API (For Auto detecting Language and Translating the services)
- 3. Cloud Speech to Text API - Tel, Hin, Eng
- 4. Cloud Text to Speech API - Tel, Hin, Eng
+ 3. Cloud Speech to Text API - Tel, Eng
+ 4. Cloud Text to Speech API - Tel, Eng
 
 Voice to Voice Communication AI Assistant
 
@@ -24,7 +24,7 @@ Do they need to buy the premium directly without experiencing the application? N
 
 AI Agent: 
 *5. Vision AI API (Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications. Used for: Model Garden)
- 6. Gemini 1.5 PRO LLM API (RAG) & Privacy with User Specific Information - Chat with Local Texting Messages and also regional language messages too.
+ 6. Gemini 2.5 PRO LLM API (RAG) & Privacy with User Specific Information - Chat with Local Texting Messages and also regional language messages too.
 
 Animated Progress Bar for Auto Logging in
 JWT Tokens (Authorization, Token Generation)
@@ -48,11 +48,12 @@ Custom Hook Creation (Code Optimisation Techniques, Code Reusability for efficie
 
 Which other Technologies we Integrated?
 
-Full Stack Web - our Tech
-Mobile App Dev 
-GCP - Google Cloud Tech
-AI - Generative AI
-AES and BCRYPT Hashing - Cyber Security
+1. Full Stack Web - our Tech
+2. Mobile App Development
+3. GCP - Google Cloud Platform
+4. AI - Generative AI
+5. AES and BCRYPT Hashing - Cyber Security
+6. Analytical Dashboard - Data Analytics
 
 --------------------------------------------
 
