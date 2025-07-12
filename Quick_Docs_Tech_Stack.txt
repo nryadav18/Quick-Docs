@@ -1,17 +1,17 @@
 Quick Docs Tech Stack:
 
-React Native Expo SDK 53 (Updated)
-Zustand (React Native friendly Global State Management)
-+ Expo-Secure-Storage (Token Based Authentication and Auto Load of User Account until logged out or deactivate)
+1. React Native Expo SDK 53 (Updated)
+2. Zustand (React Native friendly Global State Management)
+3. Expo-Secure-Storage (Token Based Authentication and Auto Load of User Account until logged out or deactivate)
 Zustand	- Light weighted ~1.1 KB - SSR-safe - Simple, minimal, reactive
 
-Node.js, Express.js, MongoDB
+4. Node.js, Express.js, MongoDB
 
-FingerPrint Authenticaton/ PIN Authentication
+5. FingerPrint Authenticaton/ PIN Authentication
 
-AI Analysing Dashboard Screen using User Data
+6. AI Analysing Dashboard Screen using User Data
 
-GCS (Google Cloud Services)
+7. GCS (Google Cloud Services)
 Cloud Storage (Google)
  1. Vertex API (Google)
  2. Google Translate API (For Auto detecting Language and Translating the services)

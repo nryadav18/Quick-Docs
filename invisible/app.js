@@ -374,7 +374,7 @@ app.get('/validate-user', authenticateToken, async (req, res) => {
         res.status(200).json({ decryptedUser, dashboard });
     } catch (error) {
         console.error('Error fetching user data:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(401).json({ message: 'Unauthorized Access' });
     }
 });
 
@@ -733,6 +733,7 @@ app.post('/ask', async (req, res) => {
         const langMap = {
             'en-IN': 'English',
             'te-IN': 'Telugu',
+            'hi-IN': 'Hindi',
         };
 
         const targetLang = langMap[detectedLanguage] || 'English';
@@ -781,6 +782,8 @@ app.post('/ask', async (req, res) => {
                 .filter(Boolean)
                 .join('\n---\n');
         }
+
+        console.log("Targetted Language: ", targetLang)
 
         const systemContext = topMatches || 'No user files matched. Use only your personality and app knowledge.';
 
@@ -938,7 +941,7 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
 
         // Test multiple languages in parallel   
 
-        const languagesToTest = ['en-US', 'en-IN', 'te-IN'];
+        const languagesToTest = ['en-IN', 'te-IN', 'hi-IN'];
 
         const recognitionPromises = languagesToTest.map(async (langCode) => {
             try {
@@ -1014,7 +1017,7 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
                 // Map language codes for different APIs
                 const langMap = {
                     'hi': 'hi',
-                    'te': 'te'
+                    'te': 'te',
                 };
 
                 const sourceLang = langMap[langCode] || langCode;
