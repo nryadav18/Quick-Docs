@@ -10,11 +10,18 @@ web-build/
 expo-env.d.ts
 .env
 **/.env
-visible/yadavmainserver-686fc016f695.json
-visible/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
 **/package-lock.json
-visible/eas.json
 
+# visible hidden:
+visible/eas.json
+visible/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
+visible/firebaseConfig.json
+visible/google-services.json
+visible/yadavmainserver-686fc016f695.json
+
+# invisible hidden:
+invisible/qd-bucket-credential.json
+invisible/qd-speech-api-user.json
 
 GCP_Services.txt
 
