@@ -61,7 +61,7 @@ quick-docs/
 
 ## 📦 Packages Used
 
-```bash
+
 "axios", "zustand", "expo-secure-store", "expo-local-authentication",
 "react-native-voice", "react-native-push-notification",
 "express", "cors", "jsonwebtoken", "pdf-parse", "mammoth",
