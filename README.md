@@ -11,7 +11,7 @@
 
 ## 🎬 App Demo
 
-👉 [📽️ Click here to watch the screen recording](./videos/quickdocs-demo.mp4)
+👉 [📽️ Click here to watch the screen recording](./videos/Quick-Docs.mp4)
 
 _(Preview not working? Right-click > "Open link in new tab" or download)_
 
