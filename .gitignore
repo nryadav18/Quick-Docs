@@ -10,8 +10,11 @@ web-build/
 expo-env.d.ts
 .env
 **/.env
-**/yadavmainserver-686fc016f695.json
-**/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
+visible/yadavmainserver-686fc016f695.json
+visible/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
+**/package-lock.json
+visible/eas.json
+
 
 GCP_Services.txt
 
