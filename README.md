@@ -20,11 +20,11 @@ _(Preview not working? Right-click > "Open link in new tab" or download)_
 ## 📂 Folder Structure
 
 quick-docs
-├── videos # 📽️ Demo recordings
-├── visible # 📱 React Native frontend
-├── invisible # 🧠 Backend with Node.js + MongoDB
-├── testing # 🧪 Sample test files (PDF, DOCX)
-├── docs # 📊 Presentations, PPTs
+videos # 📽️ Demo recordings
+visible # 📱 React Native frontend
+invisible # 🧠 Backend with Node.js + MongoDB
+testing # 🧪 Sample test files (PDF, DOCX)
+docs # 📊 Presentations, PPTs
 
 
 ---
