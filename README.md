@@ -113,7 +113,7 @@ quick-docs:
 "express", "cors", "jsonwebtoken", "pdf-parse", "mammoth",
 "@google-cloud/translate", "@google-cloud/vision",
 "@google-cloud/text-to-speech", "@google-cloud/speech",
-"@google-cloud/storage", "@google-cloud/aiplatform"![firebase-a08021](https://github.com/user-attachments/assets/42e77342-a29b-41c1-b8b8-29dd50886515)
+"@google-cloud/storage", "@google-cloud/aiplatform"
 
 
 🔓 Monetization
@@ -121,7 +121,7 @@ quick-docs:
 
 💎 Premium Access: Unlock full features with RazorPay
 
-<p align="left"> <img src="https://reactnative.dev/img/header_logo.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mongodb/mongodb-original-wordmark.svg" width="40" height="40" /> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original-wordmark.svg" width="40" height="40" /> </p>
+<p align="left"> <img src="https://reactnative.dev/img/header_logo.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mongodb/mongodb-original-wordmark.svg" width="40" height="40" /> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original-wordmark.svg" width="40" height="40" /> ![firebase-a08021](https://github.com/user-attachments/assets/42e77342-a29b-41c1-b8b8-29dd50886515)</p>
 
 # Clone the repo
 git clone https://github.com/nryadav18/quick-docs.git
