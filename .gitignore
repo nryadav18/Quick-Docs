@@ -15,8 +15,8 @@ expo-env.d.ts
 # visible hidden:
 visible/eas.json
 visible/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
-visible/firebaseConfig.json
-visible/google-services.json
+**/firebaseConfig.js
+**/google-services.json
 visible/yadavmainserver-686fc016f695.json
 
 # invisible hidden:
