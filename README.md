@@ -3,7 +3,7 @@
 
 ---
 
-🔐 A full-stack mobile app that allows users to securely upload documents and chat with them using AI (Gemini 2.5 Pro), Voice, and Vision APIs. Built with React Native, Node.js, MongoDB, and Google Cloud AI services.
+🔐 A Full-Stack Mobile App that allows Users to securely upload documents and Chat, Talk with them using AI, Integrated Voice and Vision APIs. Built with React Native Expo, Node.js, Express.js, MongoDB and Google Cloud Platform services.
 
 📱 Designed for mobile. Built for intelligence.
 
