@@ -121,8 +121,6 @@ quick-docs:
 
 💎 Premium Access: Unlock full features with RazorPay
 
-<p align="left"> <a href="https://linkedin.com/in/nryadav18" target="blank"><img src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/linked-in-alt.svg" height="30" width="40" /></a> <a href="https://www.leetcode.com/rajeswar_2004" target="blank"><img src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/leet-code.svg" height="30" width="40" /></a> <a href="https://auth.geeksforgeeks.org/user/nryadav_18" target="blank"><img src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/geeks-for-geeks.svg" height="30" width="40" /></a> <a href="https://www.codechef.com/users/nryadav_18" target="_blank"> <img src="https://avatars.githubusercontent.com/u/11960354?v=4" height="30" width="40" /> </a> </p>
-
 <p align="left"> <img src="https://reactnative.dev/img/header_logo.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mongodb/mongodb-original-wordmark.svg" width="40" height="40" /> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original-wordmark.svg" width="40" height="40" /> </p>
 
 # Clone the repo
