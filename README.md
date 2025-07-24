@@ -123,16 +123,30 @@ quick-docs:
 
 <p align="left"> <img src="https://reactnative.dev/img/header_logo.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mongodb/mongodb-original-wordmark.svg" width="40" height="40" /> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original-wordmark.svg" width="40" height="40" /> </p>
 
-# Clone the repo
+### Clone the repo
+```bash
 git clone https://github.com/nryadav18/quick-docs.git
 cd quick-docs
+```
 
-# Frontend (React Native)
+## Frontend (React Native)
+### Installation
+```bash
 cd visible
 npm install
+```
+### Running the Frontend
+```bash
 npx expo start
+```
 
-# Backend (Node.js)
+## Backend (Node.js + Express)
+### Installation
+```bash
 cd ../invisible
 npm install
+```
+### Running the Server
+```bash
 npm run dev
+```
