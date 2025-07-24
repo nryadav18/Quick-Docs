@@ -107,14 +107,25 @@ quick-docs:
 
 ## 📦 Packages Used
 
-
-"axios", "zustand", "expo-secure-store", "expo-local-authentication",
-"react-native-voice", "react-native-push-notification",
-"express", "cors", "jsonwebtoken", "pdf-parse", "mammoth",
-"@google-cloud/translate", "@google-cloud/vision",
-"@google-cloud/text-to-speech", "@google-cloud/speech",
-"@google-cloud/storage", "@google-cloud/aiplatform"
-
+```bash
+"axios"
+"zustand"
+"expo-secure-store"
+"expo-local-authentication"
+"react-native-voice"
+"react-native-push-notification"
+"express"
+"cors"
+"jsonwebtoken"
+"pdf-parse"
+"mammoth"
+"@google-cloud/translate"
+"@google-cloud/vision"
+"@google-cloud/text-to-speech"
+"@google-cloud/speech"
+"@google-cloud/storage"
+"@google-cloud/aiplatform"
+```
 
 🔓 Monetization
 🆓 Free Tier: Upload 1 doc + 3 AI queries
