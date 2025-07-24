@@ -102,17 +102,17 @@ const VoiceToVoiceScreen = () => {
     };
 
     const startRecording = async () => {
-        if (!user?.premiumuser) {
-            navigation.navigate('Premium');
-            return;
-        }
+        // if (!user?.premiumuser) {
+        //     navigation.navigate('Premium');
+        //     return;
+        // }
 
-        const planNames = user?.premiumDetails.map(p => { return p.type || '' });
+        // const planNames = user?.premiumDetails.map(p => { return p.type || '' });
 
-        if (!planNames.some(name => name.includes('Ultra Pro Max'))) {
-            navigation.navigate('Premium');
-            return;
-        }
+        // if (!planNames.some(name => name.includes('Ultra Pro Max'))) {
+        //     navigation.navigate('Premium');
+        //     return;
+        // }
 
         await requestMicrophonePermission();
 
@@ -221,18 +221,6 @@ const VoiceToVoiceScreen = () => {
         return `data:audio/mp3;base64,${response.data.audioContent}`;
     };
 
-    const getHindiAudioFromGoogleTTS = async (text) => {
-        const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
-            text,
-            languageCode: 'hi-IN',
-            name: "hi-IN-Chirp3-HD-Achernar",
-            ssmlGender: 'MALE',
-            audioEncoding: 'MP3',
-            speakingRate: 1.0
-        });
-        return `data:audio/mp3;base64,${response.data.audioContent}`;
-    };
-
     const handleVoiceToVoice = async (audioUri) => {
         const { updateDashboardEntry } = useUserStore.getState();
         setIsSpeaking(false);
@@ -301,27 +289,6 @@ const VoiceToVoiceScreen = () => {
                     // Use Google Cloud TTS for Telugu
                     try {
                         const audioURI = await getTeluguAudioFromGoogleTTS(answer);
-                        await playBase64Audio(audioURI);
-                    } catch (error) {
-                        setLoading(false);
-                        setIsSpeaking(false);
-                        console.error('TTS Error:', error.message);
-                        if (error.response) {
-                            // Server responded with a status other than 2xx
-                            console.error('Response Data:', error.response.data);
-                            console.error('Status Code:', error.response.status);
-                        } else if (error.request) {
-                            // No response received
-                            console.error('No response received:', error.request);
-                        } else {
-                            // Something else went wrong
-                            console.error('Unexpected error:', error);
-                        }
-                    }
-                } else if (langCode.startsWith('hi')) {
-                    console.log("It's Finally Hindi")
-                    try {
-                        const audioURI = await getHindiAudioFromGoogleTTS(answer);
                         await playBase64Audio(audioURI);
                     } catch (error) {
                         setLoading(false);
@@ -533,8 +500,7 @@ const VoiceToVoiceScreen = () => {
     const getLanguageName = (languageCode) => {
         const languageNames = {
             'en-IN': 'English',
-            'te-IN': 'Telugu',
-            'hi-IN': 'Hindi',
+            'te-IN': 'Telugu'
         };
 
         return languageNames[languageCode] || languageCode;

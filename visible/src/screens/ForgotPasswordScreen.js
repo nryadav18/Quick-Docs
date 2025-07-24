@@ -32,7 +32,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     const [showPassword, setShowPassword] = useState(false); // For toggling password visibility
 
-    //My Custom Alert Functions
+    // My Custom Alert Functions
     const showErrorAlert = (title, message) => {
         setErrorTitle(title)
         setErrorMessage(message)

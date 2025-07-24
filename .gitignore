@@ -20,8 +20,7 @@ visible/yadavmainserver-firebase-adminsdk-j807m-a298c237d9.json
 visible/yadavmainserver-686fc016f695.json
 
 # invisible hidden:
-invisible/qd-bucket-credential.json
-invisible/qd-speech-api-user.json
+invisible/quick-docs-bucket-service-account.json
 
 GCP_Services.txt
 
