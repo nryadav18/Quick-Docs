@@ -14,52 +14,54 @@
 [🔗 Click Here To Download App Video](https://raw.githubusercontent.com/nryadav18/Quick-Docs/main/videos/Quick-Docs.mp4)
 
 <p align="center">
-  <img src="./outputs/1.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/2.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/3.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/1.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/2.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/3.jpg" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/4.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/5.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/6.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/4.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/5.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/6.jpg" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/7.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/8.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/9.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/7.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/8.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/9.jpg" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/10.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/11.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/12.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/10.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/11.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/12.jpg" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/13.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/14.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/15.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/13.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/14.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/15.jpg" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/16.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/17.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/18.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/16.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/17.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/18.jpg" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/19.png" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/20.png" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/21.png" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/19.png" width="30%" style="margin: 150px;" />
+  <img src="./outputs/20.png" width="30%" style="margin: 150px;" />
+  <img src="./outputs/21.png" width="30%" style="margin: 150px;" />
 </p>
 
 <p align="center">
-  <img src="./outputs/22.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/23.png" alt="Login Page" width="30%" style="margin: 150px;" />
-  <img src="./outputs/24.jpg" alt="Login Page" width="30%" style="margin: 150px;" />
+  <img src="./outputs/22.jpg" width="30%" style="margin: 150px;" />
+  <img src="./outputs/23.png" width="30%" style="margin: 150px;" />
+  <img src="./outputs/24.jpg" width="30%" style="margin: 150px;" />
 </p>
+
+<img src="./outputs/backendOutput.png" width="100%" />
 
 ---
 

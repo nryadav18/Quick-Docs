@@ -1,45 +1,122 @@
-Team Name: PAGE STAGE ENGAGE
+<h1 align="center" style="font-size:40px;">🚀 Quick Docs — AI-Powered Secure Document Assistant</h1>
+<h3 align="center">Secure | Translate | Summarize | Speak with Docs — All on Mobile</h3>
 
-Project Title: Quick Docs – Document Storage + AI Summarizer
+---
 
-Project Description:
+🔐 A Full-Stack Mobile App that allows Users to securely upload documents and Chat, Talk with them using AI, Integrated Voice and Vision APIs. Built with React Native Expo and Zustand for Frontend.
 
-    Quick Docs App is an Intelligent Document Management mobile solution that securely stores important files while providing an AI-powered chatbot for quick summarization. Users can upload their crucial documents and instantly receive concise summaries, helping them grasp key information without reading lengthy texts. Quick Docs App streamlines document handling for students, professionals, and business users. The app ensures that retrieving and understanding important data is both fast and effortless, making it an essential tool for daily productivity.
+📱 Designed for mobile. Built for intelligence.
 
+---
 
-Meaning and Interpretation:
+## 🎬 App Demo
 
-- Page: This directly and clearly refers to the documents users will be interacting with. It's straightforward and immediately connects to the core functionality of the app.
+[🔗 Click Here To Download App Video](https://raw.githubusercontent.com/nryadav18/Quick-Docs/main/videos/Quick-Docs.mp4)
 
-- Stage: This is where the metaphorical richness comes in. A "stage" is a platform where something important is presented or highlighted. In the context of your app, the AI summarizer acts as a director, bringing the key information from a lengthy document to the forefront – onto the "Page Stage." It suggests:
-    - Highlighting: The most crucial parts of the document are brought into focus.
-    - Presentation: The summary is a concise and clear presentation of the core content.
-    - Importance: What's on stage is what matters most.
+<p align="center">
+  <img src="./frontend_outputs/1.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/2.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/3.jpg" width="30%" style="margin: 150px;" />
+</p>
 
-- Engage: This is a dynamic call to action. It encourages users to actively interact with the summarized information. It suggests:
-    - Understanding: The summary invites you to grasp the key points.
-    - Action: It prompts you to use the summarized information for your tasks.
-    - Involvement: It's not just passive reading, but an active engagement with the content.
+<p align="center">
+  <img src="./frontend_outputs/4.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/5.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/6.jpg" width="30%" style="margin: 150px;" />
+</p>
 
+<p align="center">
+  <img src="./frontend_outputs/7.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/8.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/9.jpg" width="30%" style="margin: 150px;" />
+</p>
 
-Why it works well for "Quick Docs":
+<p align="center">
+  <img src="./frontend_outputs/10.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/11.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/12.jpg" width="30%" style="margin: 150px;" />
+</p>
 
-- Uniqueness: While "page" and "engage" are common words, the combination with "stage" in this context creates a distinctive and memorable name.
+<p align="center">
+  <img src="./frontend_outputs/13.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/14.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/15.jpg" width="30%" style="margin: 150px;" />
+</p>
 
-- Implied Functionality: It subtly hints at both document handling ("Page") and the AI summarization bringing key points to the forefront ("Stage"), leading to active understanding ("Engage").
+<p align="center">
+  <img src="./frontend_outputs/16.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/17.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/18.jpg" width="30%" style="margin: 150px;" />
+</p>
 
-- Positive Connotation: "Stage" has a generally positive connotation, suggesting importance and clarity. "Engage" is also active and encouraging.
+<p align="center">
+  <img src="./frontend_outputs/19.png" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/20.png" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/21.png" width="30%" style="margin: 150px;" />
+</p>
 
-- Rhyme and Rhythm: The rhyme between "Stage" and "Engage" makes it catchy and easy to remember. The rhythm of the three words also flows well.
+<p align="center">
+  <img src="./frontend_outputs/22.jpg" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/23.png" width="30%" style="margin: 150px;" />
+  <img src="./frontend_outputs/24.jpg" width="30%" style="margin: 150px;" />
+</p>
 
-- Enthusiasm: The active verb "Engage" injects a sense of energy and encourages interaction with the app.
+---
 
-Taglines:
+## 💡 Features
 
-    - "Page Stage Engage: Understand Your Documents Instantly."
-    - "Bring Key Insights to the Page Stage and Engage with What Matters."
-    - "Your Documents Take Center Stage. You Simply Engage."
+- 🧠 Gemini Pro (2.5) via Vertex AI — Chat with documents (PDF, DOCX)
+- 🗣️ Voice Assistant — voice-to-voice AI using Cloud TTS & STT
+- 📸 Google Vision AI — OCR, Face, Logo, Landmark, Content moderation
+- 🌐 Google Translate — auto-detect language, translate content
+- 🔐 AES encryption + JWT auth + Expo Secure Storage
+- 🧾 RazorPay integration for monetization (free & premium tiers)
+- 📊 AI Dashboard with document history & insights
 
-Overall Impression:
+---
 
-    "Page Stage Engage" is a clever and evocative name that manages to be both meaningful and memorable. It hints at the core functionality of your app in an engaging and slightly theatrical way. It suggests that your app transforms dense documents into easily digestible and actionable insights.
+## 🧰 Tech Stack
+
+### 💻 Frontend (visible/)
+- React Native Expo SDK 53
+- Zustand (lightweight global state)
+- Firebase Cloud Messaging (v1)
+- Expo Secure Storage + Biometrics
+- EAS Build system
+
+---
+
+## 📦 Packages Used
+
+```bash
+"axios"
+"zustand"
+"expo-secure-store"
+"expo-local-authentication"
+"react-native-voice"
+"react-native-push-notification"
+```
+
+🔓 Monetization
+🆓 Free Tier: Upload 1 doc + 3 AI queries
+
+💎 Premium Access: Unlock full features with RazorPay
+
+<p align="left"> <img src="https://reactnative.dev/img/header_logo.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/nodejs/nodejs-original-wordmark.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/mongodb/mongodb-original-wordmark.svg" width="40" height="40" /> <img src="https://www.vectorlogo.zone/logos/firebase/firebase-icon.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" width="40" height="40" /> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/express/express-original-wordmark.svg" width="40" height="40" /> </p>
+
+### Clone the repo
+```bash
+git clone https://github.com/nryadav18/quick-docs.git
+cd quick-docs
+```
+
+### Installation
+```bash
+cd visible
+npm install
+```
+
+### Running the Frontend
+```bash
+npx expo start
+```
