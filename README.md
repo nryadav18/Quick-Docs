@@ -1,4 +1,4 @@
-<h1 align="center" style="font-size:40px;">🚀 Quick Docs — AI-Powered Secure Document Assistant</h1>
+<h1 align="center" style="font-size:40px;">🚀 Quick Docs — AI-Powered Secure Document Assistant</h1> 
 <h3 align="center">Secure | Translate | Summarize | Speak with Docs — All on Mobile</h3>
 
 ---
