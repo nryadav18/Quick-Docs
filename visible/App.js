@@ -7,7 +7,7 @@ import useUserStore from './src/store/userStore';
 import * as Notifications from 'expo-notifications';
 import * as MediaLibrary from 'expo-media-library';
 import * as SecureStore from 'expo-secure-store';
-import './firebaseConfig'
+// import './firebaseConfig'
 import LoadingScreen from './src/screens/LoadingScreen';
 import { BACKEND_URL } from '@env';
 import { Text, TextInput } from 'react-native';

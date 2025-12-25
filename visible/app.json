@@ -20,7 +20,6 @@
       "supportsTablet": true
     },
     "android": {
-      "googleServicesFile": "./google-services.json",
       "permissions": [
         "NOTIFICATIONS",
         "READ_EXTERNAL_STORAGE",
@@ -55,7 +54,9 @@
           "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-font"
     ],
     "web": {
       "favicon": "./assets/updatedLogo1.png"
