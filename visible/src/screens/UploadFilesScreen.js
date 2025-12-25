@@ -26,6 +26,7 @@ import { BACKEND_URL } from '@env';
 import { AppState } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { scaleFont } from "../components/ScaleFont"
+import ComingSoon from './ComingSoonScreen';
 
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -255,105 +256,111 @@ const UploadFilesScreen = () => {
     const { width: previewWidth, height: previewHeight } = calculatePreviewSize();
 
     return (
-        <LinearGradient
-            colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
-            style={[styles.container, isDarkMode && styles.darkContainer]}
-        >
-            <ScrollView showsVerticalScrollIndicator={false}>
-                <Text style={[styles.title, isDarkMode && styles.darkTitle]}>Upload a File</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter File Name"
-                    onChangeText={setFileName}
-                    value={fileName}
-                    placeholderTextColor="#666"
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter importance (1 to 5)"
-                    keyboardType="numeric"
-                    maxLength={1}
-                    value={importance}
-                    onChangeText={setImportance}
-                    placeholderTextColor="#666"
-                />
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
-                        <Text style={styles.buttonText}>Choose File</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.uploadButton} onPress={takePhoto}>
-                        <Text style={styles.buttonText}>Take Photo</Text>
-                    </TouchableOpacity>
-                </View>
-                <View
-                    style={[
-                        styles.previewContainer,
-                        isDarkMode && styles.darkPreviewContainer,
-                        { width: previewWidth, height: previewHeight },
-                    ]}
-                >
-                    {file ? (
-                        fileType && fileType.includes('pdf') ? (
-                            <Image
-                                source={require('../../assets/pdf.png')}
-                                style={{ width: '60%', height: '60%' }}
-                                resizeMode="contain"
-                            />
-                        ) : (
-                            <Image source={{ uri: file }} style={{ width: '100%', height: '100%', resizeMode: 'contain' }} />
-                        )
-                    ) : (
-                        <Text style={[styles.noFileText, isDarkMode && { color: 'white' }]}>
-                            Upload File with Less than 5MB and Preview your File
-                        </Text>
-                    )}
-                </View>
-                {
-                    (
-                        (!user?.premiumuser && (user?.myfiles?.length) >= 1) ||
-                        (
-                            user?.premiumuser &&
-                            (user?.premiumDetails?.length) === 1 &&
-                            user?.premiumDetails?.[0]?.type === 'Pro Plan' &&
-                            (user?.myfiles?.length) >= 10
-                        )
-                    ) ? (
-                        <TouchableOpacity
-                            style={[
-                                styles.submitButton,
-                                { backgroundColor: isDarkMode ? 'rgba(209, 184, 17, 0.26)' : '#E9A319' }
-                            ]}
-                            onPress={() => navigation.navigate('Premium')}
-                        >
-                            <View style={styles.buttonStylings}>
-                                <CrownIcon name="crown" size={24} color="#FFD700" />
-                                <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
-                                    Buy Premium to Upload
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity style={styles.submitButton} onPress={uploadFile}>
-                            {uploadingState ? (
-                                <ActivityIndicator color="white" />
-                            ) : (
-                                <View style={styles.buttonStylings}>
-                                    <FontAwesome5 name="file-upload" size={24} color="white" />
-                                    <Text style={styles.buttonText}>Upload File</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    )
-                }
 
-            </ScrollView>
 
-            {/* Alert Components */}
-            <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
-            <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
-            <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
-            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
+        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
+            <ComingSoon />
         </LinearGradient>
+
+        // <LinearGradient
+        //     colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
+        //     style={[styles.container, isDarkMode && styles.darkContainer]}
+        // >
+        //     <ScrollView showsVerticalScrollIndicator={false}>
+        //         <Text style={[styles.title, isDarkMode && styles.darkTitle]}>Upload a File</Text>
+        //         <TextInput
+        //             style={styles.input}
+        //             placeholder="Enter File Name"
+        //             onChangeText={setFileName}
+        //             value={fileName}
+        //             placeholderTextColor="#666"
+        //         />
+        //         <TextInput
+        //             style={styles.input}
+        //             placeholder="Enter importance (1 to 5)"
+        //             keyboardType="numeric"
+        //             maxLength={1}
+        //             value={importance}
+        //             onChangeText={setImportance}
+        //             placeholderTextColor="#666"
+        //         />
+        //         <View style={styles.buttonContainer}>
+        //             <TouchableOpacity style={styles.uploadButton} onPress={pickFile}>
+        //                 <Text style={styles.buttonText}>Choose File</Text>
+        //             </TouchableOpacity>
+        //             <TouchableOpacity style={styles.uploadButton} onPress={takePhoto}>
+        //                 <Text style={styles.buttonText}>Take Photo</Text>
+        //             </TouchableOpacity>
+        //         </View>
+        //         <View
+        //             style={[
+        //                 styles.previewContainer,
+        //                 isDarkMode && styles.darkPreviewContainer,
+        //                 { width: previewWidth, height: previewHeight },
+        //             ]}
+        //         >
+        //             {file ? (
+        //                 fileType && fileType.includes('pdf') ? (
+        //                     <Image
+        //                         source={require('../../assets/pdf.png')}
+        //                         style={{ width: '60%', height: '60%' }}
+        //                         resizeMode="contain"
+        //                     />
+        //                 ) : (
+        //                     <Image source={{ uri: file }} style={{ width: '100%', height: '100%', resizeMode: 'contain' }} />
+        //                 )
+        //             ) : (
+        //                 <Text style={[styles.noFileText, isDarkMode && { color: 'white' }]}>
+        //                     Upload File with Less than 5MB and Preview your File
+        //                 </Text>
+        //             )}
+        //         </View>
+        //         {
+        //             (
+        //                 (!user?.premiumuser && (user?.myfiles?.length) >= 1) ||
+        //                 (
+        //                     user?.premiumuser &&
+        //                     (user?.premiumDetails?.length) === 1 &&
+        //                     user?.premiumDetails?.[0]?.type === 'Pro Plan' &&
+        //                     (user?.myfiles?.length) >= 10
+        //                 )
+        //             ) ? (
+        //                 <TouchableOpacity
+        //                     style={[
+        //                         styles.submitButton,
+        //                         { backgroundColor: isDarkMode ? 'rgba(209, 184, 17, 0.26)' : '#E9A319' }
+        //                     ]}
+        //                     onPress={() => navigation.navigate('Premium')}
+        //                 >
+        //                     <View style={styles.buttonStylings}>
+        //                         <CrownIcon name="crown" size={24} color="#FFD700" />
+        //                         <Text style={[styles.buttonText, isDarkMode && { color: '#FFF085' }]}>
+        //                             Buy Premium to Upload
+        //                         </Text>
+        //                     </View>
+        //                 </TouchableOpacity>
+        //             ) : (
+        //                 <TouchableOpacity style={styles.submitButton} onPress={uploadFile}>
+        //                     {uploadingState ? (
+        //                         <ActivityIndicator color="white" />
+        //                     ) : (
+        //                         <View style={styles.buttonStylings}>
+        //                             <FontAwesome5 name="file-upload" size={24} color="white" />
+        //                             <Text style={styles.buttonText}>Upload File</Text>
+        //                         </View>
+        //                     )}
+        //                 </TouchableOpacity>
+        //             )
+        //         }
+
+        //     </ScrollView>
+
+        //     {/* Alert Components */}
+        //     <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
+        //     <WarningAlert visible={warningAlertVisible} title={warningTitle} message={warningMessage} onOk={() => setWarningAlertVisible(false)} onCancel={() => setWarningAlertVisible(false)} />
+        //     <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
+        //     <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
+        // </LinearGradient>
     );
 };
 
@@ -410,7 +417,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     darkPreviewContainer: { backgroundColor: '#121212' },
-    noFileText: { fontSize: scaleFont(14),  color: '#888', textAlign : 'center' },
+    noFileText: { fontSize: scaleFont(14), color: '#888', textAlign: 'center' },
 });
 
 export default UploadFilesScreen;

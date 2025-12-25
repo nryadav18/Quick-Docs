@@ -17,6 +17,7 @@ import CrownIcon from 'react-native-vector-icons/FontAwesome5';
 import { BACKEND_URL } from '@env';
 const { setAlreadyLoggedIn } = useUserStore.getState();
 import { scaleFont } from "../components/ScaleFont"
+import ComingSoon from './ComingSoonScreen';
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
@@ -257,254 +258,259 @@ const ProfileScreen = () => {
 
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-            <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
-                {/* Header */}
-                <View style={[styles.header, isDarkMode && styles.darkHeader]}>
-                    <TouchableOpacity onPress={pickImage}>
-                        <View style={{ position: 'relative' }}>
 
-                            {/* Profile Image */}
-                            <Image
-                                key={user?.profileImageUrl ? `${user.profileImageUrl}` : 'default-image'}
-                                source={
-                                    user?.profileImageUrl
-                                        ? { uri: `${user.profileImageUrl}` }
-                                        : require('../../assets/updatedLogo1.png')
-                                }
-                                style={styles.profileImage}
-                                priority="high"
-                            />
+        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
+            <ComingSoon />
+        </LinearGradient>
 
+        // <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+        //     <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
+        //         {/* Header */}
+        //         <View style={[styles.header, isDarkMode && styles.darkHeader]}>
+        //             <TouchableOpacity onPress={pickImage}>
+        //                 <View style={{ position: 'relative' }}>
 
-                            {/* Camera Icon */}
-                            <View style={styles.cameraIcon}>
-                                <Ionicons name="camera" size={20} color="#FFF" />
-                            </View>
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={[styles.name, isDarkMode && styles.darkText]}>{user?.name}</Text>
-                    <View
-                        style={[
-                            {
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                justifyContent: 'flex-end',
-                                gap: 10,
-                            },
-                            user?.premiumuser && {
-                                paddingVertical: 8,
-                                backgroundColor: isDarkMode ? 'rgba(255, 221, 2, 0.28)' : '#E9A319',
-                                paddingHorizontal: 26,
-                                borderRadius: 30,
-                            },
-                        ]}
-                    >
-                        {!!user?.username && (
-                            <Text style={[styles.username, isDarkMode && styles.darkSubText]}>
-                                {user?.username}
-                            </Text>
-                        )}
-                        {user?.premiumuser && (
-                            <CrownIcon
-                                name="crown"
-                                size={18}
-                                color="#FFD700"
-                                style={styles.crownContainer}
-                            />
-                        )}
-                    </View>
-                </View>
-
-                {/* Stats Card */}
-                <View style={[styles.card, isDarkMode && styles.darkCard]}>
-                    <View style={styles.statRow}>
-                        <View style={styles.statItem}>
-                            <Ionicons name="document-text-outline" size={30} color="#00796b" />
-                            <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>{user.myfiles.length}</Text>
-                            <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>Files Uploaded</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="calendar-outline" size={30} color="#FF8C00" />
-                            <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>
-                                {user?.dob ? formatDate(user.dob) : 'N/A'}
-                            </Text>
-                            <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
-                                Date of Birth
-                            </Text>
-                        </View>
-                    </View>
-                    <View style={[styles.statRow, styles.emailRow]}>
-                        <View style={styles.statItem}>
-                            <Ionicons name="mail-outline" size={30} color="#CB0404" />
-                            <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>
-                                {user?.email ?? 'N/A'}
-                            </Text>
-                            <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>Email</Text>
-                        </View>
-                    </View>
-                    {
-                        user?.premiumuser && (user?.premiumDetails.length >= 2 ||
-                            (user?.premiumDetails.length == 1 && user?.premiumDetails[0].type != "Pro Plan")
-                        ) && (
-                            <View style={[styles.statRow, { marginTop: 10 }]}>
-                                <View style={[styles.statItem, { gap: 10 }]}>
-                                    {countdown === '🎉 Happy Birthday!' ? <BirthdayIcon name="birthday-cake" size={30} color="#DC8BE0" />
-                                        : <Ionicons name="time-outline" size={30} color="#DC8BE0" />}
-                                    <Text style={[styles.statNumber, isDarkMode && styles.darkText,
-                                    countdown === '🎉 Happy Birthday!' ? { fontSize: scaleFont(22) } : { fontSize: scaleFont(18) }]}>
-                                        {countdown === '🎉 Happy Birthday!' ? '🎉 Happy Birthday!' : countdown}
-                                    </Text>
-                                    <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
-                                        {countdown === '🎉 Happy Birthday!' ? 'Wishing you a wonderful day! 🎂🎈' : 'Your Next Birthday🎈'}
-                                    </Text>
-                                </View>
-                            </View>
-                        )
-                    }
-                </View>
-
-                <TouchableOpacity
-                    style={styles.logoutButton}
-                    onPress={async () => {
-                        if (deviceExpoNotificationToken) {
-                            sendPushNotification(
-                                deviceExpoNotificationToken,
-                                'You have logged out safely👋😌',
-                                `See you soon! Take care!`
-                            );
-                        }
-                        const clearingUserDetails = async () => {
-                            useUserStore.getState().clearUser();
-                            await SecureStore.deleteItemAsync('user_token');
-                        };
-                        clearingUserDetails();
-                        setAlreadyLoggedIn(false)
-                    }}
-                >
-                    <Text style={styles.buttonText}>Logout</Text>
-                </TouchableOpacity>
+        //                     {/* Profile Image */}
+        //                     <Image
+        //                         key={user?.profileImageUrl ? `${user.profileImageUrl}` : 'default-image'}
+        //                         source={
+        //                             user?.profileImageUrl
+        //                                 ? { uri: `${user.profileImageUrl}` }
+        //                                 : require('../../assets/updatedLogo1.png')
+        //                         }
+        //                         style={styles.profileImage}
+        //                         priority="high"
+        //                     />
 
 
-                <TouchableOpacity style={[styles.logoutButton, { backgroundColor: '#FF3B30', marginTop: 15, paddingHorizontal: 32, paddingVertical: 13, }]} onPress={handleDeactivateAccount}>
-                    <Text style={styles.buttonText}>Deactivate Account</Text>
-                </TouchableOpacity>
-                <Modal
-                    animationType="fade"
-                    transparent={true}
-                    visible={showBirthdayModal}
-                    onRequestClose={() => setShowBirthdayModal(false)}
-                >
-                    <View style={{
-                        flex: 1,
-                        backgroundColor: 'rgba(0,0,0,0.6)',
-                        justifyContent: 'center',
-                        alignItems: 'center'
-                    }}>
-                        <View style={{
-                            width: '85%',
-                            backgroundColor: isDarkMode ? '#1c1c1e' : '#fff',
-                            paddingVertical: 30,
-                            paddingHorizontal: 20,
-                            borderRadius: 25,
-                            alignItems: 'center',
-                            shadowColor: isDarkMode ? '#ffffff' : '#000',
-                            shadowOffset: { width: 0, height: 0 },
-                            shadowOpacity: isDarkMode ? 0.3 : 0.3,
-                            shadowRadius: isDarkMode ? 15 : 10,
-                            elevation: 12,
+        //                     {/* Camera Icon */}
+        //                     <View style={styles.cameraIcon}>
+        //                         <Ionicons name="camera" size={20} color="#FFF" />
+        //                     </View>
+        //                 </View>
+        //             </TouchableOpacity>
+        //             <Text style={[styles.name, isDarkMode && styles.darkText]}>{user?.name}</Text>
+        //             <View
+        //                 style={[
+        //                     {
+        //                         flexDirection: 'row',
+        //                         alignItems: 'center',
+        //                         justifyContent: 'flex-end',
+        //                         gap: 10,
+        //                     },
+        //                     user?.premiumuser && {
+        //                         paddingVertical: 8,
+        //                         backgroundColor: isDarkMode ? 'rgba(255, 221, 2, 0.28)' : '#E9A319',
+        //                         paddingHorizontal: 26,
+        //                         borderRadius: 30,
+        //                     },
+        //                 ]}
+        //             >
+        //                 {!!user?.username && (
+        //                     <Text style={[styles.username, isDarkMode && styles.darkSubText]}>
+        //                         {user?.username}
+        //                     </Text>
+        //                 )}
+        //                 {user?.premiumuser && (
+        //                     <CrownIcon
+        //                         name="crown"
+        //                         size={18}
+        //                         color="#FFD700"
+        //                         style={styles.crownContainer}
+        //                     />
+        //                 )}
+        //             </View>
+        //         </View>
 
-                        }}>
-                            <TouchableOpacity
-                                onPress={() => setShowBirthdayModal(false)}
-                                style={{
-                                    position: 'absolute',
-                                    top: 15,
-                                    right: 15,
-                                    zIndex: 10,
-                                }}
-                            >
-                                <Icon name="close" size={30} color="#FF3B30" />
-                            </TouchableOpacity>
+        //         {/* Stats Card */}
+        //         <View style={[styles.card, isDarkMode && styles.darkCard]}>
+        //             <View style={styles.statRow}>
+        //                 <View style={styles.statItem}>
+        //                     <Ionicons name="document-text-outline" size={30} color="#00796b" />
+        //                     <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>{user.myfiles.length}</Text>
+        //                     <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>Files Uploaded</Text>
+        //                 </View>
+        //                 <View style={styles.statItem}>
+        //                     <Ionicons name="calendar-outline" size={30} color="#FF8C00" />
+        //                     <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>
+        //                         {user?.dob ? formatDate(user.dob) : 'N/A'}
+        //                     </Text>
+        //                     <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
+        //                         Date of Birth
+        //                     </Text>
+        //                 </View>
+        //             </View>
+        //             <View style={[styles.statRow, styles.emailRow]}>
+        //                 <View style={styles.statItem}>
+        //                     <Ionicons name="mail-outline" size={30} color="#CB0404" />
+        //                     <Text style={[styles.statNumber, isDarkMode && styles.darkText]}>
+        //                         {user?.email ?? 'N/A'}
+        //                     </Text>
+        //                     <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>Email</Text>
+        //                 </View>
+        //             </View>
+        //             {
+        //                 user?.premiumuser && (user?.premiumDetails.length >= 2 ||
+        //                     (user?.premiumDetails.length == 1 && user?.premiumDetails[0].type != "Pro Plan")
+        //                 ) && (
+        //                     <View style={[styles.statRow, { marginTop: 10 }]}>
+        //                         <View style={[styles.statItem, { gap: 10 }]}>
+        //                             {countdown === '🎉 Happy Birthday!' ? <BirthdayIcon name="birthday-cake" size={30} color="#DC8BE0" />
+        //                                 : <Ionicons name="time-outline" size={30} color="#DC8BE0" />}
+        //                             <Text style={[styles.statNumber, isDarkMode && styles.darkText,
+        //                             countdown === '🎉 Happy Birthday!' ? { fontSize: scaleFont(22) } : { fontSize: scaleFont(18) }]}>
+        //                                 {countdown === '🎉 Happy Birthday!' ? '🎉 Happy Birthday!' : countdown}
+        //                             </Text>
+        //                             <Text style={[styles.statLabel, isDarkMode && styles.darkSubText]}>
+        //                                 {countdown === '🎉 Happy Birthday!' ? 'Wishing you a wonderful day! 🎂🎈' : 'Your Next Birthday🎈'}
+        //                             </Text>
+        //                         </View>
+        //                     </View>
+        //                 )
+        //             }
+        //         </View>
 
-                            <View style={{
-                                width: 130,
-                                height: 130,
-                                borderRadius: 75,
-                                overflow: 'hidden',
-                                borderWidth: 4,
-                                borderColor: '#FFD700',
-                                marginBottom: 20,
-                            }}>
-                                <Image
-                                    source={{ uri: user?.profileImageUrl }}
-                                    style={{ width: '100%', height: '100%' }}
-                                    contentFit="cover"
-                                />
-                            </View>
-
-                            <Text
-                                style={{
-                                    fontSize: scaleFont(24),
-                                    fontWeight: 'bold',
-                                    color: isDarkMode ? '#fff' : '#333',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                🎉 Happy Birthday, {user?.name ?? 'User'}!
-                            </Text>
-
-
-                            <Text style={{
-                                marginTop: 12,
-                                fontSize: scaleFont(14),
-                                color: isDarkMode ? '#ccc' : '#666',
-                                textAlign: 'center',
-                                paddingHorizontal: 10,
-                            }}>
-                                Wishing you a day filled with love, laughter, and unforgettable memories. 💖
-                            </Text>
-
-                            <TouchableOpacity
-                                onPress={() => setShowBirthdayModal(false)}
-                                style={{
-                                    marginTop: 25,
-                                    backgroundColor: '#FF69B4',
-                                    paddingVertical: 12,
-                                    paddingHorizontal: 30,
-                                    borderRadius: 30,
-                                    shadowColor: '#FF69B4',
-                                    shadowOffset: { width: 0, height: 3 },
-                                    shadowOpacity: 0.4,
-                                    shadowRadius: 6,
-                                    elevation: 5,
-                                }}
-                            >
-                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: scaleFont(14) }}>Close</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
+        //         <TouchableOpacity
+        //             style={styles.logoutButton}
+        //             onPress={async () => {
+        //                 if (deviceExpoNotificationToken) {
+        //                     sendPushNotification(
+        //                         deviceExpoNotificationToken,
+        //                         'You have logged out safely👋😌',
+        //                         `See you soon! Take care!`
+        //                     );
+        //                 }
+        //                 const clearingUserDetails = async () => {
+        //                     useUserStore.getState().clearUser();
+        //                     await SecureStore.deleteItemAsync('user_token');
+        //                 };
+        //                 clearingUserDetails();
+        //                 setAlreadyLoggedIn(false)
+        //             }}
+        //         >
+        //             <Text style={styles.buttonText}>Logout</Text>
+        //         </TouchableOpacity>
 
 
-                <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
-                <WarningAlert
-                    visible={warningAlertVisible}
-                    title={warningTitle}
-                    message={warningMessage}
-                    onCancel={() => {
-                        setWarningAlertVisible(false);
-                        setOnWarningConfirm(null);
-                    }}
-                    onOk={() => {
-                        setWarningAlertVisible(false);
-                        if (onWarningConfirm) onWarningConfirm();
-                        setOnWarningConfirm(null);
-                    }}
-                />
-                <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
-            </LinearGradient >
-        </ScrollView>
+        //         <TouchableOpacity style={[styles.logoutButton, { backgroundColor: '#FF3B30', marginTop: 15, paddingHorizontal: 32, paddingVertical: 13, }]} onPress={handleDeactivateAccount}>
+        //             <Text style={styles.buttonText}>Deactivate Account</Text>
+        //         </TouchableOpacity>
+        //         <Modal
+        //             animationType="fade"
+        //             transparent={true}
+        //             visible={showBirthdayModal}
+        //             onRequestClose={() => setShowBirthdayModal(false)}
+        //         >
+        //             <View style={{
+        //                 flex: 1,
+        //                 backgroundColor: 'rgba(0,0,0,0.6)',
+        //                 justifyContent: 'center',
+        //                 alignItems: 'center'
+        //             }}>
+        //                 <View style={{
+        //                     width: '85%',
+        //                     backgroundColor: isDarkMode ? '#1c1c1e' : '#fff',
+        //                     paddingVertical: 30,
+        //                     paddingHorizontal: 20,
+        //                     borderRadius: 25,
+        //                     alignItems: 'center',
+        //                     shadowColor: isDarkMode ? '#ffffff' : '#000',
+        //                     shadowOffset: { width: 0, height: 0 },
+        //                     shadowOpacity: isDarkMode ? 0.3 : 0.3,
+        //                     shadowRadius: isDarkMode ? 15 : 10,
+        //                     elevation: 12,
+
+        //                 }}>
+        //                     <TouchableOpacity
+        //                         onPress={() => setShowBirthdayModal(false)}
+        //                         style={{
+        //                             position: 'absolute',
+        //                             top: 15,
+        //                             right: 15,
+        //                             zIndex: 10,
+        //                         }}
+        //                     >
+        //                         <Icon name="close" size={30} color="#FF3B30" />
+        //                     </TouchableOpacity>
+
+        //                     <View style={{
+        //                         width: 130,
+        //                         height: 130,
+        //                         borderRadius: 75,
+        //                         overflow: 'hidden',
+        //                         borderWidth: 4,
+        //                         borderColor: '#FFD700',
+        //                         marginBottom: 20,
+        //                     }}>
+        //                         <Image
+        //                             source={{ uri: user?.profileImageUrl }}
+        //                             style={{ width: '100%', height: '100%' }}
+        //                             contentFit="cover"
+        //                         />
+        //                     </View>
+
+        //                     <Text
+        //                         style={{
+        //                             fontSize: scaleFont(24),
+        //                             fontWeight: 'bold',
+        //                             color: isDarkMode ? '#fff' : '#333',
+        //                             textAlign: 'center',
+        //                         }}
+        //                     >
+        //                         🎉 Happy Birthday, {user?.name ?? 'User'}!
+        //                     </Text>
+
+
+        //                     <Text style={{
+        //                         marginTop: 12,
+        //                         fontSize: scaleFont(14),
+        //                         color: isDarkMode ? '#ccc' : '#666',
+        //                         textAlign: 'center',
+        //                         paddingHorizontal: 10,
+        //                     }}>
+        //                         Wishing you a day filled with love, laughter, and unforgettable memories. 💖
+        //                     </Text>
+
+        //                     <TouchableOpacity
+        //                         onPress={() => setShowBirthdayModal(false)}
+        //                         style={{
+        //                             marginTop: 25,
+        //                             backgroundColor: '#FF69B4',
+        //                             paddingVertical: 12,
+        //                             paddingHorizontal: 30,
+        //                             borderRadius: 30,
+        //                             shadowColor: '#FF69B4',
+        //                             shadowOffset: { width: 0, height: 3 },
+        //                             shadowOpacity: 0.4,
+        //                             shadowRadius: 6,
+        //                             elevation: 5,
+        //                         }}
+        //                     >
+        //                         <Text style={{ color: 'white', fontWeight: 'bold', fontSize: scaleFont(14) }}>Close</Text>
+        //                     </TouchableOpacity>
+        //                 </View>
+        //             </View>
+        //         </Modal>
+
+
+        //         <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
+        //         <WarningAlert
+        //             visible={warningAlertVisible}
+        //             title={warningTitle}
+        //             message={warningMessage}
+        //             onCancel={() => {
+        //                 setWarningAlertVisible(false);
+        //                 setOnWarningConfirm(null);
+        //             }}
+        //             onOk={() => {
+        //                 setWarningAlertVisible(false);
+        //                 if (onWarningConfirm) onWarningConfirm();
+        //                 setOnWarningConfirm(null);
+        //             }}
+        //         />
+        //         <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
+        //     </LinearGradient >
+        // </ScrollView>
     );
 };
 

@@ -28,6 +28,7 @@ import * as MediaLibrary from 'expo-media-library';
 import useThemedStatusBar from '../hooks/StatusBar';
 import { BACKEND_URL } from '@env';
 import { scaleFont } from "../components/ScaleFont"
+import ComingSoon from './ComingSoonScreen';
 
 
 // File Icons
@@ -381,149 +382,156 @@ const ViewFilesScreen = () => {
     });
 
     return (
+
         <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
-            <TextInput
-                style={styles.searchBar}
-                placeholder="Search by name, type, or rating..."
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholderTextColor="#666"
-            />
-
-            {/* Filters */}
-            <View style={styles.filters}>
-                {['All', 'PDF', 'DOCX', 'JPG', 'PNG', 'JPEG'].map(type => (
-                    <TouchableOpacity
-                        key={type}
-                        style={[styles.filterButton, selectedType === type && styles.activeFilter]}
-                        onPress={() => setSelectedType(type)}
-                    >
-                        <Text style={[styles.filterText, selectedType === type && styles.activeFilterText]}>
-                            {type}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            {/* Loader */}
-            {loading && (
-                <View style={styles.lottieContainer}>
-                    <LottieView
-                        source={require('../../assets/loading.json')}
-                        autoPlay
-                        loop
-                        speed={1.5}
-                        style={styles.lottie}
-                    />
-                </View>
-            )}
-
-            {/* Files List using map instead of FlatList */}
-            {!loading && (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
-                    {filteredFiles.length > 0 ? (
-                        filteredFiles.map((item, index) => (
-                            <View key={index} style={[styles.fileCard, isDarkMode && styles.darkFileCard]}>
-                                <TouchableOpacity
-                                    onPress={() => handleShareFile(item)}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 15,
-                                        right: 15,
-                                        zIndex: 10,
-                                    }}
-                                >
-                                    <MaterialIcons name="share" size={30} color="violet" />
-                                </TouchableOpacity >
-                                <View style={styles.previewContainer}>
-                                    <View style={styles.previewBox}>
-                                        {(
-                                            <View style={styles.genericFile}>
-                                                {
-                                                    item.type.toLowerCase().includes('pdf') ?
-                                                        <View style={styles.pdfdocxParentIcon}>
-                                                            <Image source={require('../../assets/pdf.png')} style={styles.pdfdocxIcon} />
-                                                        </View> :
-                                                        (item.type.toLowerCase().includes('docx') ?
-                                                            <View style={styles.pdfdocxParentIcon}>
-                                                                <Image source={require('../../assets/doc_icon.png')} style={styles.pdfdocxIcon} />
-                                                            </View>
-                                                            : <Image source={{ uri: item.url }} style={styles.fileIcon} />)
-                                                }
-                                            </View>
-                                        )}
-                                    </View>
-
-                                    {/* File Info */}
-                                    <View style={styles.infoBox}>
-                                        <Text numberOfLines={1} style={[styles.fileName, isDarkMode && styles.darkFileName]}>
-                                            {item.name}
-                                        </Text>
-                                        <Text style={styles.rating}>🌟 {item.rating}</Text>
-                                        <Text style={[styles.fileTypeLabel, isDarkMode && styles.darkFileTypeLabel]}>{item.type.toUpperCase()}</Text>
-                                    </View>
-                                </View>
-                                <View style={styles.buttonContainer}>
-                                    <TouchableOpacity style={styles.viewButton} onPress={() => handleViewFile(item)}>
-                                        <MaterialIcons name="visibility" size={20} color="white" />
-                                        <Text style={styles.buttonText}>View</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownloadFile(item)}>
-                                        <MaterialIcons name="file-download" size={20} color="white" />
-                                        <Text style={styles.buttonText}>Download</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteFile(item)}>
-                                        <MaterialIcons name="delete" size={20} color="white" />
-                                        <Text style={styles.buttonText}>Delete</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        ))
-                    ) : (
-                        <View style={styles.emptyState}>
-                            <Image source={require('../../assets/NoDataFound.jpg')} style={styles.noDataFound} />
-                            <Text style={[styles.emptyText, isDarkMode && styles.darkText]}>
-                                No Files Found.
-                            </Text>
-                        </View>
-                    )}
-                </ScrollView>
-            )}
-
-            {/* Image Preview Modal */}
-            <Modal visible={!!imagePreview} transparent={true} animationType="slide">
-                <View style={styles.modalContainer}>
-                    <TouchableOpacity onPress={() => setImagePreview(null)} style={styles.closeButton}>
-                        <MaterialIcons name="close" size={30} color="white" />
-                    </TouchableOpacity>
-                    {imagePreview &&
-                        <Image source={{ uri: imagePreview }} style={styles.fullImage} />}
-                </View>
-            </Modal>
-
-            <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
-            <WarningAlert
-                visible={warningAlertVisible}
-                title={warningTitle}
-                message={warningMessage}
-                onCancel={() => {
-                    setWarningAlertVisible(false);
-                    setOnWarningConfirm(null);
-                }}
-                onOk={() => {
-                    setWarningAlertVisible(false);
-                    if (onWarningConfirm) onWarningConfirm();
-                    setOnWarningConfirm(null);
-                }}
-            />
-            <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
+            <ComingSoon />
         </LinearGradient>
+
+        
+
+        // <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
+        //     <TextInput
+        //         style={styles.searchBar}
+        //         placeholder="Search by name, type, or rating..."
+        //         value={searchText}
+        //         onChangeText={setSearchText}
+        //         placeholderTextColor="#666"
+        //     />
+
+        //     {/* Filters */}
+        //     <View style={styles.filters}>
+        //         {['All', 'PDF', 'DOCX', 'JPG', 'PNG', 'JPEG'].map(type => (
+        //             <TouchableOpacity
+        //                 key={type}
+        //                 style={[styles.filterButton, selectedType === type && styles.activeFilter]}
+        //                 onPress={() => setSelectedType(type)}
+        //             >
+        //                 <Text style={[styles.filterText, selectedType === type && styles.activeFilterText]}>
+        //                     {type}
+        //                 </Text>
+        //             </TouchableOpacity>
+        //         ))}
+        //     </View>
+
+        //     {/* Loader */}
+        //     {loading && (
+        //         <View style={styles.lottieContainer}>
+        //             <LottieView
+        //                 source={require('../../assets/loading.json')}
+        //                 autoPlay
+        //                 loop
+        //                 speed={1.5}
+        //                 style={styles.lottie}
+        //             />
+        //         </View>
+        //     )}
+
+        //     {/* Files List using map instead of FlatList */}
+        //     {!loading && (
+        //         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollViewContent}>
+        //             {filteredFiles.length > 0 ? (
+        //                 filteredFiles.map((item, index) => (
+        //                     <View key={index} style={[styles.fileCard, isDarkMode && styles.darkFileCard]}>
+        //                         <TouchableOpacity
+        //                             onPress={() => handleShareFile(item)}
+        //                             style={{
+        //                                 position: 'absolute',
+        //                                 top: 15,
+        //                                 right: 15,
+        //                                 zIndex: 10,
+        //                             }}
+        //                         >
+        //                             <MaterialIcons name="share" size={30} color="violet" />
+        //                         </TouchableOpacity >
+        //                         <View style={styles.previewContainer}>
+        //                             <View style={styles.previewBox}>
+        //                                 {(
+        //                                     <View style={styles.genericFile}>
+        //                                         {
+        //                                             item.type.toLowerCase().includes('pdf') ?
+        //                                                 <View style={styles.pdfdocxParentIcon}>
+        //                                                     <Image source={require('../../assets/pdf.png')} style={styles.pdfdocxIcon} />
+        //                                                 </View> :
+        //                                                 (item.type.toLowerCase().includes('docx') ?
+        //                                                     <View style={styles.pdfdocxParentIcon}>
+        //                                                         <Image source={require('../../assets/doc_icon.png')} style={styles.pdfdocxIcon} />
+        //                                                     </View>
+        //                                                     : <Image source={{ uri: item.url }} style={styles.fileIcon} />)
+        //                                         }
+        //                                     </View>
+        //                                 )}
+        //                             </View>
+
+        //                             {/* File Info */}
+        //                             <View style={styles.infoBox}>
+        //                                 <Text numberOfLines={1} style={[styles.fileName, isDarkMode && styles.darkFileName]}>
+        //                                     {item.name}
+        //                                 </Text>
+        //                                 <Text style={styles.rating}>🌟 {item.rating}</Text>
+        //                                 <Text style={[styles.fileTypeLabel, isDarkMode && styles.darkFileTypeLabel]}>{item.type.toUpperCase()}</Text>
+        //                             </View>
+        //                         </View>
+        //                         <View style={styles.buttonContainer}>
+        //                             <TouchableOpacity style={styles.viewButton} onPress={() => handleViewFile(item)}>
+        //                                 <MaterialIcons name="visibility" size={20} color="white" />
+        //                                 <Text style={styles.buttonText}>View</Text>
+        //                             </TouchableOpacity>
+        //                             <TouchableOpacity style={styles.downloadButton} onPress={() => handleDownloadFile(item)}>
+        //                                 <MaterialIcons name="file-download" size={20} color="white" />
+        //                                 <Text style={styles.buttonText}>Download</Text>
+        //                             </TouchableOpacity>
+        //                             <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteFile(item)}>
+        //                                 <MaterialIcons name="delete" size={20} color="white" />
+        //                                 <Text style={styles.buttonText}>Delete</Text>
+        //                             </TouchableOpacity>
+        //                         </View>
+        //                     </View>
+        //                 ))
+        //             ) : (
+        //                 <View style={styles.emptyState}>
+        //                     <Image source={require('../../assets/NoDataFound.jpg')} style={styles.noDataFound} />
+        //                     <Text style={[styles.emptyText, isDarkMode && styles.darkText]}>
+        //                         No Files Found.
+        //                     </Text>
+        //                 </View>
+        //             )}
+        //         </ScrollView>
+        //     )}
+
+        //     {/* Image Preview Modal */}
+        //     <Modal visible={!!imagePreview} transparent={true} animationType="slide">
+        //         <View style={styles.modalContainer}>
+        //             <TouchableOpacity onPress={() => setImagePreview(null)} style={styles.closeButton}>
+        //                 <MaterialIcons name="close" size={30} color="white" />
+        //             </TouchableOpacity>
+        //             {imagePreview &&
+        //                 <Image source={{ uri: imagePreview }} style={styles.fullImage} />}
+        //         </View>
+        //     </Modal>
+
+        //     <ErrorAlert visible={errorAlertVisible} title={errorTitle} message={errorMessage} onOk={() => setErrorAlertVisible(false)} />
+        //     <WarningAlert
+        //         visible={warningAlertVisible}
+        //         title={warningTitle}
+        //         message={warningMessage}
+        //         onCancel={() => {
+        //             setWarningAlertVisible(false);
+        //             setOnWarningConfirm(null);
+        //         }}
+        //         onOk={() => {
+        //             setWarningAlertVisible(false);
+        //             if (onWarningConfirm) onWarningConfirm();
+        //             setOnWarningConfirm(null);
+        //         }}
+        //     />
+        //     <SuccessAlert visible={successAlertVisible} title={successTitle} message={successMessage} onOk={() => setSuccessAlertVisible(false)} />
+        // </LinearGradient>
     );
 };
 
 // Styles
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 20, backgroundColor: '#F5F5F5' },
+    container: { flex: 1, padding: 10, backgroundColor: '#F5F5F5' },
     darkContainer: { backgroundColor: '#121212' },
     searchBar: { height: 50, backgroundColor: 'white', borderRadius: 10, paddingHorizontal: 15, marginBottom: 20 },
     filters: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 25 },

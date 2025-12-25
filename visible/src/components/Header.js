@@ -60,7 +60,7 @@ const Header = ({ title }) => {
 
                 <View style={styles.actions}>
                     {/* Premium Button */}
-                    {user?.premiumDetails.length < 3 &&
+                    {/* {user?.premiumDetails.length < 3 &&
                         !user?.premiumDetails.map(p => p?.type).some(name => name.includes('Ultra Pro Max')) && (
                             <TouchableOpacity onPress={goToPremium} style={[styles.premiumButton,
                             (!isDarkMode && { backgroundColor: '#E9A319' })]}>
@@ -74,7 +74,7 @@ const Header = ({ title }) => {
                                 </Text>
 
                             </TouchableOpacity>
-                        )}
+                        )} */}
 
 
                     {/* Toggle Theme Button */}

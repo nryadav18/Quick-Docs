@@ -23,6 +23,7 @@ import LottieView from 'lottie-react-native';
 import { useNavigation } from "@react-navigation/native";
 import { scaleFont } from "../components/ScaleFont"
 import { PermissionAlert } from '../components/AlertBox';
+import ComingSoon from './ComingSoonScreen';
 
 // Assets and Components
 import AI from '../../assets/robo1.jpg';
@@ -729,52 +730,57 @@ const AIScreen = () => {
     };
 
     return (
-        <LinearGradient
-            colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
-            style={styles.container}
-        >
-            <SafeAreaView style={styles.container}>
-                <View style={styles.header}>
-                    <LottieView
-                        source={require('../../assets/AI_Intro_Loader.json')}
-                        autoPlay={true}
-                        loop={true}
-                        speed={1}
-                        style={styles.headerLottie}
-                    />
-                    <View style={styles.headerTextContainer}>
-                        <Text style={[styles.headerTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
-                            Agent QD
-                        </Text>
-                        <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
-                            AI Assistant
-                        </Text>
-                    </View>
-                </View>
 
-                {renderLanguageInfo()}
-
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    keyboardVerticalOffset={65}
-                    style={styles.keyboardAvoidingView}
-                >
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.chatContainer}
-                        ref={scrollRef}
-                        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-                    >
-                        {messages.map(renderMessage)}
-                    </ScrollView>
-
-                    <View style={styles.inputContainer}>
-                        {renderInputSection()}
-                    </View>
-                </KeyboardAvoidingView>
-            </SafeAreaView>
-            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
+        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
+            <ComingSoon />
         </LinearGradient>
+
+        // <LinearGradient
+        //     colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
+        //     style={styles.container}
+        // >
+        //     <SafeAreaView style={styles.container}>
+        //         <View style={styles.header}>
+        //             <LottieView
+        //                 source={require('../../assets/AI_Intro_Loader.json')}
+        //                 autoPlay={true}
+        //                 loop={true}
+        //                 speed={1}
+        //                 style={styles.headerLottie}
+        //             />
+        //             <View style={styles.headerTextContainer}>
+        //                 <Text style={[styles.headerTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
+        //                     Agent QD
+        //                 </Text>
+        //                 <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
+        //                     AI Assistant
+        //                 </Text>
+        //             </View>
+        //         </View>
+
+        //         {renderLanguageInfo()}
+
+        //         <KeyboardAvoidingView
+        //             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        //             keyboardVerticalOffset={65}
+        //             style={styles.keyboardAvoidingView}
+        //         >
+        //             <ScrollView
+        //                 showsVerticalScrollIndicator={false}
+        //                 contentContainerStyle={styles.chatContainer}
+        //                 ref={scrollRef}
+        //                 onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        //             >
+        //                 {messages.map(renderMessage)}
+        //             </ScrollView>
+
+        //             <View style={styles.inputContainer}>
+        //                 {renderInputSection()}
+        //             </View>
+        //         </KeyboardAvoidingView>
+        //     </SafeAreaView>
+        //     <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
+        // </LinearGradient>
     );
 };
 
