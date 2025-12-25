@@ -244,10 +244,12 @@ const Otp = mongoose.model('Otp', OtpSchema);
 
 // Nodemailer
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // SSL
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        pass: process.env.EMAIL_PASS.replace(/\s/g, "")
     }
 });
 
@@ -912,7 +914,7 @@ const translateWithGoogleCloud = async (text, sourceLang, targetLang = 'en', pro
     try {
         const location = 'global'; // or specific location like 'us-central1'
         const parent = `projects/${projectId}/locations/${location}`;
-        
+
         // Map language codes from Speech-to-Text format to Translation API format
         const langMap = {
             'en-IN': 'en',
@@ -920,7 +922,7 @@ const translateWithGoogleCloud = async (text, sourceLang, targetLang = 'en', pro
         };
 
         const mappedSourceLang = langMap[sourceLang] || sourceLang.split('-')[0];
-        
+
         const request = {
             parent: parent,
             contents: [text],
@@ -930,7 +932,7 @@ const translateWithGoogleCloud = async (text, sourceLang, targetLang = 'en', pro
         };
 
         const [response] = await translateClient.translateText(request);
-        
+
         if (response.translations && response.translations.length > 0) {
             return {
                 translatedText: response.translations[0].translatedText,
@@ -939,7 +941,7 @@ const translateWithGoogleCloud = async (text, sourceLang, targetLang = 'en', pro
                 service: 'Google Cloud Translation'
             };
         }
-        
+
         throw new Error('No translation result received');
     } catch (error) {
         console.error('Google Cloud Translation error:', error);
@@ -952,7 +954,7 @@ const detectLanguageWithGoogleCloud = async (text, projectId) => {
     try {
         const location = 'global';
         const parent = `projects/${projectId}/locations/${location}`;
-        
+
         const request = {
             parent: parent,
             content: text,
@@ -960,19 +962,19 @@ const detectLanguageWithGoogleCloud = async (text, projectId) => {
         };
 
         const [response] = await translateClient.detectLanguage(request);
-        
+
         if (response.languages && response.languages.length > 0) {
             // Return the most confident detection
-            const bestDetection = response.languages.reduce((best, current) => 
+            const bestDetection = response.languages.reduce((best, current) =>
                 current.confidence > best.confidence ? current : best
             );
-            
+
             return {
                 languageCode: bestDetection.languageCode,
                 confidence: bestDetection.confidence
             };
         }
-        
+
         return null;
     } catch (error) {
         console.error('Language detection error:', error);
@@ -1030,8 +1032,8 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
 
                     // Calculate enhanced confidence score
                     const wordConfidences = alternative.words?.map(word => word.confidence) || [];
-                    const avgWordConfidence = wordConfidences.length > 0 
-                        ? wordConfidences.reduce((sum, conf) => sum + conf, 0) / wordConfidences.length 
+                    const avgWordConfidence = wordConfidences.length > 0
+                        ? wordConfidences.reduce((sum, conf) => sum + conf, 0) / wordConfidences.length
                         : alternative.confidence || 0;
 
                     return {
@@ -1073,14 +1075,14 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
                 (current.wordCount > 0 ? 0.2 : 0) +
                 (current.transcript.length > 10 ? 0.1 : 0)
             );
-            
+
             const bestScore = (
                 best.confidence * 0.4 +
                 best.avgWordConfidence * 0.3 +
                 (best.wordCount > 0 ? 0.2 : 0) +
                 (best.transcript.length > 10 ? 0.1 : 0)
             );
-            
+
             return currentScore > bestScore ? current : best;
         });
 
@@ -1106,13 +1108,13 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
         if (bestResult.language !== 'en-IN' && bestResult.transcript.trim()) {
             try {
                 console.log("Starting Google Cloud Translation...");
-                
+
                 // First, detect language confidence using Translation API
                 const languageDetection = await detectLanguageWithGoogleCloud(
-                    bestResult.transcript, 
+                    bestResult.transcript,
                     projectId
                 );
-                
+
                 if (languageDetection) {
                     console.log(`Language detection: ${languageDetection.languageCode} (confidence: ${languageDetection.confidence})`);
                 }
@@ -1130,7 +1132,7 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
                     translationInfo.wasTranslated = true;
                     translationInfo.translationService = translationResult.service;
                     translationInfo.detectedLanguageByTranslation = translationResult.detectedLanguage;
-                    
+
                     console.log('Translation successful with Google Cloud:', translationResult.translatedText);
                 } else {
                     console.log('Translation returned empty result');
@@ -1138,7 +1140,7 @@ app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
 
             } catch (translateError) {
                 console.error("Google Cloud Translation failed:", translateError);
-                
+
                 // Fallback: keep original text but log the failure
                 translationInfo.translationError = translateError.message;
                 translationInfo.translationService = 'Failed - Google Cloud Translation';
@@ -1226,8 +1228,8 @@ app.post("/speech-to-text-web-v2", upload.single("audio"), async (req, res) => {
 
                     // Calculate enhanced confidence score
                     const wordConfidences = alternative.words?.map(word => word.confidence) || [];
-                    const avgWordConfidence = wordConfidences.length > 0 
-                        ? wordConfidences.reduce((sum, conf) => sum + conf, 0) / wordConfidences.length 
+                    const avgWordConfidence = wordConfidences.length > 0
+                        ? wordConfidences.reduce((sum, conf) => sum + conf, 0) / wordConfidences.length
                         : alternative.confidence || 0;
 
                     return {
@@ -1269,14 +1271,14 @@ app.post("/speech-to-text-web-v2", upload.single("audio"), async (req, res) => {
                 (current.wordCount > 0 ? 0.2 : 0) +
                 (current.transcript.length > 10 ? 0.1 : 0)
             );
-            
+
             const bestScore = (
                 best.confidence * 0.4 +
                 best.avgWordConfidence * 0.3 +
                 (best.wordCount > 0 ? 0.2 : 0) +
                 (best.transcript.length > 10 ? 0.1 : 0)
             );
-            
+
             return currentScore > bestScore ? current : best;
         });
 
@@ -1302,13 +1304,13 @@ app.post("/speech-to-text-web-v2", upload.single("audio"), async (req, res) => {
         if (bestResult.language !== 'en-IN' && bestResult.transcript.trim()) {
             try {
                 console.log("Starting Google Cloud Translation...");
-                
+
                 // First, detect language confidence using Translation API
                 const languageDetection = await detectLanguageWithGoogleCloud(
-                    bestResult.transcript, 
+                    bestResult.transcript,
                     projectId
                 );
-                
+
                 if (languageDetection) {
                     console.log(`Language detection: ${languageDetection.languageCode} (confidence: ${languageDetection.confidence})`);
                 }
@@ -1326,7 +1328,7 @@ app.post("/speech-to-text-web-v2", upload.single("audio"), async (req, res) => {
                     translationInfo.wasTranslated = true;
                     translationInfo.translationService = translationResult.service;
                     translationInfo.detectedLanguageByTranslation = translationResult.detectedLanguage;
-                    
+
                     console.log('Translation successful with Google Cloud:', translationResult.translatedText);
                 } else {
                     console.log('Translation returned empty result');
@@ -1334,7 +1336,7 @@ app.post("/speech-to-text-web-v2", upload.single("audio"), async (req, res) => {
 
             } catch (translateError) {
                 console.error("Google Cloud Translation failed:", translateError);
-                
+
                 // Fallback: keep original text but log the failure
                 translationInfo.translationError = translateError.message;
                 translationInfo.translationService = 'Failed - Google Cloud Translation';
