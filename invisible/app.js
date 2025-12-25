@@ -4,7 +4,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const { Storage } = require('@google-cloud/storage');
 const multer = require('multer')
@@ -17,6 +16,7 @@ const axios = require('axios')
 const app = express();
 const Razorpay = require("razorpay");
 const vision = require('@google-cloud/vision');
+const sgMail = require('@sendgrid/mail')
 const client = new vision.ImageAnnotatorClient();
 const AES_SECRET_KEY = Buffer.from(process.env.AES_SECRET_KEY, 'base64');
 if (AES_SECRET_KEY.length !== 32) throw new Error('AES key must be 32 bytes');
@@ -34,6 +34,7 @@ const storage = new Storage({
     projectId: `${process.env.GOOGLE_PROJECT_ID}`,
 });
 
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
@@ -241,24 +242,6 @@ const User = mongoose.model('User', UserSchema);
 const FileData = mongoose.model('FileData', fileDataSchema);
 const AnalyticsDashboard = mongoose.model('Analytics', Analytics);
 const Otp = mongoose.model('Otp', OtpSchema);
-
-// Nodemailer
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // MUST be false for 587
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS.replace(/\s/g, "")
-    },
-    tls: {
-        rejectUnauthorized: false
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000
-});
-
 
 // JWT Middleware
 const authenticateToken = (req, res, next) => {
@@ -585,46 +568,61 @@ app.post('/signup', async (req, res) => {
 app.post('/send-otp', async (req, res) => {
     const { email } = req.body;
     const otp = crypto.randomInt(100000, 999999).toString();
-    const emailHash = hashValues(email); // deterministic key
-    const encryptedEmail = encrypt(email); // store encrypted if needed for display
+    const emailHash = hashValues(email);
+    const encryptedEmail = encrypt(email);
 
     try {
         await Otp.deleteMany({ emailHash });
-
         await new Otp({ emailHash, encryptedEmail, otp }).save();
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        // SendGrid mail config (similar to nodemailer format)
+        const msg = {
             to: email,
+            from: process.env.EMAIL_USER, // must be a verified sender in SendGrid
             subject: '🔐 Your OTP Code from QuickDocs App',
+            text: `Your QuickDocs OTP is ${otp}. This OTP is valid for 5 minutes.`,
             html: `
-            <!-- Email Template remains unchanged -->
             <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e2e2; border-radius: 10px; padding: 30px 40px; background-color: #fdfdfd;">
                 <div style="text-align: center; margin-bottom: 25px;">
                     <h2 style="margin: 0; color: #2e6ddf;">QuickDocs Verification</h2>
                     <p style="font-size: 15px; color: #555;">One-Time Password (OTP)</p>
                 </div>
                 <div style="text-align: center; margin: 40px 0;">
-                    <p style="font-size: 16px; color: #333; margin-bottom: 10px;">Use the following OTP to complete your verification:</p>
-                    <div style="font-size: 32px; font-weight: bold; color: #2e6ddf; letter-spacing: 3px;">${otp}</div>
-                    <p style="font-size: 14px; color: #777; margin-top: 10px;">This OTP is valid for <strong>5 minutes</strong>.</p>
+                    <p style="font-size: 16px; color: #333; margin-bottom: 10px;">
+                        Use the following OTP to complete your verification:
+                    </p>
+                    <div style="font-size: 32px; font-weight: bold; color: #2e6ddf; letter-spacing: 3px;">
+                        ${otp}
+                    </div>
+                    <p style="font-size: 14px; color: #777; margin-top: 10px;">
+                        This OTP is valid for <strong>5 minutes</strong>.
+                    </p>
                 </div>
                 <hr style="border: none; border-top: 1px solid #e2e2e2; margin: 30px 0;" />
                 <div style="text-align: center;">
-                    <p style="font-size: 13px; color: #999;">If you didn't request this OTP, you can safely ignore this email.</p>
-                    <p style="font-size: 13px; color: #999;">Need help? Contact us at <a href="mailto:quickdocss@gmail.com" style="color: #2e6ddf;">quickdocss@gmail.com</a></p>
+                    <p style="font-size: 13px; color: #999;">
+                        If you didn't request this OTP, you can safely ignore this email.
+                    </p>
+                    <p style="font-size: 13px; color: #999;">
+                        Need help? Contact us at
+                        <a href="mailto:quickdocss@gmail.com" style="color: #2e6ddf;">
+                            quickdocss@gmail.com
+                        </a>
+                    </p>
                 </div>
                 <div style="text-align: center; font-size: 12px; color: #bbb; margin-top: 30px;">
                     <p>© ${new Date().getFullYear()} QuickDocs Inc. All rights reserved.</p>
                 </div>
             </div>
             `
-        });
+        };
+
+        await sgMail.send(msg);
 
         res.json({ success: true, message: 'OTP sent successfully' });
 
     } catch (error) {
-        console.error(error);
+        console.error('SendGrid Error:', error);
         res.status(500).json({ success: false, message: 'Error sending OTP' });
     }
 });
