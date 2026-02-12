@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -30,7 +30,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const storage = new Storage({
-    keyFilename: path.join(__dirname, `${process.env.GOOGLE_APPLICATION_CREDENTIALS}`),
+    keyFilename: path.resolve(__dirname, `${process.env.GOOGLE_APPLICATION_CREDENTIALS}`),
     projectId: `${process.env.GOOGLE_PROJECT_ID}`,
 });
 
@@ -720,7 +720,7 @@ app.post('/update-notification-token', async (req, res) => {
 //Embeddings Conversion
 async function generateEmbedding(text) {
     const response = await axios.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${process.env.GOOGLE_CLOUD_API}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GOOGLE_CLOUD_API}`,
         {
             content: { parts: [{ text }] },
             taskType: 'RETRIEVAL_QUERY'
