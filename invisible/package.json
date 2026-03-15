@@ -33,6 +33,7 @@
     "mongoose": "^8.15.0",
     "morgan": "~1.9.1",
     "multer": "^2.0.1",
+    "object-assign": "^4.1.1",
     "path": "^0.12.7",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
