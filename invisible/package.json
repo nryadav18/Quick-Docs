@@ -38,6 +38,7 @@
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.1.5",
     "razorpay": "^2.9.6",
+    "sarvamai": "^1.1.6",
     "streamifier": "^0.1.1",
     "tesseract.js": "^6.0.1",
     "winston": "^3.17.0"

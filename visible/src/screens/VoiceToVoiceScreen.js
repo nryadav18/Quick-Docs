@@ -128,7 +128,7 @@ const VoiceToVoiceScreen = () => {
             await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
 
             const { recording } = await Audio.Recording.createAsync(
-                Audio.RecordingOptionsPresets.AMR_NB
+                Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
             );
 
             sound.current = recording;
@@ -210,14 +210,10 @@ const VoiceToVoiceScreen = () => {
         }
     };
 
-    const getTeluguAudioFromGoogleTTS = async (text) => {
+    const getAudioFromSarvamTTS = async (text, languageCode) => {
         const response = await axios.post(`${BACKEND_URL}/text-to-speech`, {
             text,
-            languageCode: 'te-IN',
-            name: "te-IN-Chirp3-HD-Achernar",
-            ssmlGender: 'MALE',
-            audioEncoding: 'MP3',
-            speakingRate: 1.0
+            languageCode: languageCode, // Provide the detected language code to backend (which passes to Sarvam)
         });
         return `data:audio/mp3;base64,${response.data.audioContent}`;
     };
@@ -231,8 +227,8 @@ const VoiceToVoiceScreen = () => {
             const formData = new FormData();
             formData.append('audio', {
                 uri: audioUri,
-                name: "audio.3gp",
-                type: "audio/3gpp",
+                name: "audio.m4a",
+                type: "audio/mp4",
             });
 
             const transcribeRes = await axios.post(`${BACKEND_URL}/speech-to-text-app`, formData, {
@@ -286,35 +282,30 @@ const VoiceToVoiceScreen = () => {
                 const langCode = detectedLanguage;
                 setShowLanguageInfo(false)
 
-                if (langCode.startsWith('te')) {
-                    // Use Google Cloud TTS for Telugu
-                    try {
-                        const audioURI = await getTeluguAudioFromGoogleTTS(answer);
-                        await playBase64Audio(audioURI);
-                    } catch (error) {
-                        setLoading(false);
-                        setIsSpeaking(false);
-                        console.error('TTS Error:', error.message);
-                        if (error.response) {
-                            // Server responded with a status other than 2xx
-                            console.error('Response Data:', error.response.data);
-                            console.error('Status Code:', error.response.status);
-                        } else if (error.request) {
-                            // No response received
-                            console.error('No response received:', error.request);
-                        } else {
-                            // Something else went wrong
-                            console.error('Unexpected error:', error);
-                        }
-                    }
-                } else {
+                // Use Sarvam TTS for all languages by requesting the backend endpoint
+                try {
+                    const audioURI = await getAudioFromSarvamTTS(answer, langCode);
+                    await playBase64Audio(audioURI);
+                } catch (error) {
                     setLoading(false);
-                    setIsSpeaking(true);
-                    Speech.speak(answer, {
-                        language: 'en-IN',
-                        rate: 1.0,
-                        onDone: () => setIsSpeaking(false),
-                    });
+                    setIsSpeaking(false);
+                    console.error('Sarvam TTS Error:', error.message);
+
+                    if (error.response) {
+                        console.error('Response Data:', error.response.data);
+                    }
+
+                    // Fallback to Expo speech for English if Sarvam TTS fails
+                    if (langCode.startsWith('en')) {
+                        setIsSpeaking(true);
+                        Speech.speak(answer, {
+                            language: 'en-IN',
+                            rate: 1.0,
+                            onDone: () => setIsSpeaking(false),
+                        });
+                    } else {
+                        alert('Failed to play the response in the detected regional language.');
+                    }
                 }
             };
 
@@ -551,151 +542,151 @@ const VoiceToVoiceScreen = () => {
 
     return (
 
-        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
-            <ComingSoon />
-        </LinearGradient>
-
-        // <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
-        //     {renderLanguageInfo()}
-
-        //     {renderFloatingParticles()}
-        //     <Animatable.Text animation="fadeInDown" style={[styles.title, !isDarkMode && { color: 'black' }]}>
-        //         🤖 Tap on Robo to Activate Assistant
-        //     </Animatable.Text>
-        //     {renderOrbitingElements()}
-
-
-        //     <Animated.View
-        //         style={[
-        //             styles.micContainer,
-        //             {
-        //                 transform: [
-        //                     { scale: micScale },
-        //                     {
-        //                         rotate: micRotation.interpolate({
-        //                             inputRange: [0, 1],
-        //                             outputRange: ['0deg', '360deg']
-        //                         })
-        //                     }
-        //                 ]
-        //             }
-        //         ]}
-        //     >
-
-        //         {/* Sound waves */}
-        //         {(isRecording || isSpeaking) && (
-        //             <>
-        //                 {[1, 2, 3].map((wave) => (
-        //                     <Animated.View
-        //                         key={wave}
-        //                         style={[
-        //                             styles.soundWave,
-        //                             {
-        //                                 opacity: waveAnimation.interpolate({
-        //                                     inputRange: [0, 1],
-        //                                     outputRange: [0.8, 0]
-        //                                 }),
-        //                                 transform: [
-        //                                     {
-        //                                         scale: waveAnimation.interpolate({
-        //                                             inputRange: [0, 1],
-        //                                             outputRange: [1, 1.5 + (wave * 0.3)]
-        //                                         })
-        //                                     }
-        //                                 ]
-        //                             }
-        //                         ]}
-        //                     />
-        //                 ))}
-        //             </>
-        //         )}
-
-        //         <TouchableOpacity
-        //             onPress={isRecording ? stopRecording : startRecording}
-        //             style={[styles.micButton, isRecording ? [styles.stopButton, !isDarkMode && { borderColor: 'black' }] : [styles.startButton, !isDarkMode && { borderColor: '#302b63' }], !isDarkMode && { backgroundColor: '#302b63', shadowColor: '#302b63' }]}
-        //             disabled={loading || isSpeaking}
-        //         >
-        //             {
-        //                 loading || isRecording ?
-        //                     (
-        //                         <LottieView
-        //                             source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
-        //                             autoPlay
-        //                             loop
-        //                             style={{ height: 110, width: 110 }}
-        //                         />
-        //                     ) : (
-        //                         <LottieView
-        //                             source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
-        //                             autoPlay={false}
-        //                             loop={false}
-        //                             style={{ height: 110, width: 110 }}
-        //                         />
-        //                     )
-        //             }
-        //         </TouchableOpacity>
-        //     </Animated.View>
-
-        //     {
-        //         humanQuestion && (
-        //             <Animatable.View animation="fadeIn" delay={500} style={styles.humanQuestionView}>
-        //                 <ScrollView showsVerticalScrollIndicator={false}>
-        //                     <Text style={[styles.humanQuestionText, { color: isDarkMode ? 'yellow' : 'black' }]}>{humanQuestion}</Text>
-        //                 </ScrollView>
-        //             </Animatable.View>
-        //         )
-        //     }
-
-        //     {loading && (
-        //         <View style={{ marginTop: 30, width: '100%', height: 200, justifyContent: 'center', alignItems: 'center' }}>
-        //             <LottieView
-        //                 source={require('../../assets/VoiceLoader.json')} // Lottie file for AI analyzing animation
-        //                 autoPlay
-        //                 loop
-        //                 speed={.3}
-        //                 style={{ height: 240, width: '110%' }}
-        //             />
-        //         </View>
-        //     )}
-
-        //     {
-        //         !loading && aiAnswer && (
-        //             <Animatable.View animation="fadeIn" delay={500} style={styles.aiAnswerView}>
-        //                 <ScrollView showsVerticalScrollIndicator={false}>
-        //                     <Text style={[styles.aiAnswerText, { color: isDarkMode ? '#00ffcc' : 'black' }]}>{aiAnswer}</Text>
-        //                 </ScrollView>
-        //             </Animatable.View>
-        //         )
-        //     }
-
-        //     {isSpeaking && (
-        //         <View style={styles.speakingContainer}>
-        //             <Animatable.View animation="bounceIn" delay={300}>
-        //                 <TouchableOpacity
-        //                     onPress={stopSpeaking}
-        //                     style={styles.stopSpeakingButton}
-        //                 >
-        //                     <LinearGradient
-        //                         colors={['#ff4c4c', '#ff6b6b']}
-        //                         style={styles.stopButtonGradient}
-        //                     >
-        //                         <MaterialCommunityIcons name="stop-circle" size={50} color="white" />
-        //                     </LinearGradient>
-        //                 </TouchableOpacity>
-        //             </Animatable.View>
-        //         </View>
-        //     )}
-
-
-        //     {/* Status indicator */}
-        //     <Animatable.View animation="fadeInUp" delay={1000} style={styles.statusContainer}>
-        //         <View style={[styles.statusDot, { backgroundColor: isRecording ? '#ff4c4c' : loading ? 'yellow' : isSpeaking ? '#00ffcc' : '#666' }]} />
-        //         <Text style={styles.statusText}>
-        //             {isRecording ? 'Listening...' : isSpeaking ? 'Speaking...' : loading ? 'Processing...' : 'Ready'}
-        //         </Text>
-        //     </Animatable.View>
-        //     <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
+        // <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
+        //     <ComingSoon />
         // </LinearGradient>
+
+        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={styles.container}>
+            {renderLanguageInfo()}
+
+            {renderFloatingParticles()}
+            <Animatable.Text animation="fadeInDown" style={[styles.title, !isDarkMode && { color: 'black' }]}>
+                🤖 Tap on Robo to Activate Assistant
+            </Animatable.Text>
+            {renderOrbitingElements()}
+
+
+            <Animated.View
+                style={[
+                    styles.micContainer,
+                    {
+                        transform: [
+                            { scale: micScale },
+                            {
+                                rotate: micRotation.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['0deg', '360deg']
+                                })
+                            }
+                        ]
+                    }
+                ]}
+            >
+
+                {/* Sound waves */}
+                {(isRecording || isSpeaking) && (
+                    <>
+                        {[1, 2, 3].map((wave) => (
+                            <Animated.View
+                                key={wave}
+                                style={[
+                                    styles.soundWave,
+                                    {
+                                        opacity: waveAnimation.interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [0.8, 0]
+                                        }),
+                                        transform: [
+                                            {
+                                                scale: waveAnimation.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [1, 1.5 + (wave * 0.3)]
+                                                })
+                                            }
+                                        ]
+                                    }
+                                ]}
+                            />
+                        ))}
+                    </>
+                )}
+
+                <TouchableOpacity
+                    onPress={isRecording ? stopRecording : startRecording}
+                    style={[styles.micButton, isRecording ? [styles.stopButton, !isDarkMode && { borderColor: 'black' }] : [styles.startButton, !isDarkMode && { borderColor: '#302b63' }], !isDarkMode && { backgroundColor: '#302b63', shadowColor: '#302b63' }]}
+                    disabled={loading || isSpeaking}
+                >
+                    {
+                        loading || isRecording ?
+                            (
+                                <LottieView
+                                    source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
+                                    autoPlay
+                                    loop
+                                    style={{ height: 110, width: 110 }}
+                                />
+                            ) : (
+                                <LottieView
+                                    source={require('../../assets/VoiceLoader2.json')} // Lottie file for AI analyzing animation
+                                    autoPlay={false}
+                                    loop={false}
+                                    style={{ height: 110, width: 110 }}
+                                />
+                            )
+                    }
+                </TouchableOpacity>
+            </Animated.View>
+
+            {
+                humanQuestion && (
+                    <Animatable.View animation="fadeIn" delay={500} style={styles.humanQuestionView}>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.humanQuestionText, { color: isDarkMode ? 'yellow' : 'black' }]}>{humanQuestion}</Text>
+                        </ScrollView>
+                    </Animatable.View>
+                )
+            }
+
+            {loading && (
+                <View style={{ marginTop: 30, width: '100%', height: 200, justifyContent: 'center', alignItems: 'center' }}>
+                    <LottieView
+                        source={require('../../assets/VoiceLoader.json')} // Lottie file for AI analyzing animation
+                        autoPlay
+                        loop
+                        speed={.3}
+                        style={{ height: 240, width: '110%' }}
+                    />
+                </View>
+            )}
+
+            {
+                !loading && aiAnswer && (
+                    <Animatable.View animation="fadeIn" delay={500} style={styles.aiAnswerView}>
+                        <ScrollView showsVerticalScrollIndicator={false}>
+                            <Text style={[styles.aiAnswerText, { color: isDarkMode ? '#00ffcc' : 'black' }]}>{aiAnswer}</Text>
+                        </ScrollView>
+                    </Animatable.View>
+                )
+            }
+
+            {isSpeaking && (
+                <View style={styles.speakingContainer}>
+                    <Animatable.View animation="bounceIn" delay={300}>
+                        <TouchableOpacity
+                            onPress={stopSpeaking}
+                            style={styles.stopSpeakingButton}
+                        >
+                            <LinearGradient
+                                colors={['#ff4c4c', '#ff6b6b']}
+                                style={styles.stopButtonGradient}
+                            >
+                                <MaterialCommunityIcons name="stop-circle" size={50} color="white" />
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </Animatable.View>
+                </View>
+            )}
+
+
+            {/* Status indicator */}
+            <Animatable.View animation="fadeInUp" delay={1000} style={styles.statusContainer}>
+                <View style={[styles.statusDot, { backgroundColor: isRecording ? '#ff4c4c' : loading ? 'yellow' : isSpeaking ? '#00ffcc' : '#666' }]} />
+                <Text style={styles.statusText}>
+                    {isRecording ? 'Listening...' : isSpeaking ? 'Speaking...' : loading ? 'Processing...' : 'Ready'}
+                </Text>
+            </Animatable.View>
+            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
+        </LinearGradient>
     );
 };
 

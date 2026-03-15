@@ -31,11 +31,11 @@ const FadeInText = ({ children, style }) => {
     }, []);
 
     return (
-        <View style={{ flexDirection: 'column', flexWrap: 'wrap' }}>
+        <View>
             {visibleLines.map((line, index) => (
                 <Animated.View
                     key={index}
-                    style={{ opacity: fadeAnims[index], marginBottom: 16 }}
+                    style={{ opacity: fadeAnims[index], marginBottom: 8 }}
                 >
                     <Text style={style}>{line}</Text>
                 </Animated.View>

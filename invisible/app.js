@@ -22,8 +22,7 @@ const AES_SECRET_KEY = Buffer.from(process.env.AES_SECRET_KEY, 'base64');
 if (AES_SECRET_KEY.length !== 32) throw new Error('AES key must be 32 bytes');
 const IV_LENGTH = 16;
 const langs = require('langs');
-const { SpeechClient } = require('@google-cloud/speech');
-const { TranslationServiceClient } = require('@google-cloud/translate');
+const { SarvamAIClient } = require('sarvamai');
 
 
 app.use(cors());
@@ -40,12 +39,8 @@ const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
 const upload = multer({ storage: multer.memoryStorage() });
 // const speechClient = new SpeechClient();
 
-const speechClient = new SpeechClient({
-    projectId: process.env.GOOGLE_PROJECT_ID
-});
-
-const translateClient = new TranslationServiceClient({
-    projectId: process.env.GOOGLE_PROJECT_ID
+const sarvamClient = new SarvamAIClient({
+    apiSubscriptionKey: process.env.SARVAM_API_KEY
 });
 
 
@@ -748,10 +743,34 @@ app.post('/ask', async (req, res) => {
         // Map detected language code to name for prompt
         const langMap = {
             'en-IN': 'English',
-            'te-IN': 'Telugu'
+            'te-IN': 'Telugu',
+            'hi-IN': 'Hindi',
+            'bn-IN': 'Bengali',
+            'kn-IN': 'Kannada',
+            'ml-IN': 'Malayalam',
+            'mr-IN': 'Marathi',
+            'od-IN': 'Odia',
+            'pa-IN': 'Punjabi',
+            'sa-IN': 'Sanskrit',
+            'ta-IN': 'Tamil',
+            'ur-IN': 'Urdu',
+            'as-IN': 'Assamese',
+            'gu-IN': 'Gujarati',
+            'kok-IN': 'Konkani',
+            'ks-IN': 'Kashmiri',
+            'mai-IN': 'Maithili',
+            'mni-IN': 'Manipuri',
+            'ne-IN': 'Nepali',
+            'ne-NP': 'Nepali',
+            'sd-IN': 'Sindhi',
+            'si-LK': 'Sinhala',
+            'bho-IN': 'Bhojpuri',
+            'doi-IN': 'Dogri',
+            'brx-IN': 'Bodo',
+            'sat-IN': 'Santali'
         };
 
-        const targetLang = langMap[detectedLanguage] || 'English';
+        const targetLang = detectedLanguage ? (langMap[detectedLanguage] || 'English') : 'the same language as the Question';
 
         // check general prompts
         const generalPrompts = [
@@ -773,23 +792,26 @@ app.post('/ask', async (req, res) => {
             // decrypt embeddings before using
             const queryEmbedding = await generateEmbedding(question);
 
-            const results = await FileData.aggregate([
-                {
-                    $vectorSearch: {
-                        index: 'fileDataIndex',
-                        queryVector: queryEmbedding,
-                        path: 'embedding',
-                        numCandidates: 100,
-                        limit: 3
+            const userDocs = await FileData.find({ usernameHash: hashedUsername });
+            
+            const scoredDocs = userDocs.map(doc => {
+                let score = 0;
+                if (doc.embedding && queryEmbedding && doc.embedding.length === queryEmbedding.length) {
+                    for (let i = 0; i < queryEmbedding.length; i++) {
+                        score += queryEmbedding[i] * doc.embedding[i];
                     }
-                },
-                { $match: { usernameHash: hashedUsername } }
-            ]);
+                }
+                return { doc, score };
+            });
+            
+            // Sort descending by score and pick top 3
+            scoredDocs.sort((a, b) => b.score - a.score);
+            const topResults = scoredDocs.slice(0, 3).map(m => m.doc);
 
-            console.log(results)
+            console.log("Top results count:", topResults.length);
 
             // decrypt extractedText if stored encrypted
-            topMatches = results
+            topMatches = topResults
                 .map(doc => {
                     console.log(decryptSafe(doc.extractedText))
                     return decryptSafe(doc.extractedText) || '';
@@ -986,198 +1008,76 @@ const detectLanguageWithGoogleCloud = async (text, projectId) => {
     }
 };
 
-// Advanced speech-to-text with Google Cloud Translation
+// Advanced speech-to-text with Sarvam AI
 app.post("/speech-to-text-app", upload.single("audio"), async (req, res) => {
     try {
-        const projectId = process.env.GOOGLE_PROJECT_ID; // Replace with your actual project ID
-        const audioBytes = req.file.buffer.toString("base64");
-        const audio = { content: audioBytes };
+        console.log("Starting Sarvam AI Speech-to-Text Transcribe...");
 
-        console.log("Starting advanced language detection and recognition...");
-
-        // Enhanced language list for better coverage
-        const languagesToTest = [
-            'en-IN',    // English (India)
-            'te-IN',    // Telugu (India)
-        ];
-
-        // Enhanced recognition with better configuration
-        const recognitionPromises = languagesToTest.map(async (langCode) => {
-            try {
-                const config = {
-                    encoding: 'AMR',
-                    sampleRateHertz: 8000,
-                    languageCode: langCode,
-                    enableAutomaticPunctuation: true,
-                    enableWordConfidence: true,
-                    enableWordTimeOffsets: true,
-                    model: 'latest_long',
-                    useEnhanced: true, // Use enhanced model for better accuracy
-                    maxAlternatives: 3, // Get multiple alternatives
-                    profanityFilter: false,
-                    enableSpeakerDiarization: false,
-                    metadata: {
-                        interactionType: 'VOICE_SEARCH',
-                        industryNaicsCodeOfAudio: 518210, // Data processing
-                        microphoneDistance: 'NEARFIELD',
-                        originalMediaType: 'AUDIO',
-                        recordingDeviceType: 'SMARTPHONE'
-                    }
-                };
-
-                const [response] = await speechClient.recognize({
-                    audio: audio,
-                    config: config,
-                });
-
-                if (response.results && response.results.length > 0) {
-                    const result = response.results[0];
-                    const alternative = result.alternatives[0];
-
-                    // Calculate enhanced confidence score
-                    const wordConfidences = alternative.words?.map(word => word.confidence) || [];
-                    const avgWordConfidence = wordConfidences.length > 0
-                        ? wordConfidences.reduce((sum, conf) => sum + conf, 0) / wordConfidences.length
-                        : alternative.confidence || 0;
-
-                    return {
-                        language: langCode,
-                        transcript: alternative.transcript,
-                        confidence: alternative.confidence || 0,
-                        avgWordConfidence: avgWordConfidence,
-                        wordCount: alternative.transcript.split(' ').length,
-                        alternatives: result.alternatives.slice(1, 3), // Additional alternatives
-                        words: alternative.words || []
-                    };
-                }
-                return null;
-            } catch (error) {
-                console.log(`Recognition failed for ${langCode}:`, error.message);
-                return null;
-            }
-        });
-
-        // Wait for all recognitions to complete
-        const results = await Promise.all(recognitionPromises);
-        const validResults = results.filter(result => result !== null);
-
-        if (validResults.length === 0) {
+        // Ensure we have a file
+        if (!req.file) {
             return res.status(400).json({
-                error: "No speech detected in any language",
+                error: "No audio file provided",
                 transcript: "",
-                detectedLanguage: "unknown",
-                service: "Google Cloud Speech-to-Text"
+                detectedLanguage: "unknown"
             });
         }
 
-        // Enhanced scoring algorithm for best result selection
-        const bestResult = validResults.reduce((best, current) => {
-            // Enhanced scoring with multiple factors
-            const currentScore = (
-                current.confidence * 0.4 +
-                current.avgWordConfidence * 0.3 +
-                (current.wordCount > 0 ? 0.2 : 0) +
-                (current.transcript.length > 10 ? 0.1 : 0)
-            );
+        // Convert the buffer to an object that Sarvam SDK can process
+        // We simulate a Readable property using pass-through or Buffer
+        const audioBuffer = req.file.buffer;
 
-            const bestScore = (
-                best.confidence * 0.4 +
-                best.avgWordConfidence * 0.3 +
-                (best.wordCount > 0 ? 0.2 : 0) +
-                (best.transcript.length > 10 ? 0.1 : 0)
-            );
-
-            return currentScore > bestScore ? current : best;
-        });
-
-        console.log(`Best match: ${bestResult.language} with confidence ${bestResult.confidence}`);
-        console.log("Original Text:", bestResult.transcript);
-
-        let finalTranscript = bestResult.transcript;
-        let translationInfo = {
-            originalLanguage: bestResult.language,
-            originalText: bestResult.transcript,
-            wasTranslated: false,
-            confidence: bestResult.confidence,
-            avgWordConfidence: bestResult.avgWordConfidence,
-            service: 'Google Cloud Speech-to-Text',
-            allResults: validResults.map(r => ({
-                language: r.language,
-                transcript: r.transcript,
-                confidence: r.confidence
-            }))
+        // Pass the raw buffer directly. We need to construct a custom object for core.file.Uploadable
+        // using fs or directly passing as Buffer with metadata if supported.
+        const fileObj = {
+            data: audioBuffer,
+            filename: req.file.originalname || 'audio.mp3',
+            contentType: req.file.mimetype || 'audio/mp3',
         };
 
-        // Translate using Google Cloud Translation API if needed
-        if (bestResult.language !== 'en-IN' && bestResult.transcript.trim()) {
-            try {
-                console.log("Starting Google Cloud Translation...");
-
-                // First, detect language confidence using Translation API
-                const languageDetection = await detectLanguageWithGoogleCloud(
-                    bestResult.transcript,
-                    projectId
-                );
-
-                if (languageDetection) {
-                    console.log(`Language detection: ${languageDetection.languageCode} (confidence: ${languageDetection.confidence})`);
-                }
-
-                // Translate using Google Cloud Translation API
-                const translationResult = await translateWithGoogleCloud(
-                    bestResult.transcript,
-                    bestResult.language,
-                    'en',
-                    projectId
-                );
-
-                if (translationResult && translationResult.translatedText) {
-                    finalTranscript = translationResult.translatedText;
-                    translationInfo.wasTranslated = true;
-                    translationInfo.translationService = translationResult.service;
-                    translationInfo.detectedLanguageByTranslation = translationResult.detectedLanguage;
-
-                    console.log('Translation successful with Google Cloud:', translationResult.translatedText);
-                } else {
-                    console.log('Translation returned empty result');
-                }
-
-            } catch (translateError) {
-                console.error("Google Cloud Translation failed:", translateError);
-
-                // Fallback: keep original text but log the failure
-                translationInfo.translationError = translateError.message;
-                translationInfo.translationService = 'Failed - Google Cloud Translation';
-            }
-        }
-
-        // Enhanced response with more detailed information
-        res.json({
-            transcript: finalTranscript,
-            detectedLanguage: bestResult.language,
-            confidence: bestResult.confidence,
-            avgWordConfidence: bestResult.avgWordConfidence,
-            wordCount: bestResult.wordCount,
-            translationInfo: translationInfo,
-            success: true,
-            originalText: bestResult.transcript,
-            service: 'Google Cloud Speech-to-Text + Translation',
-            processingDetails: {
-                languagesTestedCount: languagesToTest.length,
-                validResultsCount: validResults.length,
-                bestResultScore: bestResult.confidence,
-                hasWordLevelData: bestResult.words.length > 0
-            }
+        const response = await sarvamClient.speechToText.transcribe({
+            file: fileObj,
+            model: 'saaras:v3',
+            mode: 'transcribe',  // This outputs spoken text in its original language, with numerals formatted
+            // language_code: 'unknown' (can be omitted for auto-detection in Saaras v3)
         });
 
+        if (response.transcript) {
+            console.log(`Detected Language: ${response.language_code}`);
+            console.log("Transcript:", response.transcript);
+
+            let translationInfo = {
+                originalLanguage: response.language_code || 'en-IN',
+                originalText: response.transcript,
+                wasTranslated: false, // In transcribe mode it is not translated to English
+                confidence: response.language_probability || 1.0,
+                service: 'Sarvam AI Speech-to-Text Transcribe (Transcribe mode)'
+            };
+
+            res.json({
+                transcript: response.transcript,
+                detectedLanguage: response.language_code || 'en-IN',
+                confidence: response.language_probability || 1.0,
+                translationInfo: translationInfo,
+                success: true,
+                originalText: response.transcript,
+                service: 'Sarvam AI'
+            });
+        } else {
+            return res.status(400).json({
+                error: "No speech detected",
+                transcript: "",
+                detectedLanguage: "unknown"
+            });
+        }
+
     } catch (err) {
-        console.error("Google Cloud speech recognition error:", err);
+        console.error("Sarvam AI speech recognition error:", err);
         res.status(500).json({
-            error: "Google Cloud speech recognition failed",
+            error: "Sarvam AI speech recognition failed",
             transcript: "",
             detectedLanguage: "unknown",
             details: err.message,
-            service: "Google Cloud Speech-to-Text"
+            service: "Sarvam AI"
         });
     }
 });
@@ -1576,30 +1476,119 @@ app.post("/speech-to-text-web", upload.single("audio"), async (req, res) => {
 
 
 
-// Route to convert Text to Speech
+// Route to convert Text to Speech with Sarvam AI
 app.post('/text-to-speech', async (req, res) => {
-    const { text, languageCode, name, ssmlGender, audioEncoding, speakingRate } = req.body;
+    // Note: Sarvam AI language codes typically differ slightly from Google's. Ensure frontend sends the correct format like 'hi-IN'.
+    const { text, languageCode } = req.body;
 
     try {
-        const response = await axios.post(
-            `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${process.env.GOOGLE_CLOUD_API}`,
-            {
-                input: { text },
-                voice: {
-                    languageCode: languageCode,
-                    name: name,
-                    ssmlGender: ssmlGender
-                },
-                audioConfig: {
-                    audioEncoding: audioEncoding,
-                    speakingRate: speakingRate
+        console.log(`Starting Sarvam AI TTS for language: ${languageCode}`);
+        
+        // Sarvam has a 500 character limit per request. Split text if needed.
+        const maxLength = 480; 
+        const chunks = [];
+        let remaining = text;
+
+        while (remaining.length > 0) {
+            if (remaining.length <= maxLength) {
+                chunks.push(remaining);
+                break;
+            }
+            // Find a good breaking point (punctuation or space)
+            let breakPoint = maxLength;
+            const segment = remaining.substring(0, maxLength);
+            const lastPunctuation = Math.max(
+                segment.lastIndexOf('.'),
+                segment.lastIndexOf('!'),
+                segment.lastIndexOf('?'),
+                segment.lastIndexOf('\n')
+            );
+            
+            if (lastPunctuation > maxLength * 0.5) {
+                breakPoint = lastPunctuation + 1; // Include punctuation
+            } else {
+                const lastSpace = segment.lastIndexOf(' ');
+                if (lastSpace > maxLength * 0.5) {
+                    breakPoint = lastSpace;
                 }
             }
-        );
+            
+            chunks.push(remaining.substring(0, breakPoint).trim());
+            remaining = remaining.substring(breakPoint).trim();
+        }
 
-        res.json({
-            audioContent: response.data.audioContent
-        });
+        console.log(`Text split into ${chunks.length} chunks`);
+        
+        const audioBuffers = [];
+
+        // Process chunks sequentially to maintain order and avoid rate limits
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            if (!chunk) continue;
+            
+            console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`);
+            const response = await sarvamClient.textToSpeech.convert({
+                inputs: [chunk],
+                target_language_code: languageCode || 'te-IN',
+                speaker: 'ritu', // standard speaker format for Sarvam TTS. Other options depend on model
+                pace: 1.0,
+                speech_sample_rate: 16000,
+                enable_preprocessing: true,
+                model: 'bulbul:v3'
+            });
+
+            if (response && response.audios && response.audios.length > 0) {
+                // Convert base64 audio to buffer
+                const audioBuffer = Buffer.from(response.audios[0], 'base64');
+                audioBuffers.push(audioBuffer);
+            } else {
+                console.warn(`Sarvam TTS Warning: No audio content returned for chunk ${i + 1}`);
+            }
+        }
+
+        if (audioBuffers.length > 0) {
+            // Because Sarvam usually returns WAV audio without a complex header, simple buffer concatenation
+            // works decently well. For pure seamlessness, proper WAV stripping would be needed, 
+            // but for basic stitching this is acceptable.
+            // A more robust approach would be to strip the 44-byte WAV header from chunks after the first.
+            
+            // Basic header stripping for chunks > 0 assuming standard 44 byte WAV header
+            let finalBuffer;
+            if (audioBuffers.length === 1) {
+                finalBuffer = audioBuffers[0];
+            } else {
+                let totalLength = audioBuffers[0].length;
+                for (let i = 1; i < audioBuffers.length; i++) {
+                    totalLength += (audioBuffers[i].length - 44);
+                }
+                
+                finalBuffer = Buffer.alloc(totalLength);
+                let offset = 0;
+                
+                // Copy first chunk fully
+                audioBuffers[0].copy(finalBuffer, offset);
+                offset += audioBuffers[0].length;
+                
+                // Copy remaining chunks without 44-byte header
+                for (let i = 1; i < audioBuffers.length; i++) {
+                    audioBuffers[i].copy(finalBuffer, offset, 44);
+                    offset += (audioBuffers[i].length - 44);
+                }
+                
+                // Update file size in the main header (bytes 4-7)
+                finalBuffer.writeUInt32LE(totalLength - 8, 4);
+                // Update data chunk size (bytes 40-43)
+                finalBuffer.writeUInt32LE(totalLength - 44, 40);
+            }
+
+            const combinedBase64 = finalBuffer.toString('base64');
+            res.json({
+                audioContent: combinedBase64
+            });
+        } else {
+            console.error('Sarvam TTS Error: No audio content generated across all chunks');
+            res.status(500).json({ error: 'Failed to generate combined audio content' });
+        }
     } catch (err) {
         console.error('TTS Error:', err.message);
         res.status(500).json({ error: 'Failed to generate audio' });

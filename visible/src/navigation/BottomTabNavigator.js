@@ -19,6 +19,7 @@ export default function BottomTabNavigator() {
         <Tab.Navigator
             screenOptions={({ route }) => ({
                 header: () => <Header title={route.name} />,
+                tabBarHideOnKeyboard: true,
                 tabBarIcon: ({ color, size }) => {
                     let iconName;
                     if (route.name === 'Files') iconName = 'folder-open';

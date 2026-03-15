@@ -13,7 +13,8 @@ import {
     Vibration,
     Animated,
     PermissionsAndroid,
-    Linking
+    Linking,
+    Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -87,6 +88,8 @@ const AIScreen = () => {
     const [permissionVisible, setPermissionVisible] = useState(false);
     const [permissionTitle, setPermissionTitle] = useState('');
     const [permissionMessage, setPermissionMessage] = useState('');
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     const showPermissionAlert = (title, message) => {
         setPermissionTitle(title)
@@ -112,6 +115,28 @@ const AIScreen = () => {
     ];
 
     // Effects
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => {
+                setKeyboardVisible(true);
+                setKeyboardHeight(e.endCoordinates.height);
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                setKeyboardVisible(false);
+                setKeyboardHeight(0);
+            }
+        );
+
+        return () => {
+            keyboardDidHideListener.remove();
+            keyboardDidShowListener.remove();
+        };
+    }, []);
+
     useEffect(() => {
         checkPromptLimitations();
     }, [user?.premiumDetails, user?.aipromptscount]);
@@ -254,8 +279,8 @@ const AIScreen = () => {
             const formData = new FormData();
             formData.append("audio", {
                 uri: uri,
-                name: "audio.3gp",
-                type: "audio/3gpp",
+                name: "audio.m4a",
+                type: "audio/mp4",
             });
 
             const response = await axios.post(
@@ -276,7 +301,7 @@ const AIScreen = () => {
             setTranscript(transcript);
 
             // Show language detection info if not English
-            if (detectedLang && detectedLang !== 'en-US' && transInfo?.wasTranslated) {
+            if (detectedLang && detectedLang !== 'en-IN') {
                 setShowLanguageInfo(true);
                 // Auto-hide after 5 seconds
                 setTimeout(() => setShowLanguageInfo(false), 5000);
@@ -320,8 +345,32 @@ const AIScreen = () => {
     // Add this helper function for language names
     const getLanguageName = (languageCode) => {
         const languageNames = {
-            'en-US': 'English',
-            'te-IN': 'Telugu'
+            'en-IN': 'English',
+            'te-IN': 'Telugu',
+            'hi-IN': 'Hindi',
+            'bn-IN': 'Bengali',
+            'kn-IN': 'Kannada',
+            'ml-IN': 'Malayalam',
+            'mr-IN': 'Marathi',
+            'od-IN': 'Odia',
+            'pa-IN': 'Punjabi',
+            'sa-IN': 'Sanskrit',
+            'ta-IN': 'Tamil',
+            'ur-IN': 'Urdu',
+            'as-IN': 'Assamese',
+            'gu-IN': 'Gujarati',
+            'kok-IN': 'Konkani',
+            'ks-IN': 'Kashmiri',
+            'mai-IN': 'Maithili',
+            'mni-IN': 'Manipuri',
+            'ne-IN': 'Nepali',
+            'ne-NP': 'Nepali',
+            'sd-IN': 'Sindhi',
+            'si-LK': 'Sinhala',
+            'bho-IN': 'Bhojpuri',
+            'doi-IN': 'Dogri',
+            'brx-IN': 'Bodo',
+            'sat-IN': 'Santali'
         };
 
         return languageNames[languageCode] || languageCode;
@@ -538,6 +587,7 @@ const AIScreen = () => {
                 body: JSON.stringify({
                     username: user?.username,
                     question: latestUserMessage,
+                    detectedLanguage: detectedLanguage,
                 })
             });
 
@@ -642,7 +692,7 @@ const AIScreen = () => {
                 ) : (
                     <View style={item.role === 'user' ? styles.HumanMessageContainer : styles.RoboMessageContainer}>
                         {item.role === 'assistant' ? (
-                            <FadeInText style={[styles.AIText, { flexWrap: 'wrap' }]}>
+                            <FadeInText style={[styles.AIText]}>
                                 {item.text}
                             </FadeInText>
                         ) : (
@@ -731,56 +781,53 @@ const AIScreen = () => {
 
     return (
 
-        <LinearGradient colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']} style={[styles.container, isDarkMode && styles.darkContainer]}>
-            <ComingSoon />
+        <LinearGradient
+            colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
+            style={styles.container}
+        >
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <LottieView
+                        source={require('../../assets/AI_Intro_Loader.json')}
+                        autoPlay={true}
+                        loop={true}
+                        speed={1}
+                        style={styles.headerLottie}
+                    />
+                    <View style={styles.headerTextContainer}>
+                        <Text style={[styles.headerTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
+                            Agent QD
+                        </Text>
+                        <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
+                            AI Assistant
+                        </Text>
+                    </View>
+                </View>
+
+                {renderLanguageInfo()}
+
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 65 : 0}
+                    style={styles.keyboardAvoidingView}
+                >
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.chatContainer}
+                        ref={scrollRef}
+                        onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+                        style={{ flex: 1 }}
+                    >
+                        {messages.map(renderMessage)}
+                    </ScrollView>
+
+                    <Animated.View style={[styles.inputContainer, { marginBottom: isKeyboardVisible ? (Platform.OS === 'ios' ? 10 : keyboardHeight + 10) : 80 }]}>
+                        {renderInputSection()}
+                    </Animated.View>
+                </KeyboardAvoidingView>
+            </SafeAreaView>
+            <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
         </LinearGradient>
-
-        // <LinearGradient
-        //     colors={isDarkMode ? ['#0f0c29', '#302b63', '#24243e'] : ['#89f7fe', '#fad0c4']}
-        //     style={styles.container}
-        // >
-        //     <SafeAreaView style={styles.container}>
-        //         <View style={styles.header}>
-        //             <LottieView
-        //                 source={require('../../assets/AI_Intro_Loader.json')}
-        //                 autoPlay={true}
-        //                 loop={true}
-        //                 speed={1}
-        //                 style={styles.headerLottie}
-        //             />
-        //             <View style={styles.headerTextContainer}>
-        //                 <Text style={[styles.headerTitle, { color: isDarkMode ? '#fff' : '#00796b' }]}>
-        //                     Agent QD
-        //                 </Text>
-        //                 <Text style={[styles.headerSubtitle, { color: isDarkMode ? '#ccc' : '#666' }]}>
-        //                     AI Assistant
-        //                 </Text>
-        //             </View>
-        //         </View>
-
-        //         {renderLanguageInfo()}
-
-        //         <KeyboardAvoidingView
-        //             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        //             keyboardVerticalOffset={65}
-        //             style={styles.keyboardAvoidingView}
-        //         >
-        //             <ScrollView
-        //                 showsVerticalScrollIndicator={false}
-        //                 contentContainerStyle={styles.chatContainer}
-        //                 ref={scrollRef}
-        //                 onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-        //             >
-        //                 {messages.map(renderMessage)}
-        //             </ScrollView>
-
-        //             <View style={styles.inputContainer}>
-        //                 {renderInputSection()}
-        //             </View>
-        //         </KeyboardAvoidingView>
-        //     </SafeAreaView>
-        //     <PermissionAlert visible={permissionVisible} title={permissionTitle} message={permissionMessage} onAllow={() => { Linking.openSettings(); }} onCancel={() => setPermissionVisible(false)} />
-        // </LinearGradient>
     );
 };
 
@@ -859,7 +906,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-evenly',
-        paddingVertical: 20,
+        paddingTop: 0,
+        paddingBottom: 10,
         paddingHorizontal: 16,
     },
     headerLottie: {
@@ -884,11 +932,11 @@ const styles = StyleSheet.create({
     chatContainer: {
         flexGrow: 1,
         padding: 16,
-        paddingBottom: 130,
+        paddingBottom: 16,
     },
     AIMessage: {
         flexDirection: 'row',
-        alignItems: 'centflex-start',
+        alignItems: 'flex-start',
         marginVertical: 8,
         marginRight: 10,
     },
@@ -914,7 +962,7 @@ const styles = StyleSheet.create({
         color: '#2c3e50',
         fontWeight: '500',
         fontSize: scaleFont(14),
-        lineHeight: 22,
+        lineHeight: 28,
     },
     HumanMessage: {
         flexDirection: 'row-reverse',
@@ -940,7 +988,7 @@ const styles = StyleSheet.create({
         color: '#2c3e50',
         fontWeight: '500',
         fontSize: scaleFont(14),
-        lineHeight: 22,
+        lineHeight: 28,
     },
     HumanMsgLogoParent: {
         marginLeft: 12,
@@ -971,10 +1019,7 @@ const styles = StyleSheet.create({
         fontSize: scaleFont(12),
     },
     inputContainer: {
-        position: 'absolute',
-        bottom: 65,
-        left: 16,
-        right: 16,
+        marginHorizontal: 16,
         backgroundColor: 'white',
         borderRadius: 30,
         paddingHorizontal: 8,
@@ -1023,7 +1068,6 @@ const styles = StyleSheet.create({
         position: 'relative',
     },
     input: {
-        flex: 1,
         height: 50,
         paddingHorizontal: 16,
         backgroundColor: '#f8f9fa',

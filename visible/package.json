@@ -16,7 +16,7 @@
     "@react-navigation/stack": "^7.2.3",
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",
-    "expo": "~53.0.25",
+    "expo": "~53.0.27",
     "expo-audio": "~0.4.9",
     "expo-auth-session": "~6.2.1",
     "expo-av": "~15.1.7",
@@ -31,7 +31,7 @@
     "expo-linear-gradient": "~14.1.5",
     "expo-local-authentication": "~16.0.5",
     "expo-media-library": "~17.1.7",
-    "expo-notifications": "~0.31.4",
+    "expo-notifications": "~0.31.5",
     "expo-secure-store": "~14.2.4",
     "expo-sharing": "~13.1.5",
     "expo-speech": "~13.1.7",
@@ -55,6 +55,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-vector-icons": "^10.2.0",
     "react-native-webview": "13.13.5",
+    "sarvamai": "^1.1.6",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
