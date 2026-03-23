@@ -24,7 +24,6 @@ const IV_LENGTH = 16;
 const langs = require('langs');
 const { SarvamAIClient } = require('sarvamai');
 
-
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -42,7 +41,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 const sarvamClient = new SarvamAIClient({
     apiSubscriptionKey: process.env.SARVAM_API_KEY
 });
-
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
@@ -793,7 +791,7 @@ app.post('/ask', async (req, res) => {
             const queryEmbedding = await generateEmbedding(question);
 
             const userDocs = await FileData.find({ usernameHash: hashedUsername });
-            
+
             const scoredDocs = userDocs.map(doc => {
                 let score = 0;
                 if (doc.embedding && queryEmbedding && doc.embedding.length === queryEmbedding.length) {
@@ -803,7 +801,7 @@ app.post('/ask', async (req, res) => {
                 }
                 return { doc, score };
             });
-            
+
             // Sort descending by score and pick top 3
             scoredDocs.sort((a, b) => b.score - a.score);
             const topResults = scoredDocs.slice(0, 3).map(m => m.doc);
@@ -834,6 +832,7 @@ Follow these instructions carefully:
 - If you don't understand, say so politely in ${targetLang}
 - Avoid markdown formatting
 - Make sure to answer clearly and directly
+- Never Generalise the Answers, If the information is from the User Data, then only answer based on that, else say that you don't have the information.
 
 Context:
 ${systemContext}
@@ -1483,9 +1482,9 @@ app.post('/text-to-speech', async (req, res) => {
 
     try {
         console.log(`Starting Sarvam AI TTS for language: ${languageCode}`);
-        
+
         // Sarvam has a 500 character limit per request. Split text if needed.
-        const maxLength = 480; 
+        const maxLength = 480;
         const chunks = [];
         let remaining = text;
 
@@ -1503,7 +1502,7 @@ app.post('/text-to-speech', async (req, res) => {
                 segment.lastIndexOf('?'),
                 segment.lastIndexOf('\n')
             );
-            
+
             if (lastPunctuation > maxLength * 0.5) {
                 breakPoint = lastPunctuation + 1; // Include punctuation
             } else {
@@ -1512,20 +1511,20 @@ app.post('/text-to-speech', async (req, res) => {
                     breakPoint = lastSpace;
                 }
             }
-            
+
             chunks.push(remaining.substring(0, breakPoint).trim());
             remaining = remaining.substring(breakPoint).trim();
         }
 
         console.log(`Text split into ${chunks.length} chunks`);
-        
+
         const audioBuffers = [];
 
         // Process chunks sequentially to maintain order and avoid rate limits
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i];
             if (!chunk) continue;
-            
+
             console.log(`Processing chunk ${i + 1}/${chunks.length} (${chunk.length} chars)`);
             const response = await sarvamClient.textToSpeech.convert({
                 inputs: [chunk],
@@ -1551,7 +1550,7 @@ app.post('/text-to-speech', async (req, res) => {
             // works decently well. For pure seamlessness, proper WAV stripping would be needed, 
             // but for basic stitching this is acceptable.
             // A more robust approach would be to strip the 44-byte WAV header from chunks after the first.
-            
+
             // Basic header stripping for chunks > 0 assuming standard 44 byte WAV header
             let finalBuffer;
             if (audioBuffers.length === 1) {
@@ -1561,20 +1560,20 @@ app.post('/text-to-speech', async (req, res) => {
                 for (let i = 1; i < audioBuffers.length; i++) {
                     totalLength += (audioBuffers[i].length - 44);
                 }
-                
+
                 finalBuffer = Buffer.alloc(totalLength);
                 let offset = 0;
-                
+
                 // Copy first chunk fully
                 audioBuffers[0].copy(finalBuffer, offset);
                 offset += audioBuffers[0].length;
-                
+
                 // Copy remaining chunks without 44-byte header
                 for (let i = 1; i < audioBuffers.length; i++) {
                     audioBuffers[i].copy(finalBuffer, offset, 44);
                     offset += (audioBuffers[i].length - 44);
                 }
-                
+
                 // Update file size in the main header (bytes 4-7)
                 finalBuffer.writeUInt32LE(totalLength - 8, 4);
                 // Update data chunk size (bytes 40-43)
@@ -1970,11 +1969,48 @@ app.post('/upload', upload.single('file'), async (req, res) => {
                 if (ext === 'pdf') {
                     try {
                         const pdfData = await pdfParse(file.buffer);
-                        extractedText = pdfData.text || '';
-                        console.log("PDF Extracted Data" + extractedText)
+                        extractedText = (pdfData.text || '').trim();
+                        console.log("PDF Extracted Data (text layer):", extractedText);
                     } catch (err) {
                         console.error('PDF parse error:', err.message);
-                        extractedText = '[PDF text could not be extracted]';
+                        extractedText = '';
+                    }
+
+                    // If pdf-parse returned nothing, the PDF is image-based (scanned) — fall back to Gemini OCR
+                    if (!extractedText) {
+                        console.log('PDF has no text layer. Falling back to Gemini OCR...');
+                        try {
+                            const pdfBase64 = file.buffer.toString('base64');
+                            const geminiOcrRes = await fetch(
+                                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
+                                {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        contents: [{
+                                            role: 'user',
+                                            parts: [
+                                                {
+                                                    inline_data: {
+                                                        mime_type: 'application/pdf',
+                                                        data: pdfBase64
+                                                    }
+                                                },
+                                                {
+                                                    text: 'Extract and return ALL text content from this PDF exactly as it appears. Include every word, number, and character. Do not summarize, interpret, or add any commentary — just return the raw text content.'
+                                                }
+                                            ]
+                                        }]
+                                    })
+                                }
+                            );
+                            const geminiOcrData = await geminiOcrRes.json();
+                            extractedText = geminiOcrData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                            console.log("PDF OCR (Gemini) Extracted Data:", extractedText);
+                        } catch (geminiErr) {
+                            console.error('Gemini OCR for PDF error:', geminiErr.message);
+                            extractedText = '[PDF text could not be extracted]';
+                        }
                     }
                 } else if (ext === 'docx') {
                     try {

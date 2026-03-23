@@ -56,7 +56,8 @@
       ],
       "expo-web-browser",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "web": {
       "favicon": "./assets/updatedLogo1.png"

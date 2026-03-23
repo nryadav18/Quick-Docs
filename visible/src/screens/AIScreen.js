@@ -821,7 +821,7 @@ const AIScreen = () => {
                         {messages.map(renderMessage)}
                     </ScrollView>
 
-                    <Animated.View style={[styles.inputContainer, { marginBottom: isKeyboardVisible ? (Platform.OS === 'ios' ? 10 : keyboardHeight + 10) : 80 }]}>
+                    <Animated.View style={[styles.inputContainer, { marginBottom: isKeyboardVisible ? (Platform.OS === 'ios' ? 10 : keyboardHeight + 10) : 60 }]}>
                         {renderInputSection()}
                     </Animated.View>
                 </KeyboardAvoidingView>
