@@ -89,7 +89,6 @@ const AIScreen = () => {
     const [permissionTitle, setPermissionTitle] = useState('');
     const [permissionMessage, setPermissionMessage] = useState('');
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     const showPermissionAlert = (title, message) => {
         setPermissionTitle(title)
@@ -118,17 +117,11 @@ const AIScreen = () => {
     useEffect(() => {
         const keyboardDidShowListener = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            (e) => {
-                setKeyboardVisible(true);
-                setKeyboardHeight(e.endCoordinates.height);
-            }
+            () => setKeyboardVisible(true)
         );
         const keyboardDidHideListener = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => {
-                setKeyboardVisible(false);
-                setKeyboardHeight(0);
-            }
+            () => setKeyboardVisible(false)
         );
 
         return () => {
@@ -807,8 +800,8 @@ const AIScreen = () => {
                 {renderLanguageInfo()}
 
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? 65 : 0}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                    keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
                     style={styles.keyboardAvoidingView}
                 >
                     <ScrollView
@@ -821,7 +814,7 @@ const AIScreen = () => {
                         {messages.map(renderMessage)}
                     </ScrollView>
 
-                    <Animated.View style={[styles.inputContainer, { marginBottom: isKeyboardVisible ? (Platform.OS === 'ios' ? 10 : keyboardHeight + 10) : 60 }]}>
+                    <Animated.View style={[styles.inputContainer, { marginBottom: isKeyboardVisible ? (Platform.OS === 'ios' ? 10 : keyboardHeight + 10) : 80 }]}>
                         {renderInputSection()}
                     </Animated.View>
                 </KeyboardAvoidingView>
