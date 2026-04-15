@@ -727,6 +727,49 @@ async function generateEmbedding(text) {
 }
 
 
+async function callGeminiWithRetry(payload, model = "gemini-2.5-pro", retries = 5) {
+    let delay = 500;
+
+    for (let i = 0; i < retries; i++) {
+        try {
+            const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }
+            );
+
+            // Retry only on 503 / 5xx
+            if (res.status >= 500) {
+                throw new Error(`Server error: ${res.status}`);
+            }
+
+            const data = await res.json();
+            return data;
+
+        } catch (err) {
+            if (i === retries - 1) throw err;
+
+            console.warn(`Retry ${i + 1} for ${model}...`);
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+        }
+    }
+}
+
+async function generateWithFallback(payload) {
+    try {
+        // Primary: Gemini 2.5 Pro
+        return await callGeminiWithRetry(payload, "gemini-2.5-pro");
+    } catch (err) {
+        console.warn("⚠️ Pro failed, switching to Flash model...");
+
+        return await callGeminiWithRetry(payload, "gemini-2.5-flash");
+    }
+}
+
 // AI RESPONSE
 app.post('/ask', async (req, res) => {
     const { question, username, detectedLanguage } = req.body;
@@ -839,30 +882,23 @@ ${systemContext}
 
 Question: ${lowerQuestion}`;
 
-        const geminiRes = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${process.env.GOOGLE_CLOUD_API}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            role: 'user',
-                            parts: [{
-                                text: prompt
-                            }]
-                        }
-                    ]
-                })
-            }
-        );
+        const payload = {
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ]
+        };
 
-        const data = await geminiRes.json();
+        const data = await generateWithFallback(payload);
 
         console.log(data)
         console.log(process.env.GOOGLE_CLOUD_API)
 
-        const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No meaningful response.';
+        const answer =
+            data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+            "Sorry, Due to Poor Internet Connection, I couldn't fetch the answer. Please try again.";
 
         console.log(`Answer in ${targetLang}:`, answer);
 
